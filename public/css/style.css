@@ -87,20 +87,16 @@ header {
 }
 
 .logo-icon {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #2a4a7a, #1a3a6a);
-  border: 2px solid var(--or);
+  width: 55px;
+  height: 55px;
+  background-image: url('/assets/images/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-}
-
-.logo-icon::before {
-  content: '⚽';
-  font-size: 20px;
 }
 
 .logo-text {
@@ -475,13 +471,18 @@ nav a.active {
 .actu-image {
   height: 200px;
   background: var(--bleu-fonce);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
 
-.actu-image span {
-  font-size: 4rem;
+.actu-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.actu-card:hover .actu-image img {
+  transform: scale(1.05);
 }
 
 .actu-body {

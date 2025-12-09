@@ -98,10 +98,10 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="actualites-grid">
-            ${actualites.map(a => `
+            ${actualites.map((a, index) => `
               <article class="actu-card">
                 <div class="actu-image">
-                  <span>⚽</span>
+                  <img src="/assets/images/actualites/actu_${(index % 6) + 1}.jpg" alt="${a.titre}" loading="lazy">
                 </div>
                 <div class="actu-body">
                   <div class="actu-meta">
@@ -179,14 +179,14 @@ const views = {
         <h1>Actualités</h1>
         <p>Toute l'actualité du Magny FC 78</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
           <div class="actualites-grid">
-            ${actualites.map(a => `
+            ${actualites.map((a, index) => `
               <article class="actu-card">
                 <div class="actu-image">
-                  <span>⚽</span>
+                  <img src="/assets/images/actualites/actu_${(index % 6) + 1}.jpg" alt="${a.titre}" loading="lazy">
                 </div>
                 <div class="actu-body">
                   <div class="actu-meta">
@@ -211,15 +211,13 @@ const views = {
         <h1>Galerie</h1>
         <p>Les moments forts du club en images</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
           <div class="galerie-grid">
             ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `
               <div class="galerie-item">
-                <div style="width: 100%; height: 100%; background: var(--bleu-fonce); display: flex; align-items: center; justify-content: center;">
-                  <span style="font-size: 2rem;">📷</span>
-                </div>
+                <img src="/assets/images/gallery/photo_${i}.jpg" alt="Photo galerie ${i}" loading="lazy">
               </div>
             `).join('')}
           </div>
@@ -451,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <a href="/galerie" data-link>GALERIE</a>
         <a href="/partenaires" data-link>PARTENAIRES</a>
         <a href="/contact" data-link>CONTACT</a>
-        <a href="/connexion" class="btn-connexion" data-link>CONNEXION</a>
+        <a href="/admin/login.html" class="btn-connexion">CONNEXION</a>
       </nav>
     </div>
   `;
