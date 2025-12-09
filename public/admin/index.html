@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Magny FC 78</title>
+    <style>
+        :root {
+            --primary: #1a4d92;
+            --secondary: #dabb81;
+            --accent: #ffffff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --sidebar-width: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light); color: var(--dark); }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: var(--sidebar-width); background: var(--primary);
+            color: var(--white); overflow-y: auto; z-index: 100;
+        }
+        .sidebar-header {
+            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .sidebar-logo {
+            width: 40px; height: 40px; background: var(--secondary);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; color: var(--primary);
+        }
+        .sidebar-title { font-weight: 600; }
+        .sidebar-subtitle { font-size: 0.75rem; color: var(--accent); }
+        
+        .nav-section { padding: 15px 0; }
+        .nav-section-title {
+            padding: 10px 20px; font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 1px; color: rgba(255,255,255,0.4);
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 20px; color: rgba(255,255,255,0.7);
+            cursor: pointer; transition: all 0.2s; border: none;
+            background: none; width: 100%; text-align: left; font-size: 0.9rem;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+        .nav-item.active { background: rgba(255,255,255,0.15); color: var(--accent); border-left: 3px solid var(--accent); }
+        .nav-item-icon { width: 20px; text-align: center; }
+        
+        /* Main Content */
+        .main { margin-left: var(--sidebar-width); min-height: 100vh; }
+        
+        .topbar {
+            background: var(--white); padding: 15px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50;
+        }
+        .topbar h1 { font-size: 1.5rem; color: var(--primary); }
+        .topbar-actions { display: flex; gap: 15px; align-items: center; }
+        
+        .content { padding: 30px; }
+        
+        /* Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card {
+            background: var(--white); padding: 25px; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .stat-card-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; }
+        .stat-card-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .stat-card-label { color: var(--gray); font-size: 0.9rem; }
+        
+        .card {
+            background: var(--white); border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 20px 25px; border-bottom: 1px solid var(--light);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
+        .card-body { padding: 25px; }
+        
+        /* Table */
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--light); }
+        .table th { font-weight: 600; color: var(--gray); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table tr:hover { background: var(--light); }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 6px; font-size: 0.9rem;
+            font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: #2a3a5a; }
+        .btn-secondary { background: var(--secondary); color: var(--primary); }
+        .btn-success { background: var(--success); color: var(--white); }
+        .btn-danger { background: var(--danger); color: var(--white); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-icon { padding: 8px; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 500; margin-bottom: 8px; color: var(--dark); }
+        .form-control {
+            width: 100%; padding: 12px 15px; border: 1px solid #ddd;
+            border-radius: 6px; font-size: 0.95rem; transition: border-color 0.2s;
+        }
+        .form-control:focus { outline: none; border-color: var(--accent); }
+        textarea.form-control { min-height: 120px; resize: vertical; }
+        select.form-control { cursor: pointer; }
+        
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        
+        /* Badge */
+        .badge {
+            display: inline-block; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        
+        /* Modal */
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--white); border-radius: 10px; width: 100%;
+            max-width: 600px; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-header {
+            padding: 20px 25px; border-bottom: 1px solid var(--light);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-title { font-size: 1.2rem; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
+        .modal-body { padding: 25px; }
+        .modal-footer { padding: 15px 25px; border-top: 1px solid var(--light); display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Alert */
+        .alert {
+            padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; }
+        .alert-danger { background: #fee2e2; color: #991b1b; }
+        
+        /* Loading */
+        .loading { text-align: center; padding: 40px; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--light);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 2px solid var(--light); margin-bottom: 25px; }
+        .tab {
+            padding: 12px 25px; cursor: pointer; border: none; background: none;
+            font-weight: 500; color: var(--gray); border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s;
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        
+        /* Hide sections */
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">MFC</div>
+            <div>
+                <div class="sidebar-title">Magny FC 78</div>
+                <div class="sidebar-subtitle">Administration</div>
+            </div>
+        </div>
+        
+        <nav class="nav-section">
+            <div class="nav-section-title">Principal</div>
+            <button class="nav-item active" data-section="dashboard"><span class="nav-item-icon">📊</span> Tableau de bord</button>
+            <button class="nav-item" data-section="config"><span class="nav-item-icon">⚙️</span> Configuration</button>
+            <button class="nav-item" data-section="menu"><span class="nav-item-icon">📋</span> Menu</button>
+        </nav>
+        
+        <nav class="nav-section">
+            <div class="nav-section-title">Contenu</div>
+            <button class="nav-item" data-section="equipes"><span class="nav-item-icon">👥</span> Équipes</button>
+            <button class="nav-item" data-section="matchs"><span class="nav-item-icon">⚽</span> Matchs</button>
+            <button class="nav-item" data-section="actualites"><span class="nav-item-icon">📰</span> Actualités</button>
+            <button class="nav-item" data-section="galerie"><span class="nav-item-icon">🖼️</span> Galerie</button>
+            <button class="nav-item" data-section="partenaires"><span class="nav-item-icon">🤝</span> Partenaires</button>
+        </nav>
+        
+        <nav class="nav-section">
+            <div class="nav-section-title">Communication</div>
+            <button class="nav-item" data-section="contacts"><span class="nav-item-icon">✉️</span> Messages <span id="unread-badge" class="badge badge-danger" style="margin-left:auto;display:none;">0</span></button>
+        </nav>
+        
+        <nav class="nav-section">
+            <div class="nav-section-title">Système</div>
+            <button class="nav-item" data-section="logs"><span class="nav-item-icon">📜</span> Activité</button>
+            <button class="nav-item" onclick="logout()"><span class="nav-item-icon">🚪</span> Déconnexion</button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="topbar">
+            <h1 id="page-title">Tableau de bord</h1>
+            <div class="topbar-actions">
+                <span id="user-name">Admin</span>
+                <a href="/" target="_blank" class="btn btn-sm btn-primary">🌐 Voir le site</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div id="alert-container"></div>
+            
+            <!-- Dashboard -->
+            <div class="section active" id="section-dashboard">
+                <div class="stats-grid" id="stats-grid">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Derniers matchs</h3></div>
+                    <div class="card-body" id="derniers-matchs"><div class="loading"><div class="spinner"></div></div></div>
+                </div>
+            </div>
+            
+            <!-- Configuration -->
+            <div class="section" id="section-config">
+                <div class="tabs">
+                    <button class="tab active" data-tab="general">Général</button>
+                    <button class="tab" data-tab="contact">Contact</button>
+                    <button class="tab" data-tab="social">Réseaux sociaux</button>
+                    <button class="tab" data-tab="hero">Hero</button>
+                    <button class="tab" data-tab="apparence">Apparence</button>
+                </div>
+                <div class="card"><div class="card-body" id="config-form"></div></div>
+            </div>
+            
+            <!-- Menu -->
+            <div class="section" id="section-menu">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Éléments du menu</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('menu')">+ Ajouter</button>
+                    </div>
+                    <div class="card-body" id="menu-list"></div>
+                </div>
+            </div>
+            
+            <!-- Équipes -->
+            <div class="section" id="section-equipes">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liste des équipes</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('equipe')">+ Nouvelle équipe</button>
+                    </div>
+                    <div class="card-body" id="equipes-list"></div>
+                </div>
+            </div>
+            
+            <!-- Matchs -->
+            <div class="section" id="section-matchs">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Calendrier des matchs</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('match')">+ Nouveau match</button>
+                    </div>
+                    <div class="card-body" id="matchs-list"></div>
+                </div>
+            </div>
+            
+            <!-- Actualités -->
+            <div class="section" id="section-actualites">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Articles</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('actualite')">+ Nouvel article</button>
+                    </div>
+                    <div class="card-body" id="actualites-list"></div>
+                </div>
+            </div>
+            
+            <!-- Galerie -->
+            <div class="section" id="section-galerie">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Albums photo</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('album')">+ Nouvel album</button>
+                    </div>
+                    <div class="card-body" id="galerie-list"></div>
+                </div>
+            </div>
+            
+            <!-- Partenaires -->
+            <div class="section" id="section-partenaires">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Partenaires</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('partenaire')">+ Nouveau partenaire</button>
+                    </div>
+                    <div class="card-body" id="partenaires-list"></div>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="section" id="section-contacts">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Messages reçus</h3></div>
+                    <div class="card-body" id="contacts-list"></div>
+                </div>
+            </div>
+            
+            <!-- Logs -->
+            <div class="section" id="section-logs">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Journal d'activité</h3></div>
+                    <div class="card-body" id="logs-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Formulaire</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal()">Annuler</button>
+                <button class="btn btn-primary" id="modal-submit">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/admin.js"></script>
+</body>
+</html>

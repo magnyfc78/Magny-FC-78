@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Administration Magny FC 78</title>
+    <style>
+        :root { --primary: #1a2744; --secondary: #c9a227; --accent: #5ce1e6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--primary), #0d1829);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        }
+        .login-container {
+            background: #fff; padding: 50px; border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 420px;
+        }
+        .logo { text-align: center; margin-bottom: 35px; }
+        .logo-icon {
+            width: 80px; height: 80px; background: var(--secondary);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0 auto 15px;
+        }
+        .logo h1 { color: var(--primary); font-size: 1.5rem; letter-spacing: 2px; }
+        .logo p { color: #888; font-size: 0.9rem; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 500; margin-bottom: 8px; color: #333; }
+        .form-control {
+            width: 100%; padding: 14px 18px; border: 2px solid #e5e7eb;
+            border-radius: 8px; font-size: 1rem; transition: all 0.3s;
+        }
+        .form-control:focus { outline: none; border-color: var(--accent); }
+        .btn {
+            width: 100%; padding: 16px; background: var(--primary);
+            color: #fff; border: none; border-radius: 8px; font-size: 1rem;
+            font-weight: 600; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 1px; transition: all 0.3s;
+        }
+        .btn:hover { background: #2a3a5a; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .alert {
+            padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;
+            font-size: 0.9rem; display: none;
+        }
+        .alert-danger { background: #fee2e2; color: #991b1b; display: block; }
+        .back-link { text-align: center; margin-top: 25px; }
+        .back-link a { color: var(--primary); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">MFC</div>
+            <h1>MAGNY FC 78</h1>
+            <p>Administration</p>
+        </div>
+
+        <div class="alert" id="alert"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mot de passe</label>
+                <input type="password" class="form-control" id="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn" id="submit-btn">Se connecter</button>
+        </form>
+
+        <div class="back-link">
+            <a href="/">← Retour au site</a>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        // Si déjà connecté en admin, rediriger
+        if (api.isAuthenticated() && api.isAdmin()) {
+            window.location.href = '/admin/';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const alert = document.getElementById('alert');
+            
+            btn.disabled = true;
+            btn.textContent = 'Connexion...';
+            alert.style.display = 'none';
+
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                await api.login(email, password);
+                
+                if (api.isAdmin()) {
+                    window.location.href = '/admin/';
+                } else {
+                    api.logout();
+                    alert.textContent = 'Accès refusé. Vous devez être administrateur.';
+                    alert.classList.add('alert-danger');
+                }
+            } catch (error) {
+                alert.textContent = error.message || 'Identifiants incorrects';
+                alert.classList.add('alert-danger');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Se connecter';
+        });
+    </script>
+</body>
+</html>
