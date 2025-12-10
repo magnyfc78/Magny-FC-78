@@ -87,20 +87,16 @@ header {
 }
 
 .logo-icon {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #2a4a7a, #1a3a6a);
-  border: 2px solid var(--or);
+  width: 55px;
+  height: 55px;
+  background-image: url('/assets/images/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-}
-
-.logo-icon::before {
-  content: '⚽';
-  font-size: 20px;
 }
 
 .logo-text {
@@ -440,6 +436,16 @@ nav a.active {
   color: var(--blanc);
 }
 
+.badge-argent {
+  background: #c0c0c0;
+  color: #333;
+}
+
+.badge-bronze {
+  background: #cd7f32;
+  color: #fff;
+}
+
 .equipe-info {
   font-size: 0.9rem;
   color: var(--gris);
@@ -475,13 +481,18 @@ nav a.active {
 .actu-image {
   height: 200px;
   background: var(--bleu-fonce);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
 
-.actu-image span {
-  font-size: 4rem;
+.actu-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.actu-card:hover .actu-image img {
+  transform: scale(1.05);
 }
 
 .actu-body {
@@ -938,18 +949,43 @@ footer {
 
 .partenaire-item {
   background: var(--blanc);
-  padding: 30px;
+  padding: 25px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   box-shadow: 0 3px 15px rgba(0,0,0,0.05);
   transition: all 0.3s ease;
-  min-height: 120px;
+  min-height: 180px;
+  border-radius: 10px;
 }
 
 .partenaire-item:hover {
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   transform: translateY(-5px);
+}
+
+.partenaire-logo {
+  width: 60px;
+  height: 60px;
+  background: var(--gris-clair);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.partenaire-info h3 {
+  font-family: var(--font-titre);
+  font-size: 1rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 10px;
+}
+
+.partenaire-info .badge {
+  border-radius: 15px;
 }
 
 @media (max-width: 900px) {

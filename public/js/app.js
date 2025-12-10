@@ -98,10 +98,14 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="actualites-grid">
-            ${actualites.map(a => `
+            ${actualites.map((a, index) => {
+              const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
+              const imgType = imageMap[a.categorie] || 'club';
+              const imgNum = (index % 2) + 1;
+              return `
               <article class="actu-card">
                 <div class="actu-image">
-                  <span>⚽</span>
+                  <img src="/assets/images/actualites/${imgType}_${imgNum}.jpg" alt="${a.titre}" loading="lazy">
                 </div>
                 <div class="actu-body">
                   <div class="actu-meta">
@@ -112,7 +116,7 @@ const views = {
                   <p class="actu-excerpt">${a.extrait || ''}</p>
                 </div>
               </article>
-            `).join('') || '<p class="text-center">Aucune actualité</p>'}
+            `}).join('') || '<p class="text-center">Aucune actualité</p>'}
           </div>
           <div class="text-center mt-4">
             <a href="/actualites" class="btn btn-primary" data-link>TOUTES LES ACTUALITÉS</a>
@@ -173,31 +177,25 @@ const views = {
   async actualites() {
     const res = await api.getActualites(20);
     const actualites = res?.data?.actualites || [];
+    const categories = ['Tous', 'Match', 'Événement', 'Club', 'Formation'];
+    const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
+    window.actualitesData = actualites;
 
     return `
       <section class="page-header">
         <h1>Actualités</h1>
         <p>Toute l'actualité du Magny FC 78</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
-          <div class="actualites-grid">
-            ${actualites.map(a => `
-              <article class="actu-card">
-                <div class="actu-image">
-                  <span>⚽</span>
-                </div>
-                <div class="actu-body">
-                  <div class="actu-meta">
-                    <span class="actu-category">${a.categorie}</span>
-                    <span class="actu-date">${a.date_formatee}</span>
-                  </div>
-                  <h3 class="actu-title">${a.titre}</h3>
-                  <p class="actu-excerpt">${a.extrait || ''}</p>
-                </div>
-              </article>
-            `).join('') || '<p class="text-center">Aucune actualité</p>'}
+          <div class="filters" id="actualites-filters">
+            ${categories.map(c => `
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterActualites('${c}', this)">${c}</button>
+            `).join('')}
+          </div>
+          <div class="actualites-grid" id="actualites-grid">
+            ${renderActualites(actualites)}
           </div>
         </div>
       </section>
@@ -206,20 +204,32 @@ const views = {
 
   // Page galerie
   galerie() {
+    const categories = ['Tous', 'Matchs', 'Entraînements', 'Événements'];
+    const images = {
+      matchs: [1,2,3,4,5,6].map(i => ({ src: `/assets/images/gallery/match_${i}.jpg`, cat: 'Matchs', alt: `Match ${i}` })),
+      entrainements: [1,2,3,4,5,6].map(i => ({ src: `/assets/images/gallery/entrainement_${i}.jpg`, cat: 'Entraînements', alt: `Entraînement ${i}` })),
+      evenements: [1,2,3,4].map(i => ({ src: `/assets/images/gallery/evenement_${i}.jpg`, cat: 'Événements', alt: `Événement ${i}` }))
+    };
+    const allImages = [...images.matchs, ...images.entrainements, ...images.evenements];
+    window.galerieImages = allImages;
+
     return `
       <section class="page-header">
         <h1>Galerie</h1>
         <p>Les moments forts du club en images</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
-          <div class="galerie-grid">
-            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `
-              <div class="galerie-item">
-                <div style="width: 100%; height: 100%; background: var(--bleu-fonce); display: flex; align-items: center; justify-content: center;">
-                  <span style="font-size: 2rem;">📷</span>
-                </div>
+          <div class="filters" id="galerie-filters">
+            ${categories.map(c => `
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterGalerie('${c}', this)">${c}</button>
+            `).join('')}
+          </div>
+          <div class="galerie-grid" id="galerie-grid">
+            ${allImages.map(img => `
+              <div class="galerie-item" data-category="${img.cat}">
+                <img src="${img.src}" alt="${img.alt}" loading="lazy">
               </div>
             `).join('')}
           </div>
@@ -230,20 +240,36 @@ const views = {
 
   // Page partenaires
   partenaires() {
+    const categories = ['Tous', 'Gold', 'Silver', 'Bronze'];
+    const partenaires = [
+      { nom: 'Mairie de Magny', categorie: 'Gold', logo: 'mairie' },
+      { nom: 'Conseil Départemental 78', categorie: 'Gold', logo: 'cd78' },
+      { nom: 'Sport 2000', categorie: 'Gold', logo: 'sport2000' },
+      { nom: 'Crédit Agricole', categorie: 'Silver', logo: 'ca' },
+      { nom: 'Boulangerie du Centre', categorie: 'Silver', logo: 'boulangerie' },
+      { nom: 'Garage Dupont', categorie: 'Silver', logo: 'garage' },
+      { nom: 'Pharmacie des Hameaux', categorie: 'Silver', logo: 'pharmacie' },
+      { nom: 'Restaurant Le Sporting', categorie: 'Bronze', logo: 'resto' },
+      { nom: 'Assurance Martin', categorie: 'Bronze', logo: 'assurance' },
+      { nom: 'Coiffure Style', categorie: 'Bronze', logo: 'coiffure' }
+    ];
+    window.partenairesData = partenaires;
+
     return `
       <section class="page-header">
         <h1>Partenaires</h1>
         <p>Ils nous soutiennent</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
-          <div class="partenaires-grid">
-            ${[1,2,3,4,5,6,7,8,9,10].map(i => `
-              <div class="partenaire-item">
-                <span style="color: var(--gris);">Partenaire ${i}</span>
-              </div>
+          <div class="filters" id="partenaires-filters">
+            ${categories.map(c => `
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterPartenaires('${c}', this)">${c}</button>
             `).join('')}
+          </div>
+          <div class="partenaires-grid" id="partenaires-grid">
+            ${renderPartenaires(partenaires)}
           </div>
           <div class="text-center mt-4">
             <p style="color: var(--gris); margin-bottom: 20px;">Vous souhaitez soutenir le club ?</p>
@@ -397,14 +423,101 @@ function renderEquipes(equipes) {
 }
 
 async function filterEquipes(categorie, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#equipes-filters .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  
+
   const grid = document.getElementById('equipes-grid');
   grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  
+
   const res = await api.getEquipes(categorie);
   grid.innerHTML = renderEquipes(res?.data?.equipes || []);
+}
+
+// Render actualités
+function renderActualites(actualites) {
+  const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
+  return actualites.map((a, index) => {
+    const imgType = imageMap[a.categorie] || 'club';
+    const imgNum = (index % 2) + 1;
+    return `
+      <article class="actu-card" data-category="${a.categorie}">
+        <div class="actu-image">
+          <img src="/assets/images/actualites/${imgType}_${imgNum}.jpg" alt="${a.titre}" loading="lazy">
+        </div>
+        <div class="actu-body">
+          <div class="actu-meta">
+            <span class="actu-category">${a.categorie}</span>
+            <span class="actu-date">${a.date_formatee}</span>
+          </div>
+          <h3 class="actu-title">${a.titre}</h3>
+          <p class="actu-excerpt">${a.extrait || ''}</p>
+        </div>
+      </article>
+    `;
+  }).join('') || '<p class="text-center">Aucune actualité</p>';
+}
+
+// Filter actualités
+function filterActualites(categorie, btn) {
+  document.querySelectorAll('#actualites-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const grid = document.getElementById('actualites-grid');
+  const actualites = window.actualitesData || [];
+
+  if (categorie === 'Tous') {
+    grid.innerHTML = renderActualites(actualites);
+  } else {
+    const filtered = actualites.filter(a => a.categorie === categorie);
+    grid.innerHTML = renderActualites(filtered);
+  }
+}
+
+// Filter galerie
+function filterGalerie(categorie, btn) {
+  document.querySelectorAll('#galerie-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const items = document.querySelectorAll('.galerie-item');
+  items.forEach(item => {
+    if (categorie === 'Tous' || item.dataset.category === categorie) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Render partenaires
+function renderPartenaires(partenaires) {
+  const badgeColors = { 'Gold': 'badge-or', 'Silver': 'badge-argent', 'Bronze': 'badge-bronze' };
+  return partenaires.map(p => `
+    <div class="partenaire-item" data-category="${p.categorie}">
+      <div class="partenaire-logo">
+        <span style="font-size: 2rem;">🏢</span>
+      </div>
+      <div class="partenaire-info">
+        <h3>${p.nom}</h3>
+        <span class="badge ${badgeColors[p.categorie] || 'badge-or'}">${p.categorie}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Filter partenaires
+function filterPartenaires(categorie, btn) {
+  document.querySelectorAll('#partenaires-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const grid = document.getElementById('partenaires-grid');
+  const partenaires = window.partenairesData || [];
+
+  if (categorie === 'Tous') {
+    grid.innerHTML = renderPartenaires(partenaires);
+  } else {
+    const filtered = partenaires.filter(p => p.categorie === categorie);
+    grid.innerHTML = renderPartenaires(filtered);
+  }
 }
 
 async function handleContact(e) {
@@ -451,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <a href="/galerie" data-link>GALERIE</a>
         <a href="/partenaires" data-link>PARTENAIRES</a>
         <a href="/contact" data-link>CONTACT</a>
-        <a href="/connexion" class="btn-connexion" data-link>CONNEXION</a>
+        <a href="/admin/login.html" class="btn-connexion">CONNEXION</a>
       </nav>
     </div>
   `;
