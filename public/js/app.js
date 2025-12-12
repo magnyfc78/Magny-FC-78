@@ -553,8 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Charger header
   document.getElementById('header').innerHTML = `
     <div class="container header-content">
-      <a href="/" class="logo" data-link title="Retour à l'accueil">
-        <img src="/assets/images/logo.png" alt="Logo Magny FC 78" class="logo-icon">
+      <a href="/" class="logo" data-link>
+        <div class="logo-icon"></div>
         <span class="logo-text">MAGNY FC 78</span>
       </a>
       <button class="menu-toggle" id="menu-toggle">☰</button>
@@ -574,10 +574,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
-          <a href="/" class="footer-logo" data-link title="Retour à l'accueil">
-            <img src="/assets/images/logo.png" alt="Logo Magny FC 78" class="logo-icon">
+          <div class="footer-logo">
+            <div class="logo-icon"></div>
             <span class="logo-text">MAGNY FC 78</span>
-          </a>
+          </div>
           <p class="footer-desc">Le club de football amateur de Magny-les-Hameaux depuis 2000. Rejoignez notre grande famille de passionnés !</p>
         </div>
         <div class="footer-col">

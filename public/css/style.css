@@ -89,14 +89,14 @@ header {
 .logo-icon {
   width: 55px;
   height: 55px;
+  background-image: url('/assets/images/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 50%;
-  object-fit: contain;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.logo:hover .logo-icon {
-  transform: scale(1.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-text {
@@ -801,12 +801,6 @@ footer {
   align-items: center;
   gap: 15px;
   margin-bottom: 20px;
-  text-decoration: none;
-  transition: opacity 0.3s ease;
-}
-
-.footer-logo:hover {
-  opacity: 0.9;
 }
 
 .footer-logo .logo-icon {
