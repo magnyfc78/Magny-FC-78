@@ -1074,3 +1074,537 @@ footer {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* =====================================================
+   BRUTALIST DESIGN - Style Wix
+   ===================================================== */
+
+/* Brutalist Shadows */
+.brutalist-shadow-cyan {
+  box-shadow: 6px 6px 0px 0px var(--turquoise);
+}
+
+.brutalist-shadow-primary {
+  box-shadow: 6px 6px 0px 0px var(--bleu-fonce);
+}
+
+.brutalist-shadow-gold {
+  box-shadow: 6px 6px 0px 0px var(--or);
+}
+
+.hover-brutalist:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 10px 10px 0px 0px var(--bleu-fonce);
+}
+
+/* Marquee Animation */
+.marquee-section {
+  background: var(--bleu-fonce);
+  padding: 20px 0;
+  overflow: hidden;
+  border-top: 4px solid var(--turquoise);
+  border-bottom: 4px solid var(--turquoise);
+}
+
+.marquee-content {
+  display: flex;
+  animation: marquee 30s linear infinite;
+}
+
+.marquee-item {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 0 30px;
+}
+
+.marquee-item span {
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--blanc);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.marquee-diamond {
+  width: 12px;
+  height: 12px;
+  background: var(--turquoise);
+  transform: rotate(45deg);
+  margin: 0 30px;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Values Section */
+.values-section {
+  background: var(--gris-clair);
+  padding: 100px 0;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.value-card {
+  background: var(--bleu-fonce);
+  padding: 50px 30px;
+  text-align: left;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.value-card:last-child {
+  border-right: none;
+}
+
+.value-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  color: var(--turquoise);
+}
+
+.value-card h3 {
+  font-family: var(--font-titre);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--blanc);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+
+.value-card p {
+  color: rgba(255,255,255,0.8);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+@media (max-width: 992px) {
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .value-card {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .value-card:nth-child(2) {
+    border-right: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+  .value-card {
+    border-right: none;
+  }
+}
+
+/* Histoire Section */
+.histoire-section {
+  padding: 120px 0;
+  background: var(--blanc);
+}
+
+.histoire-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.histoire-title {
+  position: sticky;
+  top: 120px;
+}
+
+.histoire-title h2 {
+  font-family: var(--font-titre);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--bleu-fonce);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.histoire-content p {
+  font-size: 1.2rem;
+  color: var(--gris-fonce);
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+
+.histoire-image {
+  margin: 40px 0;
+}
+
+.histoire-image img {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 992px) {
+  .histoire-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .histoire-title {
+    position: static;
+  }
+  .histoire-title h2 {
+    font-size: 3rem;
+  }
+}
+
+/* CTA Section */
+.cta-section {
+  background: var(--bleu-fonce);
+  padding: 100px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  background: var(--turquoise);
+  opacity: 0.1;
+}
+
+.cta-section::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  right: -80px;
+  width: 300px;
+  height: 300px;
+  background: var(--turquoise);
+  opacity: 0.1;
+}
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.cta-content h2 {
+  font-family: var(--font-titre);
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--blanc);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.cta-content p {
+  font-size: 1.3rem;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 40px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Animate on scroll */
+.animate-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.animate-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Page header with decorative elements */
+.page-header-brutalist {
+  background: var(--bleu-fonce);
+  padding: 150px 40px 80px;
+  position: relative;
+  overflow: hidden;
+  margin-top: var(--header-height);
+}
+
+.page-header-brutalist::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 250px;
+  height: 250px;
+  background: var(--turquoise);
+  opacity: 0.1;
+}
+
+.page-header-brutalist::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  left: -80px;
+  width: 180px;
+  height: 180px;
+  background: var(--turquoise);
+  opacity: 0.1;
+}
+
+.page-header-brutalist h1 {
+  font-family: var(--font-titre);
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
+  color: var(--blanc);
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.page-header-brutalist p {
+  font-size: 1.3rem;
+  color: rgba(255,255,255,0.9);
+  max-width: 700px;
+}
+
+/* Brutalist Cards */
+.card-brutalist {
+  background: var(--gris-clair);
+  box-shadow: 6px 6px 0px 0px var(--bleu-fonce);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card-brutalist:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 10px 10px 0px 0px var(--bleu-fonce);
+}
+
+/* Equipe card brutalist */
+.equipe-card-brutalist {
+  background: var(--gris-clair);
+  box-shadow: 4px 4px 0px 0px var(--bleu-fonce);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.equipe-card-brutalist:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0px 0px var(--bleu-fonce);
+}
+
+.equipe-card-brutalist .equipe-image {
+  height: 250px;
+  background: var(--bleu-fonce);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.equipe-card-brutalist .equipe-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.equipe-card-brutalist:hover .equipe-image img {
+  transform: scale(1.05);
+}
+
+.equipe-card-brutalist .equipe-initial {
+  font-family: var(--font-titre);
+  font-size: 5rem;
+  font-weight: 700;
+  color: var(--turquoise);
+}
+
+.equipe-card-brutalist .category-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--turquoise);
+  color: var(--bleu-fonce);
+  padding: 8px 16px;
+  font-family: var(--font-texte);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.equipe-card-brutalist .equipe-body {
+  padding: 25px;
+}
+
+.equipe-card-brutalist .equipe-body h3 {
+  font-family: var(--font-titre);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--bleu-fonce);
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}
+
+.equipe-card-brutalist .equipe-body p {
+  color: var(--gris);
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.equipe-card-brutalist .equipe-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--bleu-fonce);
+  font-size: 0.9rem;
+}
+
+.equipe-card-brutalist .equipe-schedule {
+  background: var(--blanc);
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.equipe-card-brutalist .equipe-schedule strong {
+  color: var(--turquoise);
+}
+
+/* Contact brutalist */
+.contact-form-brutalist {
+  background: var(--gris-clair);
+  padding: 50px;
+  box-shadow: 6px 6px 0px 0px var(--bleu-fonce);
+}
+
+.contact-form-brutalist h2 {
+  font-family: var(--font-titre);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--bleu-fonce);
+  text-transform: uppercase;
+  margin-bottom: 30px;
+}
+
+.contact-form-brutalist .form-group label {
+  color: var(--bleu-fonce);
+  font-weight: 700;
+}
+
+.contact-form-brutalist .form-control {
+  background: var(--blanc);
+  border: 2px solid var(--bleu-fonce);
+  color: var(--gris-fonce);
+}
+
+.contact-form-brutalist .form-control:focus {
+  border-color: var(--turquoise);
+}
+
+.contact-info-brutalist {
+  background: var(--bleu-fonce);
+  padding: 40px;
+  box-shadow: 4px 4px 0px 0px var(--turquoise);
+}
+
+.contact-info-brutalist h3 {
+  font-family: var(--font-titre);
+  font-size: 2rem;
+  color: var(--blanc);
+  text-transform: uppercase;
+  margin-bottom: 30px;
+}
+
+.contact-info-brutalist .info-item {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.contact-info-brutalist .info-icon {
+  color: var(--turquoise);
+  font-size: 1.5rem;
+}
+
+.contact-info-brutalist .info-content h4 {
+  color: var(--blanc);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.contact-info-brutalist .info-content p,
+.contact-info-brutalist .info-content a {
+  color: rgba(255,255,255,0.8);
+}
+
+.contact-info-brutalist .info-content a:hover {
+  color: var(--turquoise);
+}
+
+/* Map container */
+.map-container {
+  background: var(--gris-clair);
+  box-shadow: 4px 4px 0px 0px var(--bleu-fonce);
+  overflow: hidden;
+}
+
+.map-container iframe {
+  width: 100%;
+  height: 300px;
+  border: none;
+}
+
+.map-container .map-info {
+  background: var(--bleu-fonce);
+  padding: 20px;
+}
+
+.map-container .map-info p {
+  color: rgba(255,255,255,0.9);
+}
+
+.map-container .map-info strong {
+  color: var(--turquoise);
+}
+
+/* Hours card */
+.hours-card {
+  background: var(--gris-clair);
+  padding: 30px;
+  box-shadow: 4px 4px 0px 0px var(--bleu-fonce);
+}
+
+.hours-card h3 {
+  font-family: var(--font-titre);
+  font-size: 1.5rem;
+  color: var(--bleu-fonce);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hours-card .hours-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.hours-card .hours-row:last-child {
+  border-bottom: none;
+}
