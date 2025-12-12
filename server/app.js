@@ -118,6 +118,12 @@ app.use(express.static(path.join(__dirname, '../public'), {
   etag: true
 }));
 
+// Servir les assets (images, etc.)
+app.use('/assets', express.static(path.join(__dirname, '../assets'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  etag: true
+}));
+
 // =====================================================
 // ROUTES API
 // =====================================================
