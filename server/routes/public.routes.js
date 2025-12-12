@@ -129,9 +129,9 @@ router.get('/matchs', async (req, res, next) => {
     }
     
     sql += ` ORDER BY m.date_match ${type === 'termine' ? 'DESC' : 'ASC'} LIMIT ?`;
-    params.push(parseInt(limit));
-    
-    const [matchs] = await db.pool.execute(sql, params);
+    params.push(parseInt(limit) || 20);
+
+    const matchs = await db.query(sql, params);
     
     // Formater les dates
     const formatted = matchs.map(m => {
@@ -167,9 +167,9 @@ router.get('/actualites', async (req, res, next) => {
     }
     
     sql += ' ORDER BY date_publication DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), parseInt(offset));
-    
-    const [actualites] = await db.pool.execute(sql, params);
+    params.push(parseInt(limit) || 10, parseInt(offset) || 0);
+
+    const actualites = await db.query(sql, params);
     
     const formatted = actualites.map(a => ({
       ...a,
