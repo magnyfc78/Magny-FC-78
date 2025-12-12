@@ -162,7 +162,7 @@ const views = {
         <div class="container">
           <div class="filters" id="equipes-filters">
             ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterEquipes('${c}', this)">${c}</button>
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="equipes" data-category="${c}">${c}</button>
             `).join('')}
           </div>
           <div class="equipes-grid" id="equipes-grid">
@@ -191,7 +191,7 @@ const views = {
         <div class="container">
           <div class="filters" id="actualites-filters">
             ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterActualites('${c}', this)">${c}</button>
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="actualites" data-category="${c}">${c}</button>
             `).join('')}
           </div>
           <div class="actualites-grid" id="actualites-grid">
@@ -223,7 +223,7 @@ const views = {
         <div class="container">
           <div class="filters" id="galerie-filters">
             ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterGalerie('${c}', this)">${c}</button>
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="galerie" data-category="${c}">${c}</button>
             `).join('')}
           </div>
           <div class="galerie-grid" id="galerie-grid">
@@ -265,7 +265,7 @@ const views = {
         <div class="container">
           <div class="filters" id="partenaires-filters">
             ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" onclick="filterPartenaires('${c}', this)">${c}</button>
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="partenaires" data-category="${c}">${c}</button>
             `).join('')}
           </div>
           <div class="partenaires-grid" id="partenaires-grid">
@@ -422,10 +422,7 @@ function renderEquipes(equipes) {
   `).join('');
 }
 
-async function filterEquipes(categorie, btn) {
-  document.querySelectorAll('#equipes-filters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
+async function filterEquipes(categorie) {
   const grid = document.getElementById('equipes-grid');
   grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
@@ -458,10 +455,7 @@ function renderActualites(actualites) {
 }
 
 // Filter actualités
-function filterActualites(categorie, btn) {
-  document.querySelectorAll('#actualites-filters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
+function filterActualites(categorie) {
   const grid = document.getElementById('actualites-grid');
   const actualites = window.actualitesData || [];
 
@@ -474,10 +468,7 @@ function filterActualites(categorie, btn) {
 }
 
 // Filter galerie
-function filterGalerie(categorie, btn) {
-  document.querySelectorAll('#galerie-filters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
+function filterGalerie(categorie) {
   const items = document.querySelectorAll('.galerie-item');
   items.forEach(item => {
     if (categorie === 'Tous' || item.dataset.category === categorie) {
@@ -505,10 +496,7 @@ function renderPartenaires(partenaires) {
 }
 
 // Filter partenaires
-function filterPartenaires(categorie, btn) {
-  document.querySelectorAll('#partenaires-filters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
+function filterPartenaires(categorie) {
   const grid = document.getElementById('partenaires-grid');
   const partenaires = window.partenairesData || [];
 
@@ -546,12 +534,8 @@ async function handleContact(e) {
 }
 
 // =====================================================
-// EXPOSE FILTER FUNCTIONS GLOBALLY (for onclick handlers)
+// EXPOSE FUNCTIONS GLOBALLY (for inline handlers)
 // =====================================================
-window.filterEquipes = filterEquipes;
-window.filterActualites = filterActualites;
-window.filterGalerie = filterGalerie;
-window.filterPartenaires = filterPartenaires;
 window.handleContact = handleContact;
 
 // =====================================================
@@ -627,6 +611,36 @@ document.addEventListener('DOMContentLoaded', () => {
     link.addEventListener('click', () => {
       document.getElementById('nav').classList.remove('active');
     });
+  });
+
+  // Event delegation for filter buttons
+  document.addEventListener('click', (e) => {
+    const filterBtn = e.target.closest('.filter-btn[data-filter]');
+    if (!filterBtn) return;
+
+    const filterType = filterBtn.dataset.filter;
+    const category = filterBtn.dataset.category;
+    const filtersContainer = filterBtn.closest('.filters');
+
+    // Update active state
+    filtersContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    filterBtn.classList.add('active');
+
+    // Call the appropriate filter function
+    switch (filterType) {
+      case 'equipes':
+        filterEquipes(category);
+        break;
+      case 'actualites':
+        filterActualites(category);
+        break;
+      case 'galerie':
+        filterGalerie(category);
+        break;
+      case 'partenaires':
+        filterPartenaires(category);
+        break;
+    }
   });
 
   // Routes
