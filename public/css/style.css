@@ -192,11 +192,11 @@ nav a.active {
    ===================================================== */
 .hero {
   min-height: 100vh;
-  background: linear-gradient(to bottom, 
+  background: linear-gradient(to bottom,
     rgba(13, 24, 41, 0.7) 0%,
     rgba(13, 24, 41, 0.5) 50%,
     rgba(13, 24, 41, 0.8) 100%
-  ), url('https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=1920') center/cover no-repeat;
+  ), url('/assets/images/backGroundAccueil.png') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
