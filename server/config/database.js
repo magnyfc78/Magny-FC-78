@@ -48,9 +48,11 @@ const testConnection = async () => {
 };
 
 // Wrapper pour les requêtes avec gestion d'erreurs
+// Utilise pool.query() au lieu de pool.execute() pour éviter les problèmes
+// de prepared statements avec LIMIT/OFFSET dans certaines versions MySQL/MariaDB
 const query = async (sql, params = []) => {
   try {
-    const [rows] = await pool.execute(sql, params);
+    const [rows] = await pool.query(sql, params);
     return rows;
   } catch (error) {
     logger.error('Erreur requête SQL:', error.message);
