@@ -546,6 +546,15 @@ async function handleContact(e) {
 }
 
 // =====================================================
+// EXPOSE FILTER FUNCTIONS GLOBALLY (for onclick handlers)
+// =====================================================
+window.filterEquipes = filterEquipes;
+window.filterActualites = filterActualites;
+window.filterGalerie = filterGalerie;
+window.filterPartenaires = filterPartenaires;
+window.handleContact = handleContact;
+
+// =====================================================
 // INITIALISATION
 // =====================================================
 
