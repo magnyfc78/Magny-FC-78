@@ -79,42 +79,6 @@
     </div>
 
     <script src="/js/api.js"></script>
-    <script>
-        // Si déjà connecté en admin, rediriger
-        if (api.isAuthenticated() && api.isAdmin()) {
-            window.location.href = '/admin/';
-        }
-
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            const alert = document.getElementById('alert');
-            
-            btn.disabled = true;
-            btn.textContent = 'Connexion...';
-            alert.style.display = 'none';
-
-            try {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                
-                await api.login(email, password);
-                
-                if (api.isAdmin()) {
-                    window.location.href = '/admin/';
-                } else {
-                    api.logout();
-                    alert.textContent = 'Accès refusé. Vous devez être administrateur.';
-                    alert.classList.add('alert-danger');
-                }
-            } catch (error) {
-                alert.textContent = error.message || 'Identifiants incorrects';
-                alert.classList.add('alert-danger');
-            }
-
-            btn.disabled = false;
-            btn.textContent = 'Se connecter';
-        });
-    </script>
+    <script src="/js/admin-login.js"></script>
 </body>
 </html>
