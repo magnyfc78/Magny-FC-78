@@ -105,11 +105,13 @@
                 } else {
                     api.logout();
                     alert.textContent = 'Accès refusé. Vous devez être administrateur.';
-                    alert.classList.add('alert-danger');
+                    alert.className = 'alert alert-danger';
+                    alert.style.display = 'block';
                 }
             } catch (error) {
                 alert.textContent = error.message || 'Identifiants incorrects';
-                alert.classList.add('alert-danger');
+                alert.className = 'alert alert-danger';
+                alert.style.display = 'block';
             }
 
             btn.disabled = false;
