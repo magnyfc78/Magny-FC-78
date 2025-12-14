@@ -27,9 +27,10 @@ CREATE TABLE users (
 ) ENGINE=InnoDB;
 
 -- Admin par défaut (password: Admin123!)
-INSERT INTO users (id, nom, prenom, email, password, role) VALUES 
-('admin-001', 'Admin', 'MFC', 'admin@magnyfc78.fr', 
-'$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.qKLXFg7VJXqXXe', 'admin');
+-- If password doesn't work, run: node scripts/reset-admin-password.js
+INSERT INTO users (id, nom, prenom, email, password, role) VALUES
+('admin-001', 'Admin', 'MFC', 'admin@magnyfc78.fr',
+'$2a$12$05ABoFA9W3jYutRCnPRLK.w3aW0sGGjhbqHYZt0q1HqRpzhRBmjRW', 'admin');
 
 -- =====================================================
 -- CONFIGURATION DU SITE
