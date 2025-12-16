@@ -744,7 +744,8 @@ async function saveModal() {
         division: getValue('f-division') || null, coach: getValue('f-coach') || null,
         assistant: getValue('f-assistant') || null, description: getValue('f-description') || null,
         horaires_entrainement: getValue('f-horaires_entrainement') || null,
-        terrain: getValue('f-terrain') || null
+        terrain: getValue('f-terrain') || null,
+        actif: true, ordre: 0
       };
       endpoint = '/admin/equipes';
       break;
