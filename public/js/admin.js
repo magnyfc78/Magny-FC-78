@@ -730,17 +730,19 @@ async function saveModal() {
       break;
     case 'equipe':
       data = {
-        nom: getValue('f-nom'), categorie_id: getValue('f-categorie_id'),
-        division: getValue('f-division'), coach: getValue('f-coach'),
-        assistant: getValue('f-assistant'), description: getValue('f-description')
+        nom: getValue('f-nom'), categorie_id: getValue('f-categorie_id') || null,
+        division: getValue('f-division') || null, coach: getValue('f-coach') || null,
+        assistant: getValue('f-assistant') || null, description: getValue('f-description') || null,
+        horaires_entrainement: null, terrain: null
       };
       endpoint = '/admin/equipes';
       break;
     case 'match':
       data = {
         equipe_id: getValue('f-equipe_id'), adversaire: getValue('f-adversaire'),
-        date_match: getValue('f-date_match'), lieu: getValue('f-lieu'),
-        competition: getValue('f-competition')
+        date_match: getValue('f-date_match'), lieu: getValue('f-lieu') || 'domicile',
+        competition: getValue('f-competition') || null,
+        adresse_match: null, journee: null
       };
       if (editingId) {
         data.score_domicile = getValue('f-score_domicile') || null;
@@ -751,25 +753,27 @@ async function saveModal() {
       break;
     case 'actualite':
       data = {
-        titre: getValue('f-titre'), categorie: getValue('f-categorie'),
-        extrait: getValue('f-extrait'), contenu: getValue('f-contenu'),
-        date_publication: getValue('f-date_publication'),
-        publie: getChecked('f-publie'), a_la_une: getChecked('f-a_la_une')
+        titre: getValue('f-titre'), categorie: getValue('f-categorie') || 'Club',
+        extrait: getValue('f-extrait') || null, contenu: getValue('f-contenu') || null,
+        date_publication: getValue('f-date_publication') || new Date().toISOString(),
+        publie: getChecked('f-publie'), a_la_une: getChecked('f-a_la_une'),
+        image: null, tags: []
       };
       endpoint = '/admin/actualites';
       break;
     case 'album':
       data = {
-        titre: getValue('f-titre'), description: getValue('f-description'),
+        titre: getValue('f-titre'), description: getValue('f-description') || null,
         date_evenement: getValue('f-date_evenement') || null,
-        ordre: parseInt(getValue('f-ordre')) || 0, actif: getChecked('f-actif')
+        image_couverture: null
       };
       endpoint = '/admin/galerie/albums';
       break;
     case 'partenaire':
       data = {
-        nom: getValue('f-nom'), type: getValue('f-type'),
-        site_web: getValue('f-site_web'), description: getValue('f-description')
+        nom: getValue('f-nom'), type: getValue('f-type') || 'partenaire',
+        site_web: getValue('f-site_web') || null, description: getValue('f-description') || null,
+        logo: null, ordre: 0
       };
       endpoint = '/admin/partenaires';
       break;
