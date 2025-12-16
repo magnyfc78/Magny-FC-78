@@ -566,9 +566,28 @@ function openModal(type, data = null) {
             <input type="text" class="form-control" id="f-terrain" value="${data?.terrain || ''}" placeholder="Ex: Terrain A - Stade Jean Jaurès">
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Photo (URL)</label>
+            <input type="text" class="form-control" id="f-photo" value="${data?.photo || ''}" placeholder="/assets/images/equipe.jpg">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Photo d'équipe (URL)</label>
+            <input type="text" class="form-control" id="f-photo_equipe" value="${data?.photo_equipe || ''}" placeholder="/assets/images/equipe-groupe.jpg">
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+          </div>
         </div>
       `;
       break;
@@ -740,12 +759,18 @@ async function saveModal() {
       break;
     case 'equipe':
       data = {
-        nom: getValue('f-nom'), categorie_id: getValue('f-categorie_id') || null,
-        division: getValue('f-division') || null, coach: getValue('f-coach') || null,
-        assistant: getValue('f-assistant') || null, description: getValue('f-description') || null,
+        nom: getValue('f-nom'),
+        categorie_id: getValue('f-categorie_id') || null,
+        division: getValue('f-division') || null,
+        coach: getValue('f-coach') || null,
+        assistant: getValue('f-assistant') || null,
+        description: getValue('f-description') || null,
         horaires_entrainement: getValue('f-horaires_entrainement') || null,
         terrain: getValue('f-terrain') || null,
-        actif: true, ordre: 0
+        photo: getValue('f-photo') || null,
+        photo_equipe: getValue('f-photo_equipe') || null,
+        actif: getChecked('f-actif'),
+        ordre: parseInt(getValue('f-ordre')) || 0
       };
       endpoint = '/admin/equipes';
       break;

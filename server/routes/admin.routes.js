@@ -179,12 +179,12 @@ router.get('/equipes', async (req, res, next) => {
 
 router.post('/equipes', async (req, res, next) => {
   try {
-    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain } = req.body;
+    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre } = req.body;
     const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const [result] = await db.pool.execute(
-      `INSERT INTO equipes (nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain]
+      `INSERT INTO equipes (nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif !== false, ordre || 0]
     );
     await logActivity(req.user.id, 'create', 'equipes', result.insertId, { nom });
     res.status(201).json({ success: true, data: { id: result.insertId } });
@@ -194,12 +194,12 @@ router.post('/equipes', async (req, res, next) => {
 router.put('/equipes/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, actif, ordre } = req.body;
+    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre } = req.body;
     const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     await db.pool.execute(
-      `UPDATE equipes SET nom = ?, slug = ?, categorie_id = ?, division = ?, coach = ?, assistant = ?, 
-       description = ?, horaires_entrainement = ?, terrain = ?, actif = ?, ordre = ? WHERE id = ?`,
-      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, actif, ordre, id]
+      `UPDATE equipes SET nom = ?, slug = ?, categorie_id = ?, division = ?, coach = ?, assistant = ?,
+       description = ?, horaires_entrainement = ?, terrain = ?, photo = ?, photo_equipe = ?, actif = ?, ordre = ? WHERE id = ?`,
+      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, id]
     );
     await logActivity(req.user.id, 'update', 'equipes', id, { nom });
     res.json({ success: true, message: 'Équipe mise à jour' });
