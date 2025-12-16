@@ -405,6 +405,11 @@ const views = {
 function renderEquipes(equipes) {
   return equipes.map(e => `
     <div class="equipe-card">
+      ${e.photo_equipe ? `
+        <div class="equipe-card-image">
+          <img src="${e.photo_equipe}" alt="Photo ${e.nom}" loading="lazy">
+        </div>
+      ` : ''}
       <div class="equipe-card-header">
         <h3>${e.nom}</h3>
       </div>
