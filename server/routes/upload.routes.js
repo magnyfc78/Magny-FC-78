@@ -128,6 +128,48 @@ router.post('/galerie/:albumId', uploadMultiple('photos', 50), async (req, res, 
 });
 
 // =====================================================
+// UPLOAD PHOTO ÉQUIPE (avec nom personnalisé)
+// =====================================================
+router.post('/equipe/:nomEquipe', uploadSingle('photo'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Aucun fichier uploadé' });
+    }
+
+    const nomEquipe = req.params.nomEquipe;
+    const safeName = nomEquipe.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Supprimer accents
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 50);
+
+    const oldPath = req.file.path;
+    const newFilename = `${safeName}.jpg`;
+    const newPath = path.join(path.dirname(oldPath), newFilename);
+
+    // Supprimer l'ancien fichier s'il existe
+    if (fs.existsSync(newPath) && newPath !== oldPath) {
+      fs.unlinkSync(newPath);
+    }
+
+    // Renommer le fichier
+    fs.renameSync(oldPath, newPath);
+
+    const relativePath = `/uploads/equipes/${newFilename}`;
+
+    res.json({
+      success: true,
+      data: {
+        filename: newFilename,
+        path: relativePath
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =====================================================
 // SUPPRIMER UN FICHIER
 // =====================================================
 router.delete('/file', async (req, res, next) => {

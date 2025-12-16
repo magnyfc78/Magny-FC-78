@@ -572,8 +572,10 @@ function openModal(type, data = null) {
             <input type="text" class="form-control" id="f-photo" value="${data?.photo || ''}" placeholder="/assets/images/equipe.jpg">
           </div>
           <div class="form-group">
-            <label class="form-label">Photo d'équipe (URL)</label>
-            <input type="text" class="form-control" id="f-photo_equipe" value="${data?.photo_equipe || ''}" placeholder="/assets/images/equipe-groupe.jpg">
+            <label class="form-label">Photo d'équipe</label>
+            <input type="file" class="form-control" id="f-photo_equipe_file" accept="image/*">
+            <input type="hidden" id="f-photo_equipe" value="${data?.photo_equipe || ''}">
+            ${data?.photo_equipe ? `<div style="margin-top:5px;"><img src="${data.photo_equipe}" style="max-height:60px;border-radius:4px;"> <small>${data.photo_equipe}</small></div>` : ''}
           </div>
         </div>
         <div class="form-group">
@@ -758,6 +760,29 @@ async function saveModal() {
       endpoint = '/admin/menu';
       break;
     case 'equipe':
+      // Upload photo équipe si un fichier est sélectionné
+      const photoFile = document.getElementById('f-photo_equipe_file')?.files[0];
+      let photoEquipePath = getValue('f-photo_equipe') || null;
+
+      if (photoFile) {
+        const nomEquipe = getValue('f-nom');
+        if (!nomEquipe) {
+          showAlert('Le nom de l\'équipe est requis', 'danger');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('photo', photoFile);
+        try {
+          const uploadRes = await api.upload(`/upload/equipe/${encodeURIComponent(nomEquipe)}`, formData);
+          if (uploadRes.success) {
+            photoEquipePath = uploadRes.data.path;
+          }
+        } catch (uploadError) {
+          showAlert('Erreur upload photo: ' + uploadError.message, 'danger');
+          return;
+        }
+      }
+
       data = {
         nom: getValue('f-nom'),
         categorie_id: getValue('f-categorie_id') || null,
@@ -768,7 +793,7 @@ async function saveModal() {
         horaires_entrainement: getValue('f-horaires_entrainement') || null,
         terrain: getValue('f-terrain') || null,
         photo: getValue('f-photo') || null,
-        photo_equipe: getValue('f-photo_equipe') || null,
+        photo_equipe: photoEquipePath,
         actif: getChecked('f-actif'),
         ordre: parseInt(getValue('f-ordre')) || 0
       };
