@@ -136,31 +136,13 @@ router.post('/equipe/:nomEquipe', uploadSingle('photo'), async (req, res, next) 
       return res.status(400).json({ success: false, error: 'Aucun fichier uploadé' });
     }
 
-    const nomEquipe = req.params.nomEquipe;
-    const safeName = nomEquipe.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Supprimer accents
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .substring(0, 50);
-
-    const oldPath = req.file.path;
-    const newFilename = `${safeName}.jpg`;
-    const newPath = path.join(path.dirname(oldPath), newFilename);
-
-    // Supprimer l'ancien fichier s'il existe
-    if (fs.existsSync(newPath) && newPath !== oldPath) {
-      fs.unlinkSync(newPath);
-    }
-
-    // Renommer le fichier
-    fs.renameSync(oldPath, newPath);
-
-    const relativePath = `/uploads/equipes/${newFilename}`;
+    // Le fichier est déjà nommé avec le nom de l'équipe par le middleware
+    const relativePath = `/uploads/equipes/${req.file.filename}`;
 
     res.json({
       success: true,
       data: {
-        filename: newFilename,
+        filename: req.file.filename,
         path: relativePath
       }
     });
