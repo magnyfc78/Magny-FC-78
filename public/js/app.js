@@ -318,24 +318,41 @@ const views = {
   },
 
   // Page contact
-  contact() {
+  async contact() {
+    // Charger la configuration depuis l'API
+    let config = {};
+    try {
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      if (data.success) {
+        config = data.data;
+      }
+    } catch (e) {
+      console.error('Erreur chargement config:', e);
+    }
+
+    const adresse = config.contact_adresse || 'Stade Jean Jaurès, 78114 Magny-les-Hameaux';
+    const telephone = config.contact_telephone || '01 XX XX XX XX';
+    const email = config.contact_email || 'contact@magnyfc78.fr';
+    const horaires = config.contact_horaires || 'Mercredi : 14h - 18h | Samedi : 9h - 12h';
+
     return `
       <section class="page-header">
         <h1>Contact</h1>
-        <p>Rejoignez le Magny FC 78</p>
+        <p>Rejoignez le ${config.site_nom || 'Magny FC 78'}</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
           <div class="contact-grid">
             <div class="contact-info">
               <h2>NOUS CONTACTER</h2>
-              
+
               <div class="contact-item">
                 <span class="contact-icon">📍</span>
                 <div>
                   <h3>ADRESSE</h3>
-                  <p>Stade Jean Jaurès<br>4 rue Jean Jaurès<br>78114 Magny-les-Hameaux</p>
+                  <p>${adresse.replace(/,/g, '<br>')}</p>
                 </div>
               </div>
 
@@ -343,7 +360,7 @@ const views = {
                 <span class="contact-icon">📞</span>
                 <div>
                   <h3>TÉLÉPHONE</h3>
-                  <p>01 XX XX XX XX</p>
+                  <p>${telephone}</p>
                 </div>
               </div>
 
@@ -351,7 +368,7 @@ const views = {
                 <span class="contact-icon">✉️</span>
                 <div>
                   <h3>EMAIL</h3>
-                  <p>contact@magnyfc78.fr</p>
+                  <p>${email}</p>
                 </div>
               </div>
 
@@ -359,9 +376,23 @@ const views = {
                 <span class="contact-icon">🕐</span>
                 <div>
                   <h3>HORAIRES SECRÉTARIAT</h3>
-                  <p>Mercredi : 14h - 18h<br>Samedi : 9h - 12h</p>
+                  <p>${horaires.replace(/\|/g, '<br>')}</p>
                 </div>
               </div>
+
+              ${config.social_facebook || config.social_instagram ? `
+              <div class="contact-item">
+                <span class="contact-icon">🌐</span>
+                <div>
+                  <h3>RÉSEAUX SOCIAUX</h3>
+                  <p>
+                    ${config.social_facebook ? `<a href="${config.social_facebook}" target="_blank">Facebook</a>` : ''}
+                    ${config.social_facebook && config.social_instagram ? ' | ' : ''}
+                    ${config.social_instagram ? `<a href="${config.social_instagram}" target="_blank">Instagram</a>` : ''}
+                  </p>
+                </div>
+              </div>
+              ` : ''}
             </div>
 
             <div class="contact-form">
