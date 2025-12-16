@@ -5,6 +5,11 @@
 let currentSection = 'dashboard';
 let categories = [];
 let equipes = [];
+let menus = [];
+let matchs = [];
+let actualites = [];
+let albums = [];
+let partenaires = [];
 let editingId = null;
 let editingType = null;
 
@@ -163,7 +168,8 @@ async function saveConfig(e) {
 async function loadMenu() {
   try {
     const res = await api.get('/admin/menu');
-    document.getElementById('menu-list').innerHTML = res.data.items.length ? `
+    menus = res.data.items;
+    document.getElementById('menu-list').innerHTML = menus.length ? `
       <table class="table">
         <thead><tr><th>Label</th><th>URL</th><th>Ordre</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
@@ -232,7 +238,8 @@ async function loadEquipes() {
 async function loadMatchs() {
   try {
     const res = await api.get('/admin/matchs');
-    document.getElementById('matchs-list').innerHTML = res.data.matchs.length ? `
+    matchs = res.data.matchs;
+    document.getElementById('matchs-list').innerHTML = matchs.length ? `
       <table class="table">
         <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>
@@ -262,7 +269,8 @@ async function loadMatchs() {
 async function loadActualites() {
   try {
     const res = await api.get('/admin/actualites');
-    document.getElementById('actualites-list').innerHTML = res.data.actualites.length ? `
+    actualites = res.data.actualites;
+    document.getElementById('actualites-list').innerHTML = actualites.length ? `
       <table class="table">
         <thead><tr><th>Titre</th><th>Catégorie</th><th>Date</th><th>Publié</th><th>Vues</th><th>Actions</th></tr></thead>
         <tbody>
@@ -291,7 +299,8 @@ async function loadActualites() {
 async function loadGalerie() {
   try {
     const res = await api.get('/admin/galerie/albums');
-    document.getElementById('galerie-list').innerHTML = res.data.albums.length ? `
+    albums = res.data.albums;
+    document.getElementById('galerie-list').innerHTML = albums.length ? `
       <table class="table">
         <thead><tr><th>Titre</th><th>Date</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
@@ -319,7 +328,8 @@ async function loadGalerie() {
 async function loadPartenaires() {
   try {
     const res = await api.get('/admin/partenaires');
-    document.getElementById('partenaires-list').innerHTML = res.data.partenaires.length ? `
+    partenaires = res.data.partenaires;
+    document.getElementById('partenaires-list').innerHTML = partenaires.length ? `
       <table class="table">
         <thead><tr><th>Nom</th><th>Type</th><th>Site web</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
@@ -427,6 +437,40 @@ function openModal(type, data = null) {
 
   let html = '';
   switch(type) {
+    case 'menu':
+      html = `
+        <div class="form-group">
+          <label class="form-label">Label *</label>
+          <input type="text" class="form-control" id="f-label" value="${data?.label || ''}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL *</label>
+          <input type="text" class="form-control" id="f-url" value="${data?.url || ''}" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Icône</label>
+            <input type="text" class="form-control" id="f-icone" value="${data?.icone || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ordre</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Target</label>
+            <select class="form-control" id="f-target">
+              <option value="_self" ${data?.target === '_self' ? 'selected' : ''}>Même fenêtre</option>
+              <option value="_blank" ${data?.target === '_blank' ? 'selected' : ''}>Nouvelle fenêtre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+          </div>
+        </div>
+      `;
+      break;
     case 'equipe':
       html = `
         <div class="form-group">
@@ -550,6 +594,31 @@ function openModal(type, data = null) {
         </div>
       `;
       break;
+    case 'album':
+      html = `
+        <div class="form-group">
+          <label class="form-label">Titre *</label>
+          <input type="text" class="form-control" id="f-titre" value="${data?.titre || ''}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date d'événement</label>
+            <input type="date" class="form-control" id="f-date_evenement" value="${data?.date_evenement?.slice(0,10) || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ordre</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+        </div>
+      `;
+      break;
     case 'partenaire':
       html = `
         <div class="form-group">
@@ -593,6 +662,14 @@ async function saveModal() {
   let data = {}, endpoint = '';
 
   switch(editingType) {
+    case 'menu':
+      data = {
+        label: getValue('f-label'), url: getValue('f-url'),
+        icone: getValue('f-icone'), ordre: parseInt(getValue('f-ordre')) || 0,
+        target: getValue('f-target'), actif: getChecked('f-actif')
+      };
+      endpoint = '/admin/menu';
+      break;
     case 'equipe':
       data = {
         nom: getValue('f-nom'), categorie_id: getValue('f-categorie_id'),
@@ -622,6 +699,14 @@ async function saveModal() {
         publie: getChecked('f-publie'), a_la_une: getChecked('f-a_la_une')
       };
       endpoint = '/admin/actualites';
+      break;
+    case 'album':
+      data = {
+        titre: getValue('f-titre'), description: getValue('f-description'),
+        date_evenement: getValue('f-date_evenement') || null,
+        ordre: parseInt(getValue('f-ordre')) || 0, actif: getChecked('f-actif')
+      };
+      endpoint = '/admin/galerie/albums';
       break;
     case 'partenaire':
       data = {
@@ -661,6 +746,11 @@ async function deleteItem(endpoint, id) {
 }
 
 function editEquipe(id) { const e = equipes.find(x => x.id === id); if(e) openModal('equipe', e); }
+function editMenu(id) { const m = menus.find(x => x.id === id); if(m) openModal('menu', m); }
+function editMatch(id) { const m = matchs.find(x => x.id === id); if(m) openModal('match', m); }
+function editActualite(id) { const a = actualites.find(x => x.id === id); if(a) openModal('actualite', a); }
+function editAlbum(id) { const a = albums.find(x => x.id === id); if(a) openModal('album', a); }
+function editPartenaire(id) { const p = partenaires.find(x => x.id === id); if(p) openModal('partenaire', p); }
 
 function showAlert(message, type = 'success') {
   const container = document.getElementById('alert-container');
