@@ -10,6 +10,7 @@ let matchs = [];
 let actualites = [];
 let albums = [];
 let partenaires = [];
+let contacts = [];
 let editingId = null;
 let editingType = null;
 
@@ -39,11 +40,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  // Délégation d'événements globale pour tous les boutons d'action
+  document.addEventListener('click', handleGlobalClick);
+
   // Charger les données initiales
   await loadCategories();
   await loadEquipesList();
   loadDashboard();
 });
+
+// =====================================================
+// GESTIONNAIRE D'ÉVÉNEMENTS GLOBAL
+// =====================================================
+function handleGlobalClick(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+  const type = btn.dataset.type;
+  const id = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+
+  switch(action) {
+    case 'add':
+      openModal(type);
+      break;
+    case 'edit':
+      handleEdit(type, id);
+      break;
+    case 'delete':
+      deleteItem(type, id);
+      break;
+    case 'view':
+      if (type === 'contact') viewContact(id);
+      break;
+    case 'close-modal':
+      closeModal();
+      break;
+    case 'save-modal':
+      saveModal();
+      break;
+    case 'logout':
+      logout();
+      break;
+  }
+}
+
+function handleEdit(type, id) {
+  let item;
+  switch(type) {
+    case 'menu': item = menus.find(x => x.id === id); break;
+    case 'equipe': item = equipes.find(x => x.id === id); break;
+    case 'match': item = matchs.find(x => x.id === id); break;
+    case 'actualite': item = actualites.find(x => x.id === id); break;
+    case 'album': item = albums.find(x => x.id === id); break;
+    case 'partenaire': item = partenaires.find(x => x.id === id); break;
+  }
+  if (item) openModal(type, item);
+}
 
 // =====================================================
 // NAVIGATION
@@ -54,7 +107,7 @@ function switchSection(section) {
   document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`section-${section}`)?.classList.add('active');
-  
+
   const titles = {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
@@ -150,7 +203,6 @@ async function loadConfig(groupe = 'general') {
       </form>
     `;
 
-    // Attacher l'événement submit de manière programmatique
     document.getElementById('config-form-inner').addEventListener('submit', saveConfig);
   } catch (e) { showAlert('Erreur chargement config', 'danger'); }
 }
@@ -176,15 +228,15 @@ async function loadMenu() {
       <table class="table">
         <thead><tr><th>Label</th><th>URL</th><th>Ordre</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.items.map(m => `
+          ${menus.map(m => `
             <tr>
               <td>${m.label}</td>
               <td>${m.url}</td>
               <td>${m.ordre}</td>
               <td><span class="badge badge-${m.actif ? 'success' : 'warning'}">${m.actif ? 'Oui' : 'Non'}</span></td>
               <td>
-                <button class="btn btn-sm" onclick="editMenu(${m.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('menu', ${m.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="edit" data-type="menu" data-id="${m.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="menu" data-id="${m.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -225,8 +277,8 @@ async function loadEquipes() {
             <td>${e.coach || '-'}</td>
             <td>${e.nb_joueurs || 0}</td>
             <td>
-              <button class="btn btn-sm" onclick="editEquipe(${e.id})">✏️</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteItem('equipes', ${e.id})">🗑️</button>
+              <button class="btn btn-sm" data-action="edit" data-type="equipe" data-id="${e.id}">✏️</button>
+              <button class="btn btn-sm btn-danger" data-action="delete" data-type="equipes" data-id="${e.id}">🗑️</button>
             </td>
           </tr>
         `).join('')}
@@ -246,7 +298,7 @@ async function loadMatchs() {
       <table class="table">
         <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.matchs.map(m => `
+          ${matchs.map(m => `
             <tr>
               <td>${new Date(m.date_match).toLocaleDateString('fr-FR')} ${new Date(m.date_match).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</td>
               <td>${m.equipe_nom || '-'}</td>
@@ -255,8 +307,8 @@ async function loadMatchs() {
               <td>${m.statut === 'termine' ? `${m.score_domicile} - ${m.score_exterieur}` : '-'}</td>
               <td><span class="badge badge-${m.statut === 'termine' ? 'success' : m.statut === 'a_venir' ? 'info' : 'warning'}">${m.statut}</span></td>
               <td>
-                <button class="btn btn-sm" onclick="editMatch(${m.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('matchs', ${m.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="edit" data-type="match" data-id="${m.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="matchs" data-id="${m.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -277,7 +329,7 @@ async function loadActualites() {
       <table class="table">
         <thead><tr><th>Titre</th><th>Catégorie</th><th>Date</th><th>Publié</th><th>Vues</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.actualites.map(a => `
+          ${actualites.map(a => `
             <tr>
               <td><strong>${a.titre}</strong></td>
               <td><span class="badge badge-info">${a.categorie}</span></td>
@@ -285,8 +337,8 @@ async function loadActualites() {
               <td><span class="badge badge-${a.publie ? 'success' : 'warning'}">${a.publie ? 'Oui' : 'Non'}</span></td>
               <td>${a.vues || 0}</td>
               <td>
-                <button class="btn btn-sm" onclick="editActualite(${a.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('actualites', ${a.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="edit" data-type="actualite" data-id="${a.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="actualites" data-id="${a.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -307,15 +359,15 @@ async function loadGalerie() {
       <table class="table">
         <thead><tr><th>Titre</th><th>Date</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.albums.map(a => `
+          ${albums.map(a => `
             <tr>
               <td><strong>${a.titre}</strong></td>
               <td>${a.date_evenement ? new Date(a.date_evenement).toLocaleDateString('fr-FR') : '-'}</td>
               <td>${a.nb_photos || 0}</td>
               <td><span class="badge badge-${a.actif ? 'success' : 'warning'}">${a.actif ? 'Oui' : 'Non'}</span></td>
               <td>
-                <button class="btn btn-sm" onclick="editAlbum(${a.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('galerie/albums', ${a.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="edit" data-type="album" data-id="${a.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="galerie/albums" data-id="${a.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -336,15 +388,15 @@ async function loadPartenaires() {
       <table class="table">
         <thead><tr><th>Nom</th><th>Type</th><th>Site web</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.partenaires.map(p => `
+          ${partenaires.map(p => `
             <tr>
               <td><strong>${p.nom}</strong></td>
               <td><span class="badge badge-info">${p.type}</span></td>
               <td>${p.site_web ? `<a href="${p.site_web}" target="_blank">🔗</a>` : '-'}</td>
               <td><span class="badge badge-${p.actif ? 'success' : 'warning'}">${p.actif ? 'Oui' : 'Non'}</span></td>
               <td>
-                <button class="btn btn-sm" onclick="editPartenaire(${p.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('partenaires', ${p.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="edit" data-type="partenaire" data-id="${p.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="partenaires" data-id="${p.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -360,11 +412,12 @@ async function loadPartenaires() {
 async function loadContacts() {
   try {
     const res = await api.get('/admin/contacts');
-    document.getElementById('contacts-list').innerHTML = res.data.messages.length ? `
+    contacts = res.data.messages;
+    document.getElementById('contacts-list').innerHTML = contacts.length ? `
       <table class="table">
         <thead><tr><th>Date</th><th>Nom</th><th>Email</th><th>Sujet</th><th>Lu</th><th>Actions</th></tr></thead>
         <tbody>
-          ${res.data.messages.map(m => `
+          ${contacts.map(m => `
             <tr style="${!m.lu ? 'font-weight:bold;' : ''}">
               <td>${new Date(m.created_at).toLocaleDateString('fr-FR')}</td>
               <td>${m.nom}</td>
@@ -372,8 +425,8 @@ async function loadContacts() {
               <td>${m.sujet || '-'}</td>
               <td><span class="badge badge-${m.lu ? 'success' : 'danger'}">${m.lu ? 'Oui' : 'Non'}</span></td>
               <td>
-                <button class="btn btn-sm" onclick="viewContact(${m.id}, '${encodeURIComponent(JSON.stringify(m))}')">👁️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem('contacts', ${m.id})">🗑️</button>
+                <button class="btn btn-sm" data-action="view" data-type="contact" data-id="${m.id}">👁️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="contacts" data-id="${m.id}">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -383,8 +436,10 @@ async function loadContacts() {
   } catch (e) { showAlert('Erreur chargement messages', 'danger'); }
 }
 
-async function viewContact(id, data) {
-  const m = JSON.parse(decodeURIComponent(data));
+async function viewContact(id) {
+  const m = contacts.find(c => c.id === id);
+  if (!m) return;
+
   document.getElementById('modal-title').textContent = 'Message de ' + m.nom;
   document.getElementById('modal-body').innerHTML = `
     <p><strong>Email:</strong> ${m.email}</p>
@@ -430,7 +485,6 @@ function openModal(type, data = null) {
   editingType = type;
   editingId = data?.id || null;
   document.getElementById('modal-submit').style.display = 'block';
-  document.getElementById('modal-submit').onclick = () => saveModal();
 
   const titles = {
     menu: 'Élément de menu', equipe: 'Équipe', match: 'Match',
@@ -747,13 +801,6 @@ async function deleteItem(endpoint, id) {
     showAlert('Erreur suppression', 'danger');
   }
 }
-
-function editEquipe(id) { const e = equipes.find(x => x.id === id); if(e) openModal('equipe', e); }
-function editMenu(id) { const m = menus.find(x => x.id === id); if(m) openModal('menu', m); }
-function editMatch(id) { const m = matchs.find(x => x.id === id); if(m) openModal('match', m); }
-function editActualite(id) { const a = actualites.find(x => x.id === id); if(a) openModal('actualite', a); }
-function editAlbum(id) { const a = albums.find(x => x.id === id); if(a) openModal('album', a); }
-function editPartenaire(id) { const p = partenaires.find(x => x.id === id); if(p) openModal('partenaire', p); }
 
 function showAlert(message, type = 'success') {
   const container = document.getElementById('alert-container');
