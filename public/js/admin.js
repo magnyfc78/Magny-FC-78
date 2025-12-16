@@ -134,11 +134,11 @@ async function loadConfig(groupe = 'general') {
     const items = res.data.raw.filter(c => c.groupe === groupe);
 
     document.getElementById('config-form').innerHTML = `
-      <form id="config-form-inner" onsubmit="saveConfig(event)">
+      <form id="config-form-inner">
         ${items.map(c => `
           <div class="form-group">
             <label class="form-label">${c.label || c.cle}</label>
-            ${c.type === 'textarea' 
+            ${c.type === 'textarea'
               ? `<textarea class="form-control" name="${c.cle}">${c.valeur || ''}</textarea>`
               : c.type === 'color'
               ? `<input type="color" class="form-control" name="${c.cle}" value="${c.valeur || '#000000'}" style="height:50px;">`
@@ -149,6 +149,9 @@ async function loadConfig(groupe = 'general') {
         <button type="submit" class="btn btn-primary">Enregistrer</button>
       </form>
     `;
+
+    // Attacher l'événement submit de manière programmatique
+    document.getElementById('config-form-inner').addEventListener('submit', saveConfig);
   } catch (e) { showAlert('Erreur chargement config', 'danger'); }
 }
 
