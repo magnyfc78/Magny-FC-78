@@ -665,12 +665,22 @@ function openModal(type, data = null) {
           </div>
         </div>
         <div class="form-group">
+          <label class="form-label">Image principale</label>
+          <input type="file" class="form-control" id="f-image_file" accept="image/*">
+          <input type="hidden" id="f-image" value="${data?.image || ''}">
+          ${data?.image ? `<div style="margin-top:5px;"><img src="${data.image}" style="max-height:60px;border-radius:4px;"> <small>${data.image}</small></div>` : ''}
+        </div>
+        <div class="form-group">
           <label class="form-label">Extrait</label>
-          <textarea class="form-control" id="f-extrait" rows="2">${data?.extrait || ''}</textarea>
+          <textarea class="form-control" id="f-extrait" rows="2" placeholder="Résumé court de l'article (max 500 caractères)">${data?.extrait || ''}</textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Contenu</label>
-          <textarea class="form-control" id="f-contenu" rows="6">${data?.contenu || ''}</textarea>
+          <textarea class="form-control" id="f-contenu" rows="6" placeholder="Contenu HTML de l'article">${data?.contenu || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control" id="f-tags" value="${data?.tags ? (Array.isArray(data.tags) ? data.tags.join(', ') : data.tags) : ''}" placeholder="foot, match, victoire">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -680,6 +690,7 @@ function openModal(type, data = null) {
             <label class="form-label"><input type="checkbox" id="f-a_la_une" ${data?.a_la_une ? 'checked' : ''}> À la une</label>
           </div>
         </div>
+        ${editingId ? `<div class="form-group"><small>Vues: ${data?.vues || 0}</small></div>` : ''}
       `;
       break;
     case 'album':
@@ -692,13 +703,19 @@ function openModal(type, data = null) {
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
         </div>
+        <div class="form-group">
+          <label class="form-label">Image de couverture</label>
+          <input type="file" class="form-control" id="f-image_couverture_file" accept="image/*">
+          <input type="hidden" id="f-image_couverture" value="${data?.image_couverture || ''}">
+          ${data?.image_couverture ? `<div style="margin-top:5px;"><img src="${data.image_couverture}" style="max-height:60px;border-radius:4px;"> <small>${data.image_couverture}</small></div>` : ''}
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Date d'événement</label>
             <input type="date" class="form-control" id="f-date_evenement" value="${data?.date_evenement?.slice(0,10) || ''}">
           </div>
           <div class="form-group">
-            <label class="form-label">Ordre</label>
+            <label class="form-label">Ordre d'affichage</label>
             <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
           </div>
         </div>
@@ -722,12 +739,27 @@ function openModal(type, data = null) {
           </div>
           <div class="form-group">
             <label class="form-label">Site web</label>
-            <input type="url" class="form-control" id="f-site_web" value="${data?.site_web || ''}">
+            <input type="url" class="form-control" id="f-site_web" value="${data?.site_web || ''}" placeholder="https://...">
           </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Logo</label>
+          <input type="file" class="form-control" id="f-logo_file" accept="image/*">
+          <input type="hidden" id="f-logo" value="${data?.logo || ''}">
+          ${data?.logo ? `<div style="margin-top:5px;"><img src="${data.logo}" style="max-height:60px;border-radius:4px;"> <small>${data.logo}</small></div>` : ''}
         </div>
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+          </div>
         </div>
       `;
       break;
@@ -814,28 +846,97 @@ async function saveModal() {
       endpoint = '/admin/matchs';
       break;
     case 'actualite':
+      // Upload image si un fichier est sélectionné
+      const actuImageFile = document.getElementById('f-image_file')?.files[0];
+      let actuImagePath = getValue('f-image') || null;
+
+      if (actuImageFile) {
+        const formData = new FormData();
+        formData.append('image', actuImageFile);
+        try {
+          const uploadRes = await api.upload('/upload/single/actualite', formData);
+          if (uploadRes.success) {
+            actuImagePath = uploadRes.data.path;
+          }
+        } catch (uploadError) {
+          showAlert('Erreur upload image: ' + uploadError.message, 'danger');
+          return;
+        }
+      }
+
+      // Parser les tags
+      const tagsInput = getValue('f-tags');
+      const tagsArray = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+
       data = {
-        titre: getValue('f-titre'), categorie: getValue('f-categorie') || 'Club',
-        extrait: getValue('f-extrait') || null, contenu: getValue('f-contenu') || null,
+        titre: getValue('f-titre'),
+        categorie: getValue('f-categorie') || 'Club',
+        extrait: getValue('f-extrait') || null,
+        contenu: getValue('f-contenu') || null,
         date_publication: getValue('f-date_publication') || new Date().toISOString(),
-        publie: getChecked('f-publie'), a_la_une: getChecked('f-a_la_une'),
-        image: null, tags: []
+        publie: getChecked('f-publie'),
+        a_la_une: getChecked('f-a_la_une'),
+        image: actuImagePath,
+        tags: tagsArray
       };
       endpoint = '/admin/actualites';
       break;
     case 'album':
+      // Upload image couverture si un fichier est sélectionné
+      const albumImageFile = document.getElementById('f-image_couverture_file')?.files[0];
+      let albumImagePath = getValue('f-image_couverture') || null;
+
+      if (albumImageFile) {
+        const formData = new FormData();
+        formData.append('image', albumImageFile);
+        try {
+          const uploadRes = await api.upload('/upload/single/galerie', formData);
+          if (uploadRes.success) {
+            albumImagePath = uploadRes.data.path;
+          }
+        } catch (uploadError) {
+          showAlert('Erreur upload image: ' + uploadError.message, 'danger');
+          return;
+        }
+      }
+
       data = {
-        titre: getValue('f-titre'), description: getValue('f-description') || null,
+        titre: getValue('f-titre'),
+        description: getValue('f-description') || null,
         date_evenement: getValue('f-date_evenement') || null,
-        image_couverture: null
+        image_couverture: albumImagePath,
+        actif: getChecked('f-actif'),
+        ordre: parseInt(getValue('f-ordre')) || 0
       };
       endpoint = '/admin/galerie/albums';
       break;
     case 'partenaire':
+      // Upload logo si un fichier est sélectionné
+      const logoFile = document.getElementById('f-logo_file')?.files[0];
+      let logoPath = getValue('f-logo') || null;
+
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('image', logoFile);
+        try {
+          const uploadRes = await api.upload('/upload/single/partenaire', formData);
+          if (uploadRes.success) {
+            logoPath = uploadRes.data.path;
+          }
+        } catch (uploadError) {
+          showAlert('Erreur upload logo: ' + uploadError.message, 'danger');
+          return;
+        }
+      }
+
       data = {
-        nom: getValue('f-nom'), type: getValue('f-type') || 'partenaire',
-        site_web: getValue('f-site_web') || null, description: getValue('f-description') || null,
-        logo: null, ordre: 0
+        nom: getValue('f-nom'),
+        type: getValue('f-type') || 'partenaire',
+        site_web: getValue('f-site_web') || null,
+        description: getValue('f-description') || null,
+        logo: logoPath,
+        ordre: parseInt(getValue('f-ordre')) || 0,
+        actif: getChecked('f-actif')
       };
       endpoint = '/admin/partenaires';
       break;
