@@ -416,6 +416,8 @@ function renderEquipes(equipes) {
         <div class="equipe-info">
           <p>👥 ${e.nb_joueurs || 0} joueurs</p>
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
+          ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
+          ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
         </div>
       </div>
     </div>

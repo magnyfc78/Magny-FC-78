@@ -556,6 +556,16 @@ function openModal(type, data = null) {
             <input type="text" class="form-control" id="f-assistant" value="${data?.assistant || ''}">
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Horaires d'entraînement</label>
+            <input type="text" class="form-control" id="f-horaires_entrainement" value="${data?.horaires_entrainement || ''}" placeholder="Ex: Mardi et Jeudi 18h-20h">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Terrain</label>
+            <input type="text" class="form-control" id="f-terrain" value="${data?.terrain || ''}" placeholder="Ex: Terrain A - Stade Jean Jaurès">
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
@@ -733,7 +743,8 @@ async function saveModal() {
         nom: getValue('f-nom'), categorie_id: getValue('f-categorie_id') || null,
         division: getValue('f-division') || null, coach: getValue('f-coach') || null,
         assistant: getValue('f-assistant') || null, description: getValue('f-description') || null,
-        horaires_entrainement: null, terrain: null
+        horaires_entrainement: getValue('f-horaires_entrainement') || null,
+        terrain: getValue('f-terrain') || null
       };
       endpoint = '/admin/equipes';
       break;
