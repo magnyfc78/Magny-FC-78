@@ -394,6 +394,23 @@ nav a.active {
   box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
+.equipe-card-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.equipe-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.equipe-card:hover .equipe-card-image img {
+  transform: scale(1.05);
+}
+
 .equipe-card-header {
   background: var(--bleu-fonce);
   padding: 30px;
