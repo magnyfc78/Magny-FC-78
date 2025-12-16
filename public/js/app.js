@@ -542,7 +542,24 @@ window.handleContact = handleContact;
 // INITIALISATION
 // =====================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Charger le menu depuis l'API
+  let menuItems = [];
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    if (data.success) {
+      menuItems = data.data.items;
+    }
+  } catch (e) {
+    console.error('Erreur chargement menu:', e);
+  }
+
+  // Générer les liens du menu
+  const menuLinks = menuItems.map(item =>
+    `<a href="${item.url}" ${item.target === '_blank' ? 'target="_blank"' : 'data-link'}>${item.label}</a>`
+  ).join('');
+
   // Charger header
   document.getElementById('header').innerHTML = `
     <div class="container header-content">
@@ -552,11 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </a>
       <button class="menu-toggle" id="menu-toggle">☰</button>
       <nav id="nav">
-        <a href="/equipes" data-link>ÉQUIPES</a>
-        <a href="/actualites" data-link>ACTUALITÉS</a>
-        <a href="/galerie" data-link>GALERIE</a>
-        <a href="/partenaires" data-link>PARTENAIRES</a>
-        <a href="/contact" data-link>CONTACT</a>
+        ${menuLinks}
         <a href="/admin/login.html" class="btn-connexion">CONNEXION</a>
       </nav>
     </div>
