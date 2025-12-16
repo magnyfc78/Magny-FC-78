@@ -722,8 +722,9 @@ async function saveModal() {
     case 'menu':
       data = {
         label: getValue('f-label'), url: getValue('f-url'),
-        icone: getValue('f-icone'), ordre: parseInt(getValue('f-ordre')) || 0,
-        target: getValue('f-target'), actif: getChecked('f-actif')
+        icone: getValue('f-icone') || null, parent_id: null,
+        ordre: parseInt(getValue('f-ordre')) || 0,
+        target: getValue('f-target') || '_self', actif: getChecked('f-actif')
       };
       endpoint = '/admin/menu';
       break;
