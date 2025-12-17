@@ -203,15 +203,18 @@ const views = {
   },
 
   // Page galerie
-  galerie() {
-    const categories = ['Tous', 'Matchs', 'Entraînements', 'Événements'];
-    const images = {
-      matchs: [1,2,3,4,5,6].map(i => ({ src: `/assets/images/gallery/match_${i}.jpg`, cat: 'Matchs', alt: `Match ${i}` })),
-      entrainements: [1,2,3,4,5,6].map(i => ({ src: `/assets/images/gallery/entrainement_${i}.jpg`, cat: 'Entraînements', alt: `Entraînement ${i}` })),
-      evenements: [1,2,3,4].map(i => ({ src: `/assets/images/gallery/evenement_${i}.jpg`, cat: 'Événements', alt: `Événement ${i}` }))
-    };
-    const allImages = [...images.matchs, ...images.entrainements, ...images.evenements];
-    window.galerieImages = allImages;
+  async galerie() {
+    // Charger les albums depuis l'API
+    let albums = [];
+    try {
+      const res = await fetch('/api/galerie');
+      const data = await res.json();
+      if (data.success) {
+        albums = data.data.albums;
+      }
+    } catch (e) {
+      console.error('Erreur chargement galerie:', e);
+    }
 
     return `
       <section class="page-header">
@@ -221,17 +224,20 @@ const views = {
 
       <section class="section">
         <div class="container">
-          <div class="filters" id="galerie-filters">
-            ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="galerie" data-category="${c}">${c}</button>
-            `).join('')}
-          </div>
-          <div class="galerie-grid" id="galerie-grid">
-            ${allImages.map(img => `
-              <div class="galerie-item" data-category="${img.cat}">
-                <img src="${img.src}" alt="${img.alt}" loading="lazy">
+          <div class="galerie-albums-grid" id="galerie-grid">
+            ${albums.length ? albums.map(album => `
+              <div class="album-card">
+                <div class="album-image">
+                  <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
+                  <span class="album-count">${album.nb_photos || 0} photos</span>
+                </div>
+                <div class="album-info">
+                  <h3>${album.titre}</h3>
+                  ${album.date_evenement ? `<span class="album-date">${new Date(album.date_evenement).toLocaleDateString('fr-FR')}</span>` : ''}
+                  ${album.description ? `<p>${album.description}</p>` : ''}
+                </div>
               </div>
-            `).join('')}
+            `).join('') : '<p class="text-center">Aucun album disponible</p>'}
           </div>
         </div>
       </section>
@@ -239,20 +245,20 @@ const views = {
   },
 
   // Page partenaires
-  partenaires() {
-    const categories = ['Tous', 'Gold', 'Silver', 'Bronze'];
-    const partenaires = [
-      { nom: 'Mairie de Magny', categorie: 'Gold', logo: 'mairie' },
-      { nom: 'Conseil Départemental 78', categorie: 'Gold', logo: 'cd78' },
-      { nom: 'Sport 2000', categorie: 'Gold', logo: 'sport2000' },
-      { nom: 'Crédit Agricole', categorie: 'Silver', logo: 'ca' },
-      { nom: 'Boulangerie du Centre', categorie: 'Silver', logo: 'boulangerie' },
-      { nom: 'Garage Dupont', categorie: 'Silver', logo: 'garage' },
-      { nom: 'Pharmacie des Hameaux', categorie: 'Silver', logo: 'pharmacie' },
-      { nom: 'Restaurant Le Sporting', categorie: 'Bronze', logo: 'resto' },
-      { nom: 'Assurance Martin', categorie: 'Bronze', logo: 'assurance' },
-      { nom: 'Coiffure Style', categorie: 'Bronze', logo: 'coiffure' }
-    ];
+  async partenaires() {
+    // Charger les partenaires depuis l'API
+    let partenaires = [];
+    try {
+      const res = await fetch('/api/partenaires');
+      const data = await res.json();
+      if (data.success) {
+        partenaires = data.data.partenaires;
+      }
+    } catch (e) {
+      console.error('Erreur chargement partenaires:', e);
+    }
+
+    const categories = ['Tous', 'principal', 'officiel', 'partenaire', 'fournisseur'];
     window.partenairesData = partenaires;
 
     return `
@@ -265,7 +271,7 @@ const views = {
         <div class="container">
           <div class="filters" id="partenaires-filters">
             ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="partenaires" data-category="${c}">${c}</button>
+              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="partenaires" data-category="${c}">${c === 'Tous' ? 'Tous' : c.charAt(0).toUpperCase() + c.slice(1)}</button>
             `).join('')}
           </div>
           <div class="partenaires-grid" id="partenaires-grid">
@@ -474,10 +480,12 @@ function renderActualites(actualites) {
   return actualites.map((a, index) => {
     const imgType = imageMap[a.categorie] || 'club';
     const imgNum = (index % 2) + 1;
+    // Utiliser l'image de la BDD si disponible, sinon image par défaut
+    const imageSrc = a.image || `/assets/images/actualites/${imgType}_${imgNum}.jpg`;
     return `
       <article class="actu-card" data-category="${a.categorie}">
         <div class="actu-image">
-          <img src="/assets/images/actualites/${imgType}_${imgNum}.jpg" alt="${a.titre}" loading="lazy">
+          <img src="${imageSrc}" alt="${a.titre}" loading="lazy">
         </div>
         <div class="actu-body">
           <div class="actu-meta">
@@ -486,6 +494,7 @@ function renderActualites(actualites) {
           </div>
           <h3 class="actu-title">${a.titre}</h3>
           <p class="actu-excerpt">${a.extrait || ''}</p>
+          <span class="actu-views">👁 ${a.vues || 0} vues</span>
         </div>
       </article>
     `;
@@ -519,18 +528,25 @@ function filterGalerie(categorie) {
 
 // Render partenaires
 function renderPartenaires(partenaires) {
-  const badgeColors = { 'Gold': 'badge-or', 'Silver': 'badge-argent', 'Bronze': 'badge-bronze' };
+  const badgeColors = {
+    'principal': 'badge-or',
+    'officiel': 'badge-argent',
+    'partenaire': 'badge-bronze',
+    'fournisseur': 'badge-info'
+  };
   return partenaires.map(p => `
-    <div class="partenaire-item" data-category="${p.categorie}">
+    <div class="partenaire-item" data-category="${p.type}">
       <div class="partenaire-logo">
-        <span style="font-size: 2rem;">🏢</span>
+        ${p.logo ? `<img src="${p.logo}" alt="${p.nom}" loading="lazy">` : '<span style="font-size: 2rem;">🏢</span>'}
       </div>
       <div class="partenaire-info">
         <h3>${p.nom}</h3>
-        <span class="badge ${badgeColors[p.categorie] || 'badge-or'}">${p.categorie}</span>
+        ${p.description ? `<p>${p.description}</p>` : ''}
+        <span class="badge ${badgeColors[p.type] || 'badge-or'}">${p.type}</span>
+        ${p.site_web ? `<a href="${p.site_web}" target="_blank" class="partenaire-link">Visiter le site</a>` : ''}
       </div>
     </div>
-  `).join('');
+  `).join('') || '<p class="text-center">Aucun partenaire</p>';
 }
 
 // Filter partenaires
@@ -541,7 +557,7 @@ function filterPartenaires(categorie) {
   if (categorie === 'Tous') {
     grid.innerHTML = renderPartenaires(partenaires);
   } else {
-    const filtered = partenaires.filter(p => p.categorie === categorie);
+    const filtered = partenaires.filter(p => p.type === categorie);
     grid.innerHTML = renderPartenaires(filtered);
   }
 }
