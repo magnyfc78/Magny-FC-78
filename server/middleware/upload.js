@@ -28,7 +28,14 @@ uploadDirs.forEach(dir => {
 // Configuration du stockage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const type = req.params.type || req.body.type || 'general';
+    // Détection du type via URL ou paramètres
+    let type = req.params.type || req.body.type || 'general';
+
+    // Si route /equipe/:nomEquipe, utiliser 'equipe'
+    if (req.params.nomEquipe || req.originalUrl.includes('/equipe/')) {
+      type = 'equipe';
+    }
+
     const destinations = {
       equipe: 'public/uploads/equipes',
       actualite: 'public/uploads/actualites',
@@ -40,8 +47,21 @@ const storage = multer.diskStorage({
     cb(null, destinations[type] || destinations.general);
   },
   filename: (req, file, cb) => {
-    const uniqueId = crypto.randomBytes(8).toString('hex');
     const ext = path.extname(file.originalname).toLowerCase();
+
+    // Pour les équipes, utiliser le nom de l'équipe comme nom de fichier
+    if (req.params.nomEquipe) {
+      const nomEquipe = decodeURIComponent(req.params.nomEquipe);
+      const safeName = nomEquipe.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Supprimer accents
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 50);
+      cb(null, `${safeName}${ext}`);
+      return;
+    }
+
+    const uniqueId = crypto.randomBytes(8).toString('hex');
     const safeName = file.originalname
       .replace(ext, '')
       .toLowerCase()

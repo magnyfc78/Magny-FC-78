@@ -224,7 +224,7 @@
         <nav class="nav-section">
             <div class="nav-section-title">Système</div>
             <button class="nav-item" data-section="logs"><span class="nav-item-icon">📜</span> Activité</button>
-            <button class="nav-item" onclick="logout()"><span class="nav-item-icon">🚪</span> Déconnexion</button>
+            <button class="nav-item" data-action="logout"><span class="nav-item-icon">🚪</span> Déconnexion</button>
         </nav>
     </aside>
 
@@ -269,7 +269,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Éléments du menu</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('menu')">+ Ajouter</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="menu">+ Ajouter</button>
                     </div>
                     <div class="card-body" id="menu-list"></div>
                 </div>
@@ -280,7 +280,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Liste des équipes</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('equipe')">+ Nouvelle équipe</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="equipe">+ Nouvelle équipe</button>
                     </div>
                     <div class="card-body" id="equipes-list"></div>
                 </div>
@@ -291,7 +291,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Calendrier des matchs</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('match')">+ Nouveau match</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="match">+ Nouveau match</button>
                     </div>
                     <div class="card-body" id="matchs-list"></div>
                 </div>
@@ -302,7 +302,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Articles</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('actualite')">+ Nouvel article</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="actualite">+ Nouvel article</button>
                     </div>
                     <div class="card-body" id="actualites-list"></div>
                 </div>
@@ -313,7 +313,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Albums photo</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('album')">+ Nouvel album</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="album">+ Nouvel album</button>
                     </div>
                     <div class="card-body" id="galerie-list"></div>
                 </div>
@@ -324,7 +324,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Partenaires</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('partenaire')">+ Nouveau partenaire</button>
+                        <button class="btn btn-primary btn-sm" data-action="add" data-type="partenaire">+ Nouveau partenaire</button>
                     </div>
                     <div class="card-body" id="partenaires-list"></div>
                 </div>
@@ -353,12 +353,12 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-title">Formulaire</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <button class="modal-close" data-action="close-modal">&times;</button>
             </div>
             <div class="modal-body" id="modal-body"></div>
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal()">Annuler</button>
-                <button class="btn btn-primary" id="modal-submit">Enregistrer</button>
+                <button class="btn" data-action="close-modal">Annuler</button>
+                <button class="btn btn-primary" id="modal-submit" data-action="save-modal">Enregistrer</button>
             </div>
         </div>
     </div>

@@ -17,6 +17,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth.routes');
 const publicRoutes = require('./routes/public.routes');
 const adminRoutes = require('./routes/admin.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -130,6 +131,7 @@ app.use('/assets', express.static(path.join(__dirname, '../assets'), {
 app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -318,24 +318,41 @@ const views = {
   },
 
   // Page contact
-  contact() {
+  async contact() {
+    // Charger la configuration depuis l'API
+    let config = {};
+    try {
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      if (data.success) {
+        config = data.data;
+      }
+    } catch (e) {
+      console.error('Erreur chargement config:', e);
+    }
+
+    const adresse = config.contact_adresse || 'Stade Jean Jaurès, 78114 Magny-les-Hameaux';
+    const telephone = config.contact_telephone || '01 XX XX XX XX';
+    const email = config.contact_email || 'contact@magnyfc78.fr';
+    const horaires = config.contact_horaires || 'Mercredi : 14h - 18h | Samedi : 9h - 12h';
+
     return `
       <section class="page-header">
         <h1>Contact</h1>
-        <p>Rejoignez le Magny FC 78</p>
+        <p>Rejoignez le ${config.site_nom || 'Magny FC 78'}</p>
       </section>
-      
+
       <section class="section">
         <div class="container">
           <div class="contact-grid">
             <div class="contact-info">
               <h2>NOUS CONTACTER</h2>
-              
+
               <div class="contact-item">
                 <span class="contact-icon">📍</span>
                 <div>
                   <h3>ADRESSE</h3>
-                  <p>Stade Jean Jaurès<br>4 rue Jean Jaurès<br>78114 Magny-les-Hameaux</p>
+                  <p>${adresse.replace(/,/g, '<br>')}</p>
                 </div>
               </div>
 
@@ -343,7 +360,7 @@ const views = {
                 <span class="contact-icon">📞</span>
                 <div>
                   <h3>TÉLÉPHONE</h3>
-                  <p>01 XX XX XX XX</p>
+                  <p>${telephone}</p>
                 </div>
               </div>
 
@@ -351,7 +368,7 @@ const views = {
                 <span class="contact-icon">✉️</span>
                 <div>
                   <h3>EMAIL</h3>
-                  <p>contact@magnyfc78.fr</p>
+                  <p>${email}</p>
                 </div>
               </div>
 
@@ -359,9 +376,23 @@ const views = {
                 <span class="contact-icon">🕐</span>
                 <div>
                   <h3>HORAIRES SECRÉTARIAT</h3>
-                  <p>Mercredi : 14h - 18h<br>Samedi : 9h - 12h</p>
+                  <p>${horaires.replace(/\|/g, '<br>')}</p>
                 </div>
               </div>
+
+              ${config.social_facebook || config.social_instagram ? `
+              <div class="contact-item">
+                <span class="contact-icon">🌐</span>
+                <div>
+                  <h3>RÉSEAUX SOCIAUX</h3>
+                  <p>
+                    ${config.social_facebook ? `<a href="${config.social_facebook}" target="_blank">Facebook</a>` : ''}
+                    ${config.social_facebook && config.social_instagram ? ' | ' : ''}
+                    ${config.social_instagram ? `<a href="${config.social_instagram}" target="_blank">Instagram</a>` : ''}
+                  </p>
+                </div>
+              </div>
+              ` : ''}
             </div>
 
             <div class="contact-form">
@@ -405,6 +436,11 @@ const views = {
 function renderEquipes(equipes) {
   return equipes.map(e => `
     <div class="equipe-card">
+      ${e.photo_equipe ? `
+        <div class="equipe-card-image">
+          <img src="${e.photo_equipe}" alt="Photo ${e.nom}" loading="lazy">
+        </div>
+      ` : ''}
       <div class="equipe-card-header">
         <h3>${e.nom}</h3>
       </div>
@@ -416,6 +452,8 @@ function renderEquipes(equipes) {
         <div class="equipe-info">
           <p>👥 ${e.nb_joueurs || 0} joueurs</p>
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
+          ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
+          ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
         </div>
       </div>
     </div>
@@ -542,7 +580,24 @@ window.handleContact = handleContact;
 // INITIALISATION
 // =====================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Charger le menu depuis l'API
+  let menuItems = [];
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    if (data.success) {
+      menuItems = data.data.items;
+    }
+  } catch (e) {
+    console.error('Erreur chargement menu:', e);
+  }
+
+  // Générer les liens du menu
+  const menuLinks = menuItems.map(item =>
+    `<a href="${item.url}" ${item.target === '_blank' ? 'target="_blank"' : 'data-link'}>${item.label}</a>`
+  ).join('');
+
   // Charger header
   document.getElementById('header').innerHTML = `
     <div class="container header-content">
@@ -552,11 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </a>
       <button class="menu-toggle" id="menu-toggle">☰</button>
       <nav id="nav">
-        <a href="/equipes" data-link>ÉQUIPES</a>
-        <a href="/actualites" data-link>ACTUALITÉS</a>
-        <a href="/galerie" data-link>GALERIE</a>
-        <a href="/partenaires" data-link>PARTENAIRES</a>
-        <a href="/contact" data-link>CONTACT</a>
+        ${menuLinks}
         <a href="/admin/login.html" class="btn-connexion">CONNEXION</a>
       </nav>
     </div>

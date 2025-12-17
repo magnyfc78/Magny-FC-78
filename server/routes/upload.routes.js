@@ -128,6 +128,30 @@ router.post('/galerie/:albumId', uploadMultiple('photos', 50), async (req, res, 
 });
 
 // =====================================================
+// UPLOAD PHOTO ÉQUIPE (avec nom personnalisé)
+// =====================================================
+router.post('/equipe/:nomEquipe', uploadSingle('photo'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Aucun fichier uploadé' });
+    }
+
+    // Le fichier est déjà nommé avec le nom de l'équipe par le middleware
+    const relativePath = `/uploads/equipes/${req.file.filename}`;
+
+    res.json({
+      success: true,
+      data: {
+        filename: req.file.filename,
+        path: relativePath
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =====================================================
 // SUPPRIMER UN FICHIER
 // =====================================================
 router.delete('/file', async (req, res, next) => {

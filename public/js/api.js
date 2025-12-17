@@ -88,6 +88,26 @@ class API {
     return this.request(endpoint, { method: 'DELETE' });
   }
 
+  // UPLOAD (FormData)
+  async upload(endpoint, formData) {
+    try {
+      const headers = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+        credentials: 'include'
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Upload Error:', error);
+      throw error;
+    }
+  }
+
   // =====================================================
   // AUTHENTIFICATION
   // =====================================================
