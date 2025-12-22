@@ -5,6 +5,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const xss = require('xss-clean');
@@ -12,6 +13,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
+const config = require('./config');
 
 // Import des routes
 const authRoutes = require('./routes/auth.routes');
@@ -99,6 +101,22 @@ app.use(express.json({ limit: '10kb' })); // Limite la taille du body
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(compression()); // Compression GZIP
+
+// =====================================================
+// SESSION
+// =====================================================
+app.set('trust proxy', 1); // Important derrière Nginx
+
+app.use(session({
+  secret: config.session.secret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.session.cookieSecure,
+    httpOnly: true,
+    maxAge: config.session.maxAge
+  }
+}));
 
 // =====================================================
 // LOGGING

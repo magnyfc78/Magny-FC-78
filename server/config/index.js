@@ -43,6 +43,13 @@ const config = {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12
   },
 
+  // Session
+  session: {
+    secret: process.env.SESSION_SECRET,
+    cookieSecure: process.env.COOKIE_SECURE === 'true',
+    maxAge: 24 * 60 * 60 * 1000 // 24 heures
+  },
+
   // Logs
   logging: {
     level: process.env.LOG_LEVEL || 'info'
@@ -51,7 +58,7 @@ const config = {
 
 // Validation des variables critiques en production
 if (config.isProduction) {
-  const requiredVars = ['JWT_SECRET', 'DB_PASSWORD'];
+  const requiredVars = ['JWT_SECRET', 'DB_PASSWORD', 'SESSION_SECRET'];
   const missing = requiredVars.filter(varName => !process.env[varName]);
 
   if (missing.length > 0) {
