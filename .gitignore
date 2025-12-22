@@ -4,12 +4,12 @@
 # Environment files (secrets)
 .env
 .env.local
-.env.development
-.env.production
 .env.*.local
 
-# Keep .env.example as template
+# Keep templates and dev config
 !.env.example
+!.env.development
+!.env.production
 
 # Logs
 logs/
