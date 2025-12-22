@@ -4,10 +4,11 @@
   "description": "Site officiel du Magny Football Club 78",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "test": "jest",
-    "lint": "eslint server/"
+    "start": "NODE_ENV=production node server/server.js",
+    "dev": "NODE_ENV=development nodemon server/server.js",
+    "test": "NODE_ENV=test jest",
+    "lint": "eslint server/",
+    "generate-secret": "node scripts/generate-secret.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,6 +16,7 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "dotenv-flow": "^4.1.0",
     "express": "^4.18.2",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.1.5",
