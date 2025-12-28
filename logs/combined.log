@@ -1,0 +1,25 @@
+2025-12-28 21:42:50 [INFO]: MySQL connecté à localhost:3306/magnyfc78_db
+2025-12-28 21:42:50 [INFO]: ✅ Connexion MySQL établie
+2025-12-28 21:42:50 [INFO]: 🚀 Serveur démarré sur http://localhost:3000
+2025-12-28 21:42:50 [INFO]: 📦 Mode: production
+2025-12-28 21:43:05 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:43:05 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:43:06 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:43:06 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:43:06 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:43:06 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:43:17 [ERROR]: 500 - Non autorisé par CORS - /api/auth/login - POST - 127.0.0.1
+2025-12-28 21:43:17 [ERROR]: ERREUR: Non autorisé par CORS
+2025-12-28 21:44:53 [INFO]: MySQL connecté à localhost:3306/magnyfc78_db
+2025-12-28 21:44:53 [INFO]: ✅ Connexion MySQL établie
+2025-12-28 21:44:53 [INFO]: 🚀 Serveur démarré sur http://localhost:3000
+2025-12-28 21:44:53 [INFO]: 📦 Mode: production
+2025-12-28 21:45:32 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:32 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:33 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:33 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:34 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:34 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:34 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:34 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:34 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:34 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:34 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:34 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:34 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:45:34 +0000] "GET /admin/login.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+2025-12-28 21:45:48 [ERROR]: 500 - Non autorisé par CORS - /api/auth/login - POST - 127.0.0.1
+2025-12-28 21:45:48 [ERROR]: ERREUR: Non autorisé par CORS
+2025-12-28 21:46:11 [ERROR]: 500 - Non autorisé par CORS - /api/auth/login - POST - 127.0.0.1
+2025-12-28 21:46:11 [ERROR]: ERREUR: Non autorisé par CORS
+2025-12-28 21:53:35 [INFO]: 127.0.0.1 - - [28/Dec/2025:21:53:35 +0000] "GET /.env HTTP/1.1" 200 1914 "-" "Mozilla/5.0"
