@@ -51,7 +51,8 @@ app.use(helmet({
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
-    if (!origin || allowedOrigins.includes(origin)) {
+    // En production, autoriser les requêtes sans origine (même serveur) ou via reverse proxy
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
       callback(null, true);
     } else {
       callback(new Error('Non autorisé par CORS'));
