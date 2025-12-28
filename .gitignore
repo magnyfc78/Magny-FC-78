@@ -1,2 +1,35 @@
+# Dependencies
 /node_modules
-/node_modules
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Keep templates and dev config
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build
+dist/
+build/
+
+# Uploads (si vous avez des fichiers uploadés localement)
+uploads/
+!uploads/.gitkeep

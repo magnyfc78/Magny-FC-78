@@ -4,15 +4,16 @@
  */
 
 const mysql = require('mysql2/promise');
+const config = require('./index');
 const logger = require('../utils/logger');
 
 // Configuration du pool de connexions
 const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'magny_fc_78',
+  host: config.database.host,
+  port: config.database.port,
+  user: config.database.user,
+  password: config.database.password,
+  database: config.database.name,
   
   // Pool de connexions
   waitForConnections: true,
