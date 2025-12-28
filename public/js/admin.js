@@ -11,6 +11,7 @@ let actualites = [];
 let albums = [];
 let partenaires = [];
 let contacts = [];
+let users = [];
 let editingId = null;
 let editingType = null;
 
@@ -58,7 +59,8 @@ function handleGlobalClick(e) {
 
   const action = btn.dataset.action;
   const type = btn.dataset.type;
-  const id = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+  // Les IDs peuvent être des entiers ou des UUIDs (strings) pour les utilisateurs
+  const id = btn.dataset.id || null;
 
   switch(action) {
     case 'add':
@@ -72,6 +74,9 @@ function handleGlobalClick(e) {
       break;
     case 'view':
       if (type === 'contact') viewContact(id);
+      break;
+    case 'reset-password':
+      if (type === 'user') resetUserPassword(id);
       break;
     case 'close-modal':
       closeModal();
@@ -87,13 +92,16 @@ function handleGlobalClick(e) {
 
 function handleEdit(type, id) {
   let item;
+  // Fonction de comparaison flexible pour IDs numériques ou string (UUID)
+  const matchId = (x) => String(x.id) === String(id);
   switch(type) {
-    case 'menu': item = menus.find(x => x.id === id); break;
-    case 'equipe': item = equipes.find(x => x.id === id); break;
-    case 'match': item = matchs.find(x => x.id === id); break;
-    case 'actualite': item = actualites.find(x => x.id === id); break;
-    case 'album': item = albums.find(x => x.id === id); break;
-    case 'partenaire': item = partenaires.find(x => x.id === id); break;
+    case 'menu': item = menus.find(matchId); break;
+    case 'equipe': item = equipes.find(matchId); break;
+    case 'match': item = matchs.find(matchId); break;
+    case 'actualite': item = actualites.find(matchId); break;
+    case 'album': item = albums.find(matchId); break;
+    case 'partenaire': item = partenaires.find(matchId); break;
+    case 'user': item = users.find(matchId); break;
   }
   if (item) openModal(type, item);
 }
@@ -111,7 +119,8 @@ function switchSection(section) {
   const titles = {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
-    galerie: 'Galerie', partenaires: 'Partenaires', contacts: 'Messages', logs: 'Activité'
+    galerie: 'Galerie', partenaires: 'Partenaires', contacts: 'Messages',
+    users: 'Utilisateurs', logs: 'Activité'
   };
   document.getElementById('page-title').textContent = titles[section] || section;
 
@@ -119,7 +128,8 @@ function switchSection(section) {
   const loaders = {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
-    galerie: loadGalerie, partenaires: loadPartenaires, contacts: loadContacts, logs: loadLogs
+    galerie: loadGalerie, partenaires: loadPartenaires, contacts: loadContacts,
+    users: loadUsers, logs: loadLogs
   };
   loaders[section]?.();
 }
@@ -479,6 +489,60 @@ async function loadLogs() {
 }
 
 // =====================================================
+// UTILISATEURS
+// =====================================================
+async function loadUsers() {
+  try {
+    const res = await api.get('/admin/users');
+    users = res.data.users;
+    document.getElementById('users-list').innerHTML = users.length ? `
+      <table class="table">
+        <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Actif</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td><strong>${u.nom || ''} ${u.prenom || ''}</strong></td>
+              <td>${u.email}</td>
+              <td><span class="badge badge-${u.role === 'admin' ? 'danger' : u.role === 'editor' ? 'warning' : 'info'}">${u.role}</span></td>
+              <td><span class="badge badge-${u.actif ? 'success' : 'warning'}">${u.actif ? 'Oui' : 'Non'}</span></td>
+              <td>${u.last_login ? new Date(u.last_login).toLocaleString('fr-FR') : 'Jamais'}</td>
+              <td>
+                <button class="btn btn-sm" data-action="edit" data-type="user" data-id="${u.id}">✏️</button>
+                <button class="btn btn-sm btn-secondary" data-action="reset-password" data-type="user" data-id="${u.id}" title="Réinitialiser mot de passe">🔑</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="users" data-id="${u.id}">🗑️</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '<p>Aucun utilisateur</p>';
+  } catch (e) {
+    if (e.message.includes('403') || e.message.includes('Accès refusé')) {
+      document.getElementById('users-list').innerHTML = '<p class="alert alert-warning">Accès réservé aux administrateurs</p>';
+    } else {
+      showAlert('Erreur chargement utilisateurs', 'danger');
+    }
+  }
+}
+
+async function resetUserPassword(userId) {
+  const newPassword = prompt('Nouveau mot de passe (min. 8 caractères, avec majuscule, minuscule, chiffre et caractère spécial):');
+  if (!newPassword) return;
+
+  if (newPassword.length < 8) {
+    showAlert('Le mot de passe doit contenir au moins 8 caractères', 'danger');
+    return;
+  }
+
+  try {
+    await api.patch(`/admin/users/${userId}/password`, { password: newPassword });
+    showAlert('Mot de passe mis à jour avec succès', 'success');
+  } catch (e) {
+    showAlert('Erreur: ' + e.message, 'danger');
+  }
+}
+
+// =====================================================
 // MODALS
 // =====================================================
 function openModal(type, data = null) {
@@ -488,7 +552,7 @@ function openModal(type, data = null) {
 
   const titles = {
     menu: 'Élément de menu', equipe: 'Équipe', match: 'Match',
-    actualite: 'Article', album: 'Album', partenaire: 'Partenaire'
+    actualite: 'Article', album: 'Album', partenaire: 'Partenaire', user: 'Utilisateur'
   };
   document.getElementById('modal-title').textContent = (editingId ? 'Modifier' : 'Ajouter') + ' ' + (titles[type] || '');
 
@@ -763,6 +827,52 @@ function openModal(type, data = null) {
         </div>
       `;
       break;
+    case 'user':
+      html = `
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" class="form-control" id="f-nom" value="${data?.nom || ''}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="f-prenom" value="${data?.prenom || ''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-control" id="f-email" value="${data?.email || ''}" required>
+        </div>
+        ${!editingId ? `
+          <div class="form-group">
+            <label class="form-label">Mot de passe * (min. 8 caractères)</label>
+            <input type="password" class="form-control" id="f-password" required minlength="8">
+            <small style="color:var(--gray);">Doit contenir majuscule, minuscule, chiffre et caractère spécial (@$!%*?&)</small>
+          </div>
+        ` : ''}
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Rôle *</label>
+            <select class="form-control" id="f-role">
+              <option value="user" ${data?.role === 'user' ? 'selected' : ''}>Utilisateur</option>
+              <option value="editor" ${data?.role === 'editor' ? 'selected' : ''}>Éditeur</option>
+              <option value="admin" ${data?.role === 'admin' ? 'selected' : ''}>Administrateur</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+          </div>
+        </div>
+        ${editingId ? `
+          <div class="form-group">
+            <small style="color:var(--gray);">
+              Créé le: ${data?.created_at ? new Date(data.created_at).toLocaleString('fr-FR') : '-'}<br>
+              Dernière connexion: ${data?.last_login ? new Date(data.last_login).toLocaleString('fr-FR') : 'Jamais'}
+            </small>
+          </div>
+        ` : ''}
+      `;
+      break;
   }
 
   document.getElementById('modal-body').innerHTML = html;
@@ -939,6 +1049,25 @@ async function saveModal() {
         actif: getChecked('f-actif')
       };
       endpoint = '/admin/partenaires';
+      break;
+    case 'user':
+      data = {
+        nom: getValue('f-nom'),
+        prenom: getValue('f-prenom') || null,
+        email: getValue('f-email'),
+        role: getValue('f-role') || 'user',
+        actif: getChecked('f-actif')
+      };
+      // Ajouter le mot de passe uniquement pour la création
+      if (!editingId) {
+        const password = getValue('f-password');
+        if (!password || password.length < 8) {
+          showAlert('Le mot de passe doit contenir au moins 8 caractères', 'danger');
+          return;
+        }
+        data.password = password;
+      }
+      endpoint = '/admin/users';
       break;
   }
 
