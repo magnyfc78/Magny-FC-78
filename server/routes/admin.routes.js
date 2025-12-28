@@ -442,6 +442,150 @@ router.delete('/contacts/:id', async (req, res, next) => {
 });
 
 // =====================================================
+// GESTION DES UTILISATEURS (Admin uniquement)
+// =====================================================
+router.get('/users', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const [users] = await db.pool.execute(`
+      SELECT id, nom, prenom, email, role, actif, avatar, last_login, created_at, updated_at
+      FROM users ORDER BY created_at DESC
+    `);
+    res.json({ success: true, data: { users } });
+  } catch (error) { next(error); }
+});
+
+router.get('/users/:id', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const [users] = await db.pool.execute(
+      'SELECT id, nom, prenom, email, role, actif, avatar, last_login, created_at, updated_at FROM users WHERE id = ?',
+      [req.params.id]
+    );
+    if (!users.length) {
+      throw new AppError('Utilisateur non trouvé', 404);
+    }
+    res.json({ success: true, data: { user: users[0] } });
+  } catch (error) { next(error); }
+});
+
+router.post('/users', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { v4: uuidv4 } = require('uuid');
+    const { nom, prenom, email, password, role, actif } = req.body;
+
+    // Vérifier si l'email existe déjà
+    const [existing] = await db.pool.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existing.length) {
+      throw new AppError('Cet email est déjà utilisé', 400);
+    }
+
+    // Valider le mot de passe
+    if (!password || password.length < 8) {
+      throw new AppError('Le mot de passe doit contenir au moins 8 caractères', 400);
+    }
+
+    // Hasher le mot de passe
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const userId = uuidv4();
+    await db.pool.execute(
+      `INSERT INTO users (id, nom, prenom, email, password, role, actif, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [userId, nom, prenom || null, email.toLowerCase(), hashedPassword, role || 'user', actif !== false]
+    );
+
+    await logActivity(req.user.id, 'create', 'users', null, { email, role });
+    logger.info(`Nouvel utilisateur créé par admin: ${email}`);
+
+    res.status(201).json({ success: true, data: { id: userId }, message: 'Utilisateur créé avec succès' });
+  } catch (error) { next(error); }
+});
+
+router.put('/users/:id', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { nom, prenom, email, role, actif } = req.body;
+
+    // Vérifier si l'utilisateur existe
+    const [users] = await db.pool.execute('SELECT id, email FROM users WHERE id = ?', [id]);
+    if (!users.length) {
+      throw new AppError('Utilisateur non trouvé', 404);
+    }
+
+    // Vérifier si le nouvel email n'est pas déjà pris par un autre utilisateur
+    if (email && email.toLowerCase() !== users[0].email) {
+      const [existing] = await db.pool.execute('SELECT id FROM users WHERE email = ? AND id != ?', [email.toLowerCase(), id]);
+      if (existing.length) {
+        throw new AppError('Cet email est déjà utilisé par un autre compte', 400);
+      }
+    }
+
+    await db.pool.execute(
+      `UPDATE users SET nom = ?, prenom = ?, email = ?, role = ?, actif = ?, updated_at = NOW() WHERE id = ?`,
+      [nom, prenom || null, email.toLowerCase(), role, actif, id]
+    );
+
+    await logActivity(req.user.id, 'update', 'users', null, { email, role });
+    res.json({ success: true, message: 'Utilisateur mis à jour' });
+  } catch (error) { next(error); }
+});
+
+router.patch('/users/:id/password', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { id } = req.params;
+    const { password } = req.body;
+
+    // Valider le mot de passe
+    if (!password || password.length < 8) {
+      throw new AppError('Le mot de passe doit contenir au moins 8 caractères', 400);
+    }
+
+    // Vérifier si l'utilisateur existe
+    const [users] = await db.pool.execute('SELECT id, email FROM users WHERE id = ?', [id]);
+    if (!users.length) {
+      throw new AppError('Utilisateur non trouvé', 404);
+    }
+
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    await db.pool.execute(
+      'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
+      [hashedPassword, id]
+    );
+
+    await logActivity(req.user.id, 'password_reset', 'users', null, { email: users[0].email });
+    logger.info(`Mot de passe réinitialisé pour: ${users[0].email}`);
+
+    res.json({ success: true, message: 'Mot de passe mis à jour' });
+  } catch (error) { next(error); }
+});
+
+router.delete('/users/:id', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier si l'utilisateur existe
+    const [users] = await db.pool.execute('SELECT id, email FROM users WHERE id = ?', [id]);
+    if (!users.length) {
+      throw new AppError('Utilisateur non trouvé', 404);
+    }
+
+    // Empêcher de supprimer son propre compte
+    if (id === req.user.id) {
+      throw new AppError('Vous ne pouvez pas supprimer votre propre compte', 400);
+    }
+
+    await logActivity(req.user.id, 'delete', 'users', null, { email: users[0].email });
+    await db.pool.execute('DELETE FROM users WHERE id = ?', [id]);
+
+    res.json({ success: true, message: 'Utilisateur supprimé' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
 // ACTIVITÉ LOGS
 // =====================================================
 router.get('/logs', async (req, res, next) => {
