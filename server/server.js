@@ -2,14 +2,12 @@
  * MAGNY FC 78 - Serveur Node.js
  */
 
-require('dotenv').config();
-
+const config = require('./config');
 const app = require('./app');
 const db = require('./config/database');
 const logger = require('./utils/logger');
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || 'localhost';
+const { port: PORT, host: HOST } = config.server;
 
 // Gestion des erreurs non capturées
 process.on('uncaughtException', (err) => {

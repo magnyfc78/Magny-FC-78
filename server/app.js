@@ -5,6 +5,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const xss = require('xss-clean');
@@ -12,6 +13,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
+const config = require('./config');
 
 // Import des routes
 const authRoutes = require('./routes/auth.routes');
@@ -51,6 +53,8 @@ app.use(helmet({
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
+    // Autoriser les requêtes sans origine (same-origin, curl, mobile apps, reverse proxy local)
+    // C'est sécurisé car les navigateurs envoient toujours l'origine pour les requêtes cross-origin
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -99,6 +103,22 @@ app.use(express.json({ limit: '10kb' })); // Limite la taille du body
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(compression()); // Compression GZIP
+
+// =====================================================
+// SESSION
+// =====================================================
+app.set('trust proxy', 1); // Important derrière Nginx
+
+app.use(session({
+  secret: config.session.secret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.session.cookieSecure,
+    httpOnly: true,
+    maxAge: config.session.maxAge
+  }
+}));
 
 // =====================================================
 // LOGGING

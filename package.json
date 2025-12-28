@@ -4,10 +4,11 @@
   "description": "Site officiel du Magny Football Club 78",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "test": "jest",
-    "lint": "eslint server/"
+    "start": "cross-env NODE_ENV=production node server/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon server/server.js",
+    "test": "cross-env NODE_ENV=test jest",
+    "lint": "eslint server/",
+    "generate-secret": "node scripts/generate-secret.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -15,12 +16,17 @@
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+<<<<<<< HEAD
     "cross-env": "^10.1.0",
     "dotenv": "^16.6.1",
+=======
+    "dotenv": "^16.3.1",
+>>>>>>> 0a72e10adf1c11b7ea001c94241ab81067e70c35
     "dotenv-flow": "^4.1.0",
     "express": "^4.18.2",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.1.5",
+    "express-session": "^1.18.2",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
@@ -35,6 +41,7 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2"
