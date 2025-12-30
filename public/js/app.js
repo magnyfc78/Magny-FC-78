@@ -263,7 +263,7 @@ const views = {
 
   // Page histoire du club
   async galerieHistoire() {
-    let histoireData = { albums: [], timeline: {} };
+    let histoireData = { albums: [], timeline: {}, config: {}, moments: [] };
     try {
       const res = await fetch('/api/galerie/histoire');
       const data = await res.json();
@@ -274,13 +274,22 @@ const views = {
       console.error('Erreur chargement histoire:', e);
     }
 
-    const { albums, timeline } = histoireData;
+    const { albums, timeline, config, moments } = histoireData;
     const decades = Object.keys(timeline).sort();
+
+    // Utiliser les valeurs dynamiques de la config
+    const introTitre = config.intro_titre || '24 ans de passion footballistique';
+    const introTexte = config.intro_texte || 'Découvrez l\'histoire de notre club à travers les images qui ont marqué notre parcours.';
+    const slogan = config.slogan || 'Magny FC 78 - Depuis 2000';
+    const anneeCreation = config.annee_creation || 2000;
+    const anneesExistence = config.annees_existence || (new Date().getFullYear() - anneeCreation);
+    const nombreLicencies = config.nombre_licencies || '300+';
+    const nombreEquipes = config.nombre_equipes || '17';
 
     return `
       <section class="page-header histoire-header">
         <h1>Histoire du Club</h1>
-        <p>Magny FC 78 - Depuis 2000</p>
+        <p>${slogan}</p>
       </section>
 
       <!-- Section intro -->
@@ -291,13 +300,8 @@ const views = {
               <div class="logo-icon large"></div>
             </div>
             <div class="histoire-intro-text">
-              <h2>24 ans de passion footballistique</h2>
-              <p>
-                Fondé en 2000, le Magny Football Club 78 est devenu au fil des années un pilier
-                de la vie sportive de Magny-les-Hameaux. De sa création modeste à son statut
-                actuel de premier club de la ville avec plus de 300 licenciés et 17 équipes,
-                découvrez notre parcours à travers les images qui ont marqué notre histoire.
-              </p>
+              <h2>${introTitre}</h2>
+              <p>${introTexte}</p>
             </div>
           </div>
         </div>
@@ -345,19 +349,19 @@ const views = {
         <div class="container">
           <div class="stats-grid">
             <div class="stat-item">
-              <div class="stat-value">2000</div>
+              <div class="stat-value">${anneeCreation}</div>
               <div class="stat-label">Année de création</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">24</div>
+              <div class="stat-value">${anneesExistence}</div>
               <div class="stat-label">Années d'existence</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">300+</div>
+              <div class="stat-value">${nombreLicencies}</div>
               <div class="stat-label">Licenciés actuels</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">17</div>
+              <div class="stat-value">${nombreEquipes}</div>
               <div class="stat-label">Équipes</div>
             </div>
           </div>
@@ -365,6 +369,7 @@ const views = {
       </section>
 
       <!-- Moments clés -->
+      ${moments && moments.length > 0 ? `
       <section class="section histoire-moments">
         <div class="container">
           <div class="section-header">
@@ -372,29 +377,17 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="moments-grid">
-            <div class="moment-card">
-              <div class="moment-year">2000</div>
-              <h3>Création du club</h3>
-              <p>Naissance du Magny FC 78, un rêve partagé par des passionnés du ballon rond.</p>
-            </div>
-            <div class="moment-card">
-              <div class="moment-year">2010</div>
-              <h3>10 ans du club</h3>
-              <p>Célébration de notre première décennie avec une grande fête réunissant anciens et nouveaux membres.</p>
-            </div>
-            <div class="moment-card">
-              <div class="moment-year">2015</div>
-              <h3>Montée en R3</h3>
-              <p>L'équipe première accède au niveau Régional 3, marquant une étape importante.</p>
-            </div>
-            <div class="moment-card">
-              <div class="moment-year">2020</div>
-              <h3>20 ans du club</h3>
-              <p>Deux décennies de football, de passion et de valeurs partagées.</p>
-            </div>
+            ${moments.map(m => `
+              <div class="moment-card">
+                <div class="moment-year">${m.annee}</div>
+                <h3>${m.titre}</h3>
+                ${m.description ? `<p>${m.description}</p>` : ''}
+              </div>
+            `).join('')}
           </div>
         </div>
       </section>
+      ` : ''}
 
       <section class="section">
         <div class="container text-center">

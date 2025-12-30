@@ -246,9 +246,10 @@ router.get('/galerie', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-// Route spéciale pour l'histoire du club (timeline)
+// Route spéciale pour l'histoire du club (timeline + contenu dynamique)
 router.get('/galerie/histoire', async (req, res, next) => {
   try {
+    // Récupérer les albums de la catégorie Histoire
     const [albums] = await db.pool.execute(`
       SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement, a.annee,
              (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id AND actif = 1) as nb_photos
@@ -258,7 +259,19 @@ router.get('/galerie/histoire', async (req, res, next) => {
       ORDER BY a.annee ASC, a.date_evenement ASC
     `);
 
-    // Grouper par décennie pour la timeline
+    // Récupérer la configuration de la page Histoire
+    const [configRows] = await db.pool.execute('SELECT cle, valeur FROM histoire_config');
+    const config = {};
+    configRows.forEach(row => {
+      config[row.cle] = row.valeur;
+    });
+
+    // Récupérer les moments clés
+    const [moments] = await db.pool.execute(
+      'SELECT id, annee, titre, description, image FROM histoire_moments WHERE actif = 1 ORDER BY ordre, annee'
+    );
+
+    // Grouper les albums par décennie pour la timeline
     const timeline = {};
     albums.forEach(album => {
       const decade = Math.floor(album.annee / 10) * 10;
@@ -269,7 +282,27 @@ router.get('/galerie/histoire', async (req, res, next) => {
       timeline[decadeLabel].push(album);
     });
 
-    res.json({ success: true, data: { albums, timeline } });
+    // Calculer les stats dynamiques
+    const anneeCreation = parseInt(config.annee_creation) || 2000;
+    const anneesExistence = new Date().getFullYear() - anneeCreation;
+
+    res.json({
+      success: true,
+      data: {
+        albums,
+        timeline,
+        config: {
+          intro_titre: config.intro_titre || '24 ans de passion footballistique',
+          intro_texte: config.intro_texte || '',
+          slogan: config.slogan || 'Magny FC 78 - Depuis 2000',
+          annee_creation: anneeCreation,
+          annees_existence: anneesExistence,
+          nombre_licencies: config.nombre_licencies || '300+',
+          nombre_equipes: config.nombre_equipes || '17'
+        },
+        moments
+      }
+    });
   } catch (error) { next(error); }
 });
 
