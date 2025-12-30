@@ -202,39 +202,102 @@ router.get('/actualites/:slug', async (req, res, next) => {
 });
 
 // =====================================================
-// GALERIE
+// GALERIE - CATÉGORIES
+// =====================================================
+router.get('/galerie/categories', async (req, res, next) => {
+  try {
+    const [categories] = await db.pool.execute(`
+      SELECT gc.id, gc.nom, gc.slug, gc.description, gc.icone, gc.couleur,
+             (SELECT COUNT(*) FROM galerie_albums WHERE categorie_id = gc.id AND actif = 1) as nb_albums
+      FROM galerie_categories gc
+      WHERE gc.actif = 1
+      ORDER BY gc.ordre
+    `);
+    res.json({ success: true, data: { categories } });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// GALERIE - ALBUMS
 // =====================================================
 router.get('/galerie', async (req, res, next) => {
   try {
-    const [albums] = await db.pool.execute(`
-      SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement,
+    const { categorie } = req.query;
+
+    let sql = `
+      SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement, a.annee,
+             gc.nom as categorie_nom, gc.slug as categorie_slug, gc.couleur as categorie_couleur,
              (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id AND actif = 1) as nb_photos
       FROM galerie_albums a
+      LEFT JOIN galerie_categories gc ON a.categorie_id = gc.id
       WHERE a.actif = 1
-      ORDER BY a.date_evenement DESC
-    `);
+    `;
+    const params = [];
+
+    if (categorie && categorie !== 'Tous') {
+      sql += ' AND gc.slug = ?';
+      params.push(categorie);
+    }
+
+    sql += ' ORDER BY a.date_evenement DESC';
+
+    const [albums] = await db.pool.execute(sql, params);
     res.json({ success: true, data: { albums } });
+  } catch (error) { next(error); }
+});
+
+// Route spéciale pour l'histoire du club (timeline)
+router.get('/galerie/histoire', async (req, res, next) => {
+  try {
+    const [albums] = await db.pool.execute(`
+      SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement, a.annee,
+             (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id AND actif = 1) as nb_photos
+      FROM galerie_albums a
+      LEFT JOIN galerie_categories gc ON a.categorie_id = gc.id
+      WHERE a.actif = 1 AND gc.slug = 'histoire'
+      ORDER BY a.annee ASC, a.date_evenement ASC
+    `);
+
+    // Grouper par décennie pour la timeline
+    const timeline = {};
+    albums.forEach(album => {
+      const decade = Math.floor(album.annee / 10) * 10;
+      const decadeLabel = `${decade}s`;
+      if (!timeline[decadeLabel]) {
+        timeline[decadeLabel] = [];
+      }
+      timeline[decadeLabel].push(album);
+    });
+
+    res.json({ success: true, data: { albums, timeline } });
   } catch (error) { next(error); }
 });
 
 router.get('/galerie/:slug', async (req, res, next) => {
   try {
-    const [albums] = await db.pool.execute(
-      'SELECT * FROM galerie_albums WHERE slug = ? AND actif = 1',
-      [req.params.slug]
-    );
-    
+    // Éviter de matcher "categories" et "histoire" comme des slugs
+    if (req.params.slug === 'categories' || req.params.slug === 'histoire') {
+      return next();
+    }
+
+    const [albums] = await db.pool.execute(`
+      SELECT a.*, gc.nom as categorie_nom, gc.slug as categorie_slug, gc.couleur as categorie_couleur
+      FROM galerie_albums a
+      LEFT JOIN galerie_categories gc ON a.categorie_id = gc.id
+      WHERE a.slug = ? AND a.actif = 1
+    `, [req.params.slug]);
+
     if (!albums.length) {
       return res.status(404).json({ success: false, error: 'Album non trouvé' });
     }
-    
+
     const album = albums[0];
     const [photos] = await db.pool.execute(
       'SELECT id, titre, description, fichier, thumbnail FROM galerie_photos WHERE album_id = ? AND actif = 1 ORDER BY ordre',
       [album.id]
     );
     album.photos = photos;
-    
+
     res.json({ success: true, data: { album } });
   } catch (error) { next(error); }
 });

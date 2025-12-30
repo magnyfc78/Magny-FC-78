@@ -204,17 +204,24 @@ const views = {
 
   // Page galerie
   async galerie() {
-    // Charger les albums depuis l'API
+    // Charger les catégories et albums depuis l'API
+    let categories = [];
     let albums = [];
     try {
-      const res = await fetch('/api/galerie');
-      const data = await res.json();
-      if (data.success) {
-        albums = data.data.albums;
-      }
+      const [catRes, albumRes] = await Promise.all([
+        fetch('/api/galerie/categories'),
+        fetch('/api/galerie')
+      ]);
+      const catData = await catRes.json();
+      const albumData = await albumRes.json();
+      if (catData.success) categories = catData.data.categories;
+      if (albumData.success) albums = albumData.data.albums;
     } catch (e) {
       console.error('Erreur chargement galerie:', e);
     }
+
+    // Stocker les données globalement pour le filtrage
+    window.galerieAlbumsData = albums;
 
     return `
       <section class="page-header">
@@ -224,21 +231,174 @@ const views = {
 
       <section class="section">
         <div class="container">
+          <!-- Filtres par catégorie -->
+          <div class="filters galerie-filters" id="galerie-filters">
+            <button class="filter-btn active" data-filter="galerie" data-category="Tous">Tous</button>
+            ${categories.map(c => `
+              <button class="filter-btn" data-filter="galerie" data-category="${c.slug}" style="--cat-color: ${c.couleur}">
+                ${c.nom}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- Lien vers la page Histoire -->
+          <div class="histoire-banner">
+            <a href="/galerie/histoire" data-link class="histoire-link">
+              <span class="histoire-icon">📜</span>
+              <div class="histoire-text">
+                <strong>Découvrez l'Histoire du Club</strong>
+                <span>24 ans de passion depuis 2000</span>
+              </div>
+              <span class="histoire-arrow">→</span>
+            </a>
+          </div>
+
           <div class="galerie-albums-grid" id="galerie-grid">
-            ${albums.length ? albums.map(album => `
-              <div class="album-card">
-                <div class="album-image">
-                  <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
-                  <span class="album-count">${album.nb_photos || 0} photos</span>
+            ${renderGalerieAlbums(albums)}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  // Page histoire du club
+  async galerieHistoire() {
+    let histoireData = { albums: [], timeline: {} };
+    try {
+      const res = await fetch('/api/galerie/histoire');
+      const data = await res.json();
+      if (data.success) {
+        histoireData = data.data;
+      }
+    } catch (e) {
+      console.error('Erreur chargement histoire:', e);
+    }
+
+    const { albums, timeline } = histoireData;
+    const decades = Object.keys(timeline).sort();
+
+    return `
+      <section class="page-header histoire-header">
+        <h1>Histoire du Club</h1>
+        <p>Magny FC 78 - Depuis 2000</p>
+      </section>
+
+      <!-- Section intro -->
+      <section class="section histoire-intro">
+        <div class="container">
+          <div class="histoire-intro-content">
+            <div class="histoire-logo">
+              <div class="logo-icon large"></div>
+            </div>
+            <div class="histoire-intro-text">
+              <h2>24 ans de passion footballistique</h2>
+              <p>
+                Fondé en 2000, le Magny Football Club 78 est devenu au fil des années un pilier
+                de la vie sportive de Magny-les-Hameaux. De sa création modeste à son statut
+                actuel de premier club de la ville avec plus de 300 licenciés et 17 équipes,
+                découvrez notre parcours à travers les images qui ont marqué notre histoire.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Timeline -->
+      <section class="section histoire-timeline-section">
+        <div class="container">
+          <div class="timeline">
+            ${decades.map((decade, index) => `
+              <div class="timeline-decade ${index % 2 === 0 ? 'left' : 'right'}">
+                <div class="timeline-decade-header">
+                  <span class="decade-badge">${decade}</span>
                 </div>
-                <div class="album-info">
-                  <h3>${album.titre}</h3>
-                  ${album.date_evenement ? `<span class="album-date">${new Date(album.date_evenement).toLocaleDateString('fr-FR')}</span>` : ''}
-                  ${album.description ? `<p>${album.description}</p>` : ''}
+                <div class="timeline-albums">
+                  ${timeline[decade].map(album => `
+                    <div class="timeline-album-card">
+                      <div class="timeline-year">${album.annee}</div>
+                      <div class="timeline-album-image">
+                        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
+                      </div>
+                      <div class="timeline-album-info">
+                        <h3>${album.titre}</h3>
+                        ${album.description ? `<p>${album.description}</p>` : ''}
+                        <span class="photo-count">${album.nb_photos || 0} photos</span>
+                      </div>
+                    </div>
+                  `).join('')}
                 </div>
               </div>
-            `).join('') : '<p class="text-center">Aucun album disponible</p>'}
+            `).join('')}
           </div>
+
+          ${!albums.length ? `
+            <div class="histoire-empty">
+              <p>L'histoire du club sera bientôt disponible en images.</p>
+              <p>Revenez nous voir prochainement !</p>
+            </div>
+          ` : ''}
+        </div>
+      </section>
+
+      <!-- Stats historiques -->
+      <section class="section histoire-stats">
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">2000</div>
+              <div class="stat-label">Année de création</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">24</div>
+              <div class="stat-label">Années d'existence</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">300+</div>
+              <div class="stat-label">Licenciés actuels</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">17</div>
+              <div class="stat-label">Équipes</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Moments clés -->
+      <section class="section histoire-moments">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">Moments Clés</h2>
+            <div class="section-line"></div>
+          </div>
+          <div class="moments-grid">
+            <div class="moment-card">
+              <div class="moment-year">2000</div>
+              <h3>Création du club</h3>
+              <p>Naissance du Magny FC 78, un rêve partagé par des passionnés du ballon rond.</p>
+            </div>
+            <div class="moment-card">
+              <div class="moment-year">2010</div>
+              <h3>10 ans du club</h3>
+              <p>Célébration de notre première décennie avec une grande fête réunissant anciens et nouveaux membres.</p>
+            </div>
+            <div class="moment-card">
+              <div class="moment-year">2015</div>
+              <h3>Montée en R3</h3>
+              <p>L'équipe première accède au niveau Régional 3, marquant une étape importante.</p>
+            </div>
+            <div class="moment-card">
+              <div class="moment-year">2020</div>
+              <h3>20 ans du club</h3>
+              <p>Deux décennies de football, de passion et de valeurs partagées.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container text-center">
+          <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
         </div>
       </section>
     `;
@@ -514,16 +674,38 @@ function filterActualites(categorie) {
   }
 }
 
+// Render galerie albums
+function renderGalerieAlbums(albums) {
+  return albums.map(album => `
+    <div class="album-card" data-category="${album.categorie_slug || ''}">
+      <div class="album-image">
+        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
+        <span class="album-count">${album.nb_photos || 0} photos</span>
+        ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+      </div>
+      <div class="album-info">
+        <h3>${album.titre}</h3>
+        <div class="album-meta">
+          ${album.date_evenement ? `<span class="album-date">${new Date(album.date_evenement).toLocaleDateString('fr-FR')}</span>` : ''}
+          ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
+        </div>
+        ${album.description ? `<p>${album.description}</p>` : ''}
+      </div>
+    </div>
+  `).join('') || '<p class="text-center">Aucun album disponible</p>';
+}
+
 // Filter galerie
 function filterGalerie(categorie) {
-  const items = document.querySelectorAll('.galerie-item');
-  items.forEach(item => {
-    if (categorie === 'Tous' || item.dataset.category === categorie) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
-  });
+  const grid = document.getElementById('galerie-grid');
+  const albums = window.galerieAlbumsData || [];
+
+  if (categorie === 'Tous') {
+    grid.innerHTML = renderGalerieAlbums(albums);
+  } else {
+    const filtered = albums.filter(a => a.categorie_slug === categorie);
+    grid.innerHTML = renderGalerieAlbums(filtered);
+  }
 }
 
 // Render partenaires
@@ -715,6 +897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/equipes', views.equipes);
   router.addRoute('/actualites', views.actualites);
   router.addRoute('/galerie', views.galerie);
+  router.addRoute('/galerie/histoire', views.galerieHistoire);
   router.addRoute('/partenaires', views.partenaires);
   router.addRoute('/calendrier', views.calendrier);
   router.addRoute('/contact', views.contact);

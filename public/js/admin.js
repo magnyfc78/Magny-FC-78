@@ -4,6 +4,7 @@
 
 let currentSection = 'dashboard';
 let categories = [];
+let galerieCategories = [];
 let equipes = [];
 let menus = [];
 let matchs = [];
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les données initiales
   await loadCategories();
   await loadEquipesList();
+  await loadGalerieCategories();
   loadDashboard();
 });
 
@@ -359,20 +361,48 @@ async function loadActualites() {
 }
 
 // =====================================================
+// GALERIE - CATÉGORIES
+// =====================================================
+async function loadGalerieCategories() {
+  try {
+    const res = await api.get('/admin/galerie/categories');
+    galerieCategories = res.data.categories;
+  } catch (e) { console.error(e); }
+}
+
+// =====================================================
 // GALERIE
 // =====================================================
 async function loadGalerie() {
   try {
+    await loadGalerieCategories();
     const res = await api.get('/admin/galerie/albums');
     albums = res.data.albums;
+
+    // Créer les badges de couleur pour les catégories
+    const getCategoryBadge = (album) => {
+      if (!album.categorie_nom) return '<span class="badge badge-info">-</span>';
+      const colors = {
+        'match': 'success',
+        'tournoi': 'warning',
+        'entrainement': 'info',
+        'evenement': 'info',
+        'histoire': 'secondary'
+      };
+      const badgeType = colors[album.categorie_slug] || 'info';
+      return `<span class="badge badge-${badgeType}" style="background:${album.categorie_couleur || '#6b7280'};color:white;">${album.categorie_nom}</span>`;
+    };
+
     document.getElementById('galerie-list').innerHTML = albums.length ? `
       <table class="table">
-        <thead><tr><th>Titre</th><th>Date</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Titre</th><th>Catégorie</th><th>Date</th><th>Année</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
           ${albums.map(a => `
             <tr>
               <td><strong>${a.titre}</strong></td>
+              <td>${getCategoryBadge(a)}</td>
               <td>${a.date_evenement ? new Date(a.date_evenement).toLocaleDateString('fr-FR') : '-'}</td>
+              <td>${a.annee || '-'}</td>
               <td>${a.nb_photos || 0}</td>
               <td><span class="badge badge-${a.actif ? 'success' : 'warning'}">${a.actif ? 'Oui' : 'Non'}</span></td>
               <td>
@@ -763,6 +793,19 @@ function openModal(type, data = null) {
           <label class="form-label">Titre *</label>
           <input type="text" class="form-control" id="f-titre" value="${data?.titre || ''}" required>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Catégorie *</label>
+            <select class="form-control" id="f-categorie_id">
+              <option value="">-- Sélectionner --</option>
+              ${galerieCategories.map(c => `<option value="${c.id}" ${data?.categorie_id == c.id ? 'selected' : ''}>${c.nom}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Année</label>
+            <input type="number" class="form-control" id="f-annee" value="${data?.annee || new Date().getFullYear()}" min="1990" max="2100">
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
@@ -1012,8 +1055,10 @@ async function saveModal() {
 
       data = {
         titre: getValue('f-titre'),
+        categorie_id: getValue('f-categorie_id') || null,
         description: getValue('f-description') || null,
         date_evenement: getValue('f-date_evenement') || null,
+        annee: parseInt(getValue('f-annee')) || new Date().getFullYear(),
         image_couverture: albumImagePath,
         actif: getChecked('f-actif'),
         ordre: parseInt(getValue('f-ordre')) || 0
