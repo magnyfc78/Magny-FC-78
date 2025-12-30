@@ -1091,3 +1091,456 @@ footer {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* =====================================================
+   GALERIE - ALBUMS GRID
+   ===================================================== */
+.galerie-albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 30px;
+}
+
+.album-card {
+  background: var(--blanc);
+  box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.album-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.album-image {
+  position: relative;
+  height: 220px;
+  background: var(--bleu-fonce);
+  overflow: hidden;
+}
+
+.album-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.album-card:hover .album-image img {
+  transform: scale(1.1);
+}
+
+.album-count {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0,0,0,0.7);
+  color: var(--blanc);
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 20px;
+}
+
+.album-category {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: var(--blanc);
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 3px;
+}
+
+.album-info {
+  padding: 25px;
+}
+
+.album-info h3 {
+  font-family: var(--font-titre);
+  font-size: 1.4rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.album-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.album-date, .album-year {
+  font-size: 0.85rem;
+  color: var(--gris);
+}
+
+.album-info p {
+  font-size: 0.9rem;
+  color: var(--gris);
+  line-height: 1.6;
+}
+
+/* Galerie filtres avec couleurs */
+.galerie-filters .filter-btn:hover,
+.galerie-filters .filter-btn.active {
+  background: var(--cat-color, var(--bleu-fonce));
+  border-color: var(--cat-color, var(--bleu-fonce));
+  color: var(--blanc);
+}
+
+/* =====================================================
+   HISTOIRE - BANNER LINK
+   ===================================================== */
+.histoire-banner {
+  margin-bottom: 40px;
+}
+
+.histoire-link {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, var(--bleu-fonce), #2a4a6a);
+  padding: 25px 35px;
+  border-radius: 10px;
+  color: var(--blanc);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.histoire-link:hover {
+  border-color: var(--or);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(26, 39, 68, 0.3);
+}
+
+.histoire-icon {
+  font-size: 2.5rem;
+}
+
+.histoire-text {
+  flex: 1;
+}
+
+.histoire-text strong {
+  display: block;
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.histoire-text span {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.histoire-arrow {
+  font-size: 2rem;
+  color: var(--or);
+  transition: transform 0.3s ease;
+}
+
+.histoire-link:hover .histoire-arrow {
+  transform: translateX(10px);
+}
+
+/* =====================================================
+   HISTOIRE - PAGE HEADER
+   ===================================================== */
+.histoire-header {
+  background: linear-gradient(135deg,
+    rgba(26, 39, 68, 0.95),
+    rgba(13, 24, 41, 0.95)
+  ), url('/assets/images/hero-bg.jpg') center/cover;
+  padding-bottom: 100px;
+}
+
+.histoire-header h1 {
+  color: var(--or);
+}
+
+/* =====================================================
+   HISTOIRE - INTRO SECTION
+   ===================================================== */
+.histoire-intro {
+  background: var(--gris-clair);
+  padding: 80px 0;
+}
+
+.histoire-intro-content {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.histoire-logo .logo-icon.large {
+  width: 150px;
+  height: 150px;
+  background-color: var(--bleu-fonce);
+  border: 5px solid var(--or);
+}
+
+.histoire-intro-text h2 {
+  font-family: var(--font-titre);
+  font-size: 2.5rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.histoire-intro-text p {
+  font-size: 1.1rem;
+  color: var(--gris-fonce);
+  line-height: 1.8;
+}
+
+@media (max-width: 768px) {
+  .histoire-intro-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* =====================================================
+   HISTOIRE - TIMELINE
+   ===================================================== */
+.histoire-timeline-section {
+  padding: 100px 0;
+}
+
+.timeline {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--or);
+  transform: translateX(-50%);
+}
+
+.timeline-decade {
+  position: relative;
+  margin-bottom: 60px;
+}
+
+.timeline-decade-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.decade-badge {
+  display: inline-block;
+  background: var(--or);
+  color: var(--bleu-fonce);
+  font-family: var(--font-titre);
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding: 15px 40px;
+  letter-spacing: 3px;
+  position: relative;
+  z-index: 2;
+}
+
+.timeline-albums {
+  display: grid;
+  gap: 30px;
+}
+
+.timeline-album-card {
+  background: var(--blanc);
+  box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto 200px 1fr;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.timeline-album-card:hover {
+  transform: translateX(10px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+.timeline-year {
+  background: var(--bleu-fonce);
+  color: var(--turquoise);
+  font-family: var(--font-titre);
+  font-size: 2rem;
+  font-weight: 500;
+  padding: 30px 25px;
+  text-align: center;
+  min-width: 100px;
+}
+
+.timeline-album-image {
+  height: 150px;
+  overflow: hidden;
+}
+
+.timeline-album-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.timeline-album-info {
+  padding: 25px 30px;
+}
+
+.timeline-album-info h3 {
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.timeline-album-info p {
+  font-size: 0.9rem;
+  color: var(--gris);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.timeline-album-info .photo-count {
+  font-size: 0.8rem;
+  color: var(--turquoise);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .timeline::before {
+    left: 30px;
+  }
+
+  .timeline-album-card {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-year {
+    padding: 15px;
+    font-size: 1.5rem;
+  }
+
+  .timeline-album-image {
+    height: 200px;
+  }
+}
+
+/* =====================================================
+   HISTOIRE - STATS SECTION
+   ===================================================== */
+.histoire-stats {
+  background: var(--bleu-fonce);
+  padding: 80px 0;
+}
+
+.histoire-stats .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.histoire-stats .stat-item {
+  text-align: center;
+}
+
+.histoire-stats .stat-value {
+  font-family: var(--font-titre);
+  font-size: 3.5rem;
+  color: var(--or);
+  margin-bottom: 10px;
+}
+
+.histoire-stats .stat-label {
+  color: var(--blanc);
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .histoire-stats .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =====================================================
+   HISTOIRE - MOMENTS CLÉS
+   ===================================================== */
+.histoire-moments {
+  background: var(--gris-clair);
+  padding: 100px 0;
+}
+
+.moments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.moment-card {
+  background: var(--blanc);
+  padding: 40px 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+  border-left: 4px solid var(--or);
+  transition: all 0.3s ease;
+}
+
+.moment-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+.moment-year {
+  font-family: var(--font-titre);
+  font-size: 3rem;
+  color: var(--turquoise);
+  font-weight: 300;
+  margin-bottom: 15px;
+}
+
+.moment-card h3 {
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.moment-card p {
+  font-size: 0.95rem;
+  color: var(--gris);
+  line-height: 1.7;
+}
+
+/* =====================================================
+   HISTOIRE - EMPTY STATE
+   ===================================================== */
+.histoire-empty {
+  text-align: center;
+  padding: 80px 40px;
+  background: var(--gris-clair);
+  border-radius: 10px;
+}
+
+.histoire-empty p {
+  font-size: 1.1rem;
+  color: var(--gris);
+  margin-bottom: 10px;
+}

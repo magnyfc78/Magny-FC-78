@@ -257,6 +257,28 @@ INSERT INTO actualites (titre, slug, extrait, contenu, categorie, publie, a_la_u
 'Partenaire', TRUE, FALSE, '2024-11-05 09:00:00');
 
 -- =====================================================
+-- CATÉGORIES DE GALERIE
+-- =====================================================
+CREATE TABLE galerie_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    icone VARCHAR(50) DEFAULT 'photo',
+    couleur VARCHAR(7) DEFAULT '#1a4d92',
+    ordre INT DEFAULT 0,
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO galerie_categories (nom, slug, description, icone, couleur, ordre) VALUES
+('Match', 'match', 'Photos des matchs de nos équipes', 'futbol', '#10b981', 1),
+('Tournoi', 'tournoi', 'Photos des tournois organisés ou participés', 'trophy', '#f59e0b', 2),
+('Entraînement', 'entrainement', 'Photos des séances d''entraînement', 'running', '#3b82f6', 3),
+('Événement', 'evenement', 'Fêtes du club, remises de maillots, cérémonies', 'calendar', '#8b5cf6', 4),
+('Histoire', 'histoire', 'Photos historiques du club depuis sa création', 'history', '#dabb81', 5);
+
+-- =====================================================
 -- GALERIE PHOTOS
 -- =====================================================
 CREATE TABLE galerie_albums (
@@ -265,17 +287,25 @@ CREATE TABLE galerie_albums (
     slug VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     image_couverture VARCHAR(255),
+    categorie_id INT,
     date_evenement DATE,
+    annee INT,
     actif BOOLEAN DEFAULT TRUE,
     ordre INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (categorie_id) REFERENCES galerie_categories(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-INSERT INTO galerie_albums (titre, slug, description, date_evenement) VALUES 
-('Match Seniors vs Versailles', 'match-seniors-versailles', 'Photos du match du 30 novembre 2024', '2024-11-30'),
-('Tournoi U11 Novembre', 'tournoi-u11-novembre', 'Photos du tournoi U11', '2024-11-16'),
-('Remise des maillots', 'remise-maillots-2024', 'Cérémonie de remise des maillots saison 2024-2025', '2024-09-15'),
-('Fête du club 2024', 'fete-club-2024', 'Photos de la fête annuelle du club', '2024-06-22');
+INSERT INTO galerie_albums (titre, slug, description, categorie_id, date_evenement, annee) VALUES
+('Match Seniors vs Versailles', 'match-seniors-versailles', 'Photos du match du 30 novembre 2024', 1, '2024-11-30', 2024),
+('Tournoi U11 Novembre', 'tournoi-u11-novembre', 'Photos du tournoi U11', 2, '2024-11-16', 2024),
+('Remise des maillots', 'remise-maillots-2024', 'Cérémonie de remise des maillots saison 2024-2025', 4, '2024-09-15', 2024),
+('Fête du club 2024', 'fete-club-2024', 'Photos de la fête annuelle du club', 4, '2024-06-22', 2024),
+('Création du club', 'creation-club-2000', 'Les premiers jours du Magny FC 78', 5, '2000-09-01', 2000),
+('Première saison 2000-2001', 'premiere-saison', 'Photos de notre toute première saison', 5, '2001-06-15', 2001),
+('10 ans du club', 'dix-ans-club', 'Célébration des 10 ans du Magny FC 78', 5, '2010-06-20', 2010),
+('Montée en R3 2015', 'montee-r3-2015', 'Le jour où les Seniors sont montés en Régional 3', 5, '2015-05-30', 2015),
+('20 ans du club', 'vingt-ans-club', 'Célébration des 20 ans du club', 5, '2020-09-15', 2020);
 
 CREATE TABLE galerie_photos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -289,6 +319,45 @@ CREATE TABLE galerie_photos (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES galerie_albums(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- =====================================================
+-- HISTOIRE DU CLUB - CONTENU DYNAMIQUE
+-- =====================================================
+CREATE TABLE histoire_config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cle VARCHAR(100) NOT NULL UNIQUE,
+    valeur TEXT,
+    type VARCHAR(20) DEFAULT 'text',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO histoire_config (cle, valeur, type) VALUES
+('intro_titre', '24 ans de passion footballistique', 'text'),
+('intro_texte', 'Fondé en 2000, le Magny Football Club 78 est devenu au fil des années un pilier de la vie sportive de Magny-les-Hameaux. De sa création modeste à son statut actuel de premier club de la ville avec plus de 300 licenciés et 17 équipes, découvrez notre parcours à travers les images qui ont marqué notre histoire.', 'textarea'),
+('annee_creation', '2000', 'number'),
+('nombre_licencies', '300+', 'text'),
+('nombre_equipes', '17', 'text'),
+('slogan', 'Magny FC 78 - Depuis 2000', 'text');
+
+CREATE TABLE histoire_moments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    annee INT NOT NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    image VARCHAR(255),
+    ordre INT DEFAULT 0,
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO histoire_moments (annee, titre, description, ordre) VALUES
+(2000, 'Création du club', 'Naissance du Magny FC 78, un rêve partagé par des passionnés du ballon rond.', 1),
+(2005, 'Première montée', 'L''équipe première monte en division supérieure pour la première fois.', 2),
+(2010, '10 ans du club', 'Célébration de notre première décennie avec une grande fête réunissant anciens et nouveaux membres.', 3),
+(2015, 'Montée en R3', 'L''équipe première accède au niveau Régional 3, marquant une étape importante.', 4),
+(2018, 'Inauguration des vestiaires', 'Nouveaux vestiaires inaugurés au stade municipal.', 5),
+(2020, '20 ans du club', 'Deux décennies de football, de passion et de valeurs partagées.', 6),
+(2024, 'Record de licenciés', 'Le club atteint le cap historique des 300 licenciés.', 7);
 
 -- =====================================================
 -- PARTENAIRES

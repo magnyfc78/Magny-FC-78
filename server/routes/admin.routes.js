@@ -315,13 +315,60 @@ router.delete('/actualites/:id', async (req, res, next) => {
 });
 
 // =====================================================
-// GALERIE (Admin CRUD)
+// GALERIE - CATÉGORIES (Admin CRUD)
+// =====================================================
+router.get('/galerie/categories', async (req, res, next) => {
+  try {
+    const [categories] = await db.pool.execute(`
+      SELECT gc.*, (SELECT COUNT(*) FROM galerie_albums WHERE categorie_id = gc.id) as nb_albums
+      FROM galerie_categories gc ORDER BY gc.ordre
+    `);
+    res.json({ success: true, data: { categories } });
+  } catch (error) { next(error); }
+});
+
+router.post('/galerie/categories', async (req, res, next) => {
+  try {
+    const { nom, description, icone, couleur, ordre } = req.body;
+    const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const [result] = await db.pool.execute(
+      'INSERT INTO galerie_categories (nom, slug, description, icone, couleur, ordre) VALUES (?, ?, ?, ?, ?, ?)',
+      [nom, slug, description, icone || 'photo', couleur || '#1a4d92', ordre || 0]
+    );
+    res.status(201).json({ success: true, data: { id: result.insertId } });
+  } catch (error) { next(error); }
+});
+
+router.put('/galerie/categories/:id', async (req, res, next) => {
+  try {
+    const { nom, description, icone, couleur, ordre, actif } = req.body;
+    const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    await db.pool.execute(
+      'UPDATE galerie_categories SET nom = ?, slug = ?, description = ?, icone = ?, couleur = ?, ordre = ?, actif = ? WHERE id = ?',
+      [nom, slug, description, icone, couleur, ordre, actif, req.params.id]
+    );
+    res.json({ success: true, message: 'Catégorie mise à jour' });
+  } catch (error) { next(error); }
+});
+
+router.delete('/galerie/categories/:id', async (req, res, next) => {
+  try {
+    await db.pool.execute('DELETE FROM galerie_categories WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Catégorie supprimée' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// GALERIE - ALBUMS (Admin CRUD)
 // =====================================================
 router.get('/galerie/albums', async (req, res, next) => {
   try {
     const [albums] = await db.pool.execute(`
-      SELECT a.*, (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id) as nb_photos
-      FROM galerie_albums a ORDER BY a.date_evenement DESC
+      SELECT a.*, gc.nom as categorie_nom, gc.slug as categorie_slug,
+             (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id) as nb_photos
+      FROM galerie_albums a
+      LEFT JOIN galerie_categories gc ON a.categorie_id = gc.id
+      ORDER BY a.date_evenement DESC
     `);
     res.json({ success: true, data: { albums } });
   } catch (error) { next(error); }
@@ -329,11 +376,12 @@ router.get('/galerie/albums', async (req, res, next) => {
 
 router.post('/galerie/albums', async (req, res, next) => {
   try {
-    const { titre, description, image_couverture, date_evenement } = req.body;
+    const { titre, description, image_couverture, categorie_id, date_evenement, annee } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const albumYear = annee || (date_evenement ? new Date(date_evenement).getFullYear() : new Date().getFullYear());
     const [result] = await db.pool.execute(
-      'INSERT INTO galerie_albums (titre, slug, description, image_couverture, date_evenement) VALUES (?, ?, ?, ?, ?)',
-      [titre, slug, description, image_couverture, date_evenement]
+      'INSERT INTO galerie_albums (titre, slug, description, image_couverture, categorie_id, date_evenement, annee) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, albumYear]
     );
     res.status(201).json({ success: true, data: { id: result.insertId } });
   } catch (error) { next(error); }
@@ -341,11 +389,12 @@ router.post('/galerie/albums', async (req, res, next) => {
 
 router.put('/galerie/albums/:id', async (req, res, next) => {
   try {
-    const { titre, description, image_couverture, date_evenement, actif, ordre } = req.body;
+    const { titre, description, image_couverture, categorie_id, date_evenement, annee, actif, ordre } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const albumYear = annee || (date_evenement ? new Date(date_evenement).getFullYear() : null);
     await db.pool.execute(
-      'UPDATE galerie_albums SET titre = ?, slug = ?, description = ?, image_couverture = ?, date_evenement = ?, actif = ?, ordre = ? WHERE id = ?',
-      [titre, slug, description, image_couverture, date_evenement, actif, ordre, req.params.id]
+      'UPDATE galerie_albums SET titre = ?, slug = ?, description = ?, image_couverture = ?, categorie_id = ?, date_evenement = ?, annee = ?, actif = ?, ordre = ? WHERE id = ?',
+      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, albumYear, actif, ordre, req.params.id]
     );
     res.json({ success: true, message: 'Album mis à jour' });
   } catch (error) { next(error); }
@@ -373,6 +422,72 @@ router.delete('/galerie/photos/:id', async (req, res, next) => {
   try {
     await db.pool.execute('DELETE FROM galerie_photos WHERE id = ?', [req.params.id]);
     res.json({ success: true, message: 'Photo supprimée' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// HISTOIRE DU CLUB (Admin CRUD)
+// =====================================================
+
+// Configuration Histoire
+router.get('/histoire/config', async (req, res, next) => {
+  try {
+    const [rows] = await db.pool.execute('SELECT * FROM histoire_config');
+    const config = {};
+    rows.forEach(row => {
+      config[row.cle] = { valeur: row.valeur, type: row.type };
+    });
+    res.json({ success: true, data: { config, raw: rows } });
+  } catch (error) { next(error); }
+});
+
+router.put('/histoire/config', async (req, res, next) => {
+  try {
+    const updates = req.body;
+    for (const [cle, valeur] of Object.entries(updates)) {
+      await db.pool.execute(
+        'INSERT INTO histoire_config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = ?',
+        [cle, valeur, valeur]
+      );
+    }
+    res.json({ success: true, message: 'Configuration mise à jour' });
+  } catch (error) { next(error); }
+});
+
+// Moments clés
+router.get('/histoire/moments', async (req, res, next) => {
+  try {
+    const [moments] = await db.pool.execute('SELECT * FROM histoire_moments ORDER BY ordre, annee');
+    res.json({ success: true, data: { moments } });
+  } catch (error) { next(error); }
+});
+
+router.post('/histoire/moments', async (req, res, next) => {
+  try {
+    const { annee, titre, description, image, ordre } = req.body;
+    const [result] = await db.pool.execute(
+      'INSERT INTO histoire_moments (annee, titre, description, image, ordre) VALUES (?, ?, ?, ?, ?)',
+      [annee, titre, description, image || null, ordre || 0]
+    );
+    res.status(201).json({ success: true, data: { id: result.insertId } });
+  } catch (error) { next(error); }
+});
+
+router.put('/histoire/moments/:id', async (req, res, next) => {
+  try {
+    const { annee, titre, description, image, ordre, actif } = req.body;
+    await db.pool.execute(
+      'UPDATE histoire_moments SET annee = ?, titre = ?, description = ?, image = ?, ordre = ?, actif = ? WHERE id = ?',
+      [annee, titre, description, image, ordre, actif, req.params.id]
+    );
+    res.json({ success: true, message: 'Moment mis à jour' });
+  } catch (error) { next(error); }
+});
+
+router.delete('/histoire/moments/:id', async (req, res, next) => {
+  try {
+    await db.pool.execute('DELETE FROM histoire_moments WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Moment supprimé' });
   } catch (error) { next(error); }
 });
 
