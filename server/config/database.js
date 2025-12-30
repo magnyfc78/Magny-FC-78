@@ -25,7 +25,7 @@ const poolConfig = {
   // Sécurité
   multipleStatements: false, // Prévient les injections SQL multiples
   charset: 'utf8mb4',
-  timezone: 'Europe/Paris',
+  timezone: '+01:00', // Format numérique pour MySQL2
   
   // Reconnexion automatique
   enableKeepAlive: true,
