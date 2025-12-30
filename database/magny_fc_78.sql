@@ -109,12 +109,13 @@ CREATE TABLE categories (
     actif BOOLEAN DEFAULT TRUE
 ) ENGINE=InnoDB;
 
-INSERT INTO categories (nom, slug, ordre) VALUES 
-('Seniors', 'seniors', 1),
-('Féminines', 'feminines', 2),
-('Vétérans', 'veterans', 3),
-('Jeunes', 'jeunes', 4),
-('École de Foot', 'ecole-de-foot', 5);
+-- Ordre: du plus jeune (crevettes/école de foot) au plus vieux (vétérans)
+INSERT INTO categories (nom, slug, ordre) VALUES
+('École de Foot', 'ecole-de-foot', 1),
+('Jeunes', 'jeunes', 2),
+('Féminines', 'feminines', 3),
+('Seniors', 'seniors', 4),
+('Vétérans', 'veterans', 5);
 
 -- =====================================================
 -- ÉQUIPES
