@@ -426,6 +426,72 @@ router.delete('/galerie/photos/:id', async (req, res, next) => {
 });
 
 // =====================================================
+// HISTOIRE DU CLUB (Admin CRUD)
+// =====================================================
+
+// Configuration Histoire
+router.get('/histoire/config', async (req, res, next) => {
+  try {
+    const [rows] = await db.pool.execute('SELECT * FROM histoire_config');
+    const config = {};
+    rows.forEach(row => {
+      config[row.cle] = { valeur: row.valeur, type: row.type };
+    });
+    res.json({ success: true, data: { config, raw: rows } });
+  } catch (error) { next(error); }
+});
+
+router.put('/histoire/config', async (req, res, next) => {
+  try {
+    const updates = req.body;
+    for (const [cle, valeur] of Object.entries(updates)) {
+      await db.pool.execute(
+        'INSERT INTO histoire_config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = ?',
+        [cle, valeur, valeur]
+      );
+    }
+    res.json({ success: true, message: 'Configuration mise à jour' });
+  } catch (error) { next(error); }
+});
+
+// Moments clés
+router.get('/histoire/moments', async (req, res, next) => {
+  try {
+    const [moments] = await db.pool.execute('SELECT * FROM histoire_moments ORDER BY ordre, annee');
+    res.json({ success: true, data: { moments } });
+  } catch (error) { next(error); }
+});
+
+router.post('/histoire/moments', async (req, res, next) => {
+  try {
+    const { annee, titre, description, image, ordre } = req.body;
+    const [result] = await db.pool.execute(
+      'INSERT INTO histoire_moments (annee, titre, description, image, ordre) VALUES (?, ?, ?, ?, ?)',
+      [annee, titre, description, image || null, ordre || 0]
+    );
+    res.status(201).json({ success: true, data: { id: result.insertId } });
+  } catch (error) { next(error); }
+});
+
+router.put('/histoire/moments/:id', async (req, res, next) => {
+  try {
+    const { annee, titre, description, image, ordre, actif } = req.body;
+    await db.pool.execute(
+      'UPDATE histoire_moments SET annee = ?, titre = ?, description = ?, image = ?, ordre = ?, actif = ? WHERE id = ?',
+      [annee, titre, description, image, ordre, actif, req.params.id]
+    );
+    res.json({ success: true, message: 'Moment mis à jour' });
+  } catch (error) { next(error); }
+});
+
+router.delete('/histoire/moments/:id', async (req, res, next) => {
+  try {
+    await db.pool.execute('DELETE FROM histoire_moments WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Moment supprimé' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
 // PARTENAIRES (Admin CRUD)
 // =====================================================
 router.get('/partenaires', async (req, res, next) => {
