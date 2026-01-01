@@ -2,7 +2,7 @@
   "name": "magny-fc-78",
   "version": "1.0.0",
   "description": "Site officiel du Magny Football Club 78",
-  "main": "server/server.js",
+    "main": "server/server.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node server/server.js",
     "dev": "cross-env NODE_ENV=development nodemon server/server.js",
@@ -14,14 +14,11 @@
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
+    "connect-redis": "^7.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-<<<<<<< HEAD
     "cross-env": "^10.1.0",
     "dotenv": "^16.6.1",
-=======
-    "dotenv": "^16.3.1",
->>>>>>> 0a72e10adf1c11b7ea001c94241ab81067e70c35
     "dotenv-flow": "^4.1.0",
     "express": "^4.18.2",
     "express-mongo-sanitize": "^2.2.0",
@@ -35,6 +32,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "mysql2": "^3.6.5",
+    "redis": "^4.6.12",
     "sharp": "^0.34.5",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",

@@ -6,6 +6,8 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const { createClient } = require('redis');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const xss = require('xss-clean');
@@ -14,6 +16,7 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
 const config = require('./config');
+const logger = require('./utils/logger');
 
 // Import des routes
 const authRoutes = require('./routes/auth.routes');
@@ -23,9 +26,30 @@ const uploadRoutes = require('./routes/upload.routes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
-const logger = require('./utils/logger');
 
 const app = express();
+
+// =====================================================
+// REDIS CLIENT (pour les sessions en production)
+// =====================================================
+let redisClient = null;
+let sessionStore = null;
+
+if (config.isProduction) {
+  redisClient = createClient({
+    url: process.env.REDIS_URL || 'redis://localhost:6379'
+  });
+
+  redisClient.connect().catch((err) => {
+    logger.error('Erreur connexion Redis:', err.message);
+    logger.warn('Fallback sur MemoryStore (non recommandé en production)');
+  });
+
+  redisClient.on('error', (err) => logger.error('Redis Client Error:', err));
+  redisClient.on('connect', () => logger.info('✅ Redis connecté'));
+
+  sessionStore = new RedisStore({ client: redisClient });
+}
 
 // =====================================================
 // SÉCURITÉ - HELMET (Headers HTTP sécurisés)
@@ -105,20 +129,29 @@ app.use(cookieParser());
 app.use(compression()); // Compression GZIP
 
 // =====================================================
-// SESSION
+// SESSION (avec Redis en production)
 // =====================================================
 app.set('trust proxy', 1); // Important derrière Nginx
 
-app.use(session({
+const sessionConfig = {
   secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: config.session.cookieSecure,
     httpOnly: true,
-    maxAge: config.session.maxAge
+    maxAge: config.session.maxAge,
+    sameSite: 'lax'
   }
-}));
+};
+
+// Utiliser Redis en production si disponible
+if (sessionStore) {
+  sessionConfig.store = sessionStore;
+  logger.info('📦 Sessions stockées dans Redis');
+}
+
+app.use(session(sessionConfig));
 
 // =====================================================
 // LOGGING
