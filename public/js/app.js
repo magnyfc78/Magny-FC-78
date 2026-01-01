@@ -9,22 +9,32 @@
 const views = {
   // Page d'accueil
   async home() {
-    const [matchsRes, actusRes] = await Promise.all([
+    const [matchsRes, actusRes, configRes, partenairesRes] = await Promise.all([
       api.getMatchs('a_venir', 6),
-      api.getActualites(3)
+      api.getActualites(3),
+      fetch('/api/config').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/partenaires').then(r => r.json()).catch(() => ({ success: false }))
     ]);
 
     const matchs = matchsRes?.data?.matchs || [];
     const actualites = actusRes?.data?.actualites || [];
+    const config = configRes?.success ? configRes.data : {};
+    const partenaires = partenairesRes?.success ? partenairesRes.data.partenaires : [];
+
+    // Valeurs dynamiques depuis la config
+    const heroTitre = config.hero_titre || 'MAGNY FC 78';
+    const heroSoustitre = config.hero_soustitre || 'Le club de football amateur de Magny-les-Hameaux, Yvelines.';
+    const heroBoutonTexte = config.hero_bouton_texte || 'REJOINDRE LE CLUB';
+    const heroBoutonLien = config.hero_bouton_lien || '/contact';
 
     return `
       <!-- Hero -->
       <section class="hero">
         <div class="hero-content">
-          <h1>MAGNY FC 78</h1>
-          <p class="hero-subtitle">Le club de football amateur de Magny-les-Hameaux, Yvelines.</p>
-          <a href="/contact" class="btn-hero" data-link>
-            REJOINDRE LE CLUB
+          <h1>${heroTitre}</h1>
+          <p class="hero-subtitle">${heroSoustitre}</p>
+          <a href="${heroBoutonLien}" class="btn-hero" data-link>
+            ${heroBoutonTexte}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -132,11 +142,11 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="partenaires-grid">
-            ${[1,2,3,4,5].map(i => `
+            ${partenaires.length ? partenaires.slice(0, 6).map(p => `
               <div class="partenaire-item">
-                <span style="color: var(--gris); font-size: 0.9rem;">Partenaire ${i}</span>
+                ${p.logo ? `<img src="${p.logo}" alt="${p.nom}" loading="lazy">` : `<span style="color: var(--gris); font-size: 0.9rem;">${p.nom}</span>`}
               </div>
-            `).join('')}
+            `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
           <div class="text-center mt-4">
             <a href="/partenaires" class="btn btn-secondary" data-link>DEVENIR PARTENAIRE</a>
@@ -204,17 +214,24 @@ const views = {
 
   // Page galerie
   async galerie() {
-    // Charger les albums depuis l'API
+    // Charger les catégories et albums depuis l'API
+    let categories = [];
     let albums = [];
     try {
-      const res = await fetch('/api/galerie');
-      const data = await res.json();
-      if (data.success) {
-        albums = data.data.albums;
-      }
+      const [catRes, albumRes] = await Promise.all([
+        fetch('/api/galerie/categories'),
+        fetch('/api/galerie')
+      ]);
+      const catData = await catRes.json();
+      const albumData = await albumRes.json();
+      if (catData.success) categories = catData.data.categories;
+      if (albumData.success) albums = albumData.data.albums;
     } catch (e) {
       console.error('Erreur chargement galerie:', e);
     }
+
+    // Stocker les données globalement pour le filtrage
+    window.galerieAlbumsData = albums;
 
     return `
       <section class="page-header">
@@ -224,21 +241,167 @@ const views = {
 
       <section class="section">
         <div class="container">
+          <!-- Filtres par catégorie -->
+          <div class="filters galerie-filters" id="galerie-filters">
+            <button class="filter-btn active" data-filter="galerie" data-category="Tous">Tous</button>
+            ${categories.map(c => `
+              <button class="filter-btn" data-filter="galerie" data-category="${c.slug}" style="--cat-color: ${c.couleur}">
+                ${c.nom}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- Lien vers la page Histoire -->
+          <div class="histoire-banner">
+            <a href="/galerie/histoire" data-link class="histoire-link">
+              <span class="histoire-icon">📜</span>
+              <div class="histoire-text">
+                <strong>Découvrez l'Histoire du Club</strong>
+                <span>24 ans de passion depuis 2000</span>
+              </div>
+              <span class="histoire-arrow">→</span>
+            </a>
+          </div>
+
           <div class="galerie-albums-grid" id="galerie-grid">
-            ${albums.length ? albums.map(album => `
-              <div class="album-card">
-                <div class="album-image">
-                  <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
-                  <span class="album-count">${album.nb_photos || 0} photos</span>
+            ${renderGalerieAlbums(albums)}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  // Page histoire du club
+  async galerieHistoire() {
+    let histoireData = { albums: [], timeline: {}, config: {}, moments: [] };
+    try {
+      const res = await fetch('/api/galerie/histoire');
+      const data = await res.json();
+      if (data.success) {
+        histoireData = data.data;
+      }
+    } catch (e) {
+      console.error('Erreur chargement histoire:', e);
+    }
+
+    const { albums, timeline, config, moments } = histoireData;
+    const decades = Object.keys(timeline).sort();
+
+    // Utiliser les valeurs dynamiques de la config
+    const introTitre = config.intro_titre || '24 ans de passion footballistique';
+    const introTexte = config.intro_texte || 'Découvrez l\'histoire de notre club à travers les images qui ont marqué notre parcours.';
+    const slogan = config.slogan || 'Magny FC 78 - Depuis 2000';
+    const anneeCreation = config.annee_creation || 2000;
+    const anneesExistence = config.annees_existence || (new Date().getFullYear() - anneeCreation);
+    const nombreLicencies = config.nombre_licencies || '300+';
+    const nombreEquipes = config.nombre_equipes || '17';
+
+    return `
+      <section class="page-header histoire-header">
+        <h1>Histoire du Club</h1>
+        <p>${slogan}</p>
+      </section>
+
+      <!-- Section intro -->
+      <section class="section histoire-intro">
+        <div class="container">
+          <div class="histoire-intro-content">
+            <div class="histoire-logo">
+              <div class="logo-icon large"></div>
+            </div>
+            <div class="histoire-intro-text">
+              <h2>${introTitre}</h2>
+              <p>${introTexte}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Timeline -->
+      <section class="section histoire-timeline-section">
+        <div class="container">
+          <div class="timeline">
+            ${decades.map((decade, index) => `
+              <div class="timeline-decade ${index % 2 === 0 ? 'left' : 'right'}">
+                <div class="timeline-decade-header">
+                  <span class="decade-badge">${decade}</span>
                 </div>
-                <div class="album-info">
-                  <h3>${album.titre}</h3>
-                  ${album.date_evenement ? `<span class="album-date">${new Date(album.date_evenement).toLocaleDateString('fr-FR')}</span>` : ''}
-                  ${album.description ? `<p>${album.description}</p>` : ''}
+                <div class="timeline-albums">
+                  ${timeline[decade].map(album => `
+                    <div class="timeline-album-card">
+                      <div class="timeline-year">${album.annee}</div>
+                      <div class="timeline-album-image">
+                        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
+                      </div>
+                      <div class="timeline-album-info">
+                        <h3>${album.titre}</h3>
+                        ${album.description ? `<p>${album.description}</p>` : ''}
+                        <span class="photo-count">${album.nb_photos || 0} photos</span>
+                      </div>
+                    </div>
+                  `).join('')}
                 </div>
               </div>
-            `).join('') : '<p class="text-center">Aucun album disponible</p>'}
+            `).join('')}
           </div>
+
+          ${!albums.length ? `
+            <div class="histoire-empty">
+              <p>L'histoire du club sera bientôt disponible en images.</p>
+              <p>Revenez nous voir prochainement !</p>
+            </div>
+          ` : ''}
+        </div>
+      </section>
+
+      <!-- Stats historiques -->
+      <section class="section histoire-stats">
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">${anneeCreation}</div>
+              <div class="stat-label">Année de création</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">${anneesExistence}</div>
+              <div class="stat-label">Années d'existence</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">${nombreLicencies}</div>
+              <div class="stat-label">Licenciés actuels</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">${nombreEquipes}</div>
+              <div class="stat-label">Équipes</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Moments clés -->
+      ${moments && moments.length > 0 ? `
+      <section class="section histoire-moments">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">Moments Clés</h2>
+            <div class="section-line"></div>
+          </div>
+          <div class="moments-grid">
+            ${moments.map(m => `
+              <div class="moment-card">
+                <div class="moment-year">${m.annee}</div>
+                <h3>${m.titre}</h3>
+                ${m.description ? `<p>${m.description}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </section>
+      ` : ''}
+
+      <section class="section">
+        <div class="container text-center">
+          <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
         </div>
       </section>
     `;
@@ -514,16 +677,38 @@ function filterActualites(categorie) {
   }
 }
 
+// Render galerie albums
+function renderGalerieAlbums(albums) {
+  return albums.map(album => `
+    <div class="album-card" data-category="${album.categorie_slug || ''}">
+      <div class="album-image">
+        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
+        <span class="album-count">${album.nb_photos || 0} photos</span>
+        ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+      </div>
+      <div class="album-info">
+        <h3>${album.titre}</h3>
+        <div class="album-meta">
+          ${album.date_evenement ? `<span class="album-date">${new Date(album.date_evenement).toLocaleDateString('fr-FR')}</span>` : ''}
+          ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
+        </div>
+        ${album.description ? `<p>${album.description}</p>` : ''}
+      </div>
+    </div>
+  `).join('') || '<p class="text-center">Aucun album disponible</p>';
+}
+
 // Filter galerie
 function filterGalerie(categorie) {
-  const items = document.querySelectorAll('.galerie-item');
-  items.forEach(item => {
-    if (categorie === 'Tous' || item.dataset.category === categorie) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
-  });
+  const grid = document.getElementById('galerie-grid');
+  const albums = window.galerieAlbumsData || [];
+
+  if (categorie === 'Tous') {
+    grid.innerHTML = renderGalerieAlbums(albums);
+  } else {
+    const filtered = albums.filter(a => a.categorie_slug === categorie);
+    grid.innerHTML = renderGalerieAlbums(filtered);
+  }
 }
 
 // Render partenaires
@@ -597,17 +782,35 @@ window.handleContact = handleContact;
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Charger le menu depuis l'API
+  // Charger le menu et la config depuis l'API
   let menuItems = [];
+  let siteConfig = {};
   try {
-    const res = await fetch('/api/menu');
-    const data = await res.json();
-    if (data.success) {
-      menuItems = data.data.items;
+    const [menuRes, configRes] = await Promise.all([
+      fetch('/api/menu'),
+      fetch('/api/config')
+    ]);
+    const menuData = await menuRes.json();
+    const configData = await configRes.json();
+    if (menuData.success) {
+      menuItems = menuData.data.items;
+    }
+    if (configData.success) {
+      siteConfig = configData.data;
     }
   } catch (e) {
-    console.error('Erreur chargement menu:', e);
+    console.error('Erreur chargement menu/config:', e);
   }
+
+  // Valeurs dynamiques depuis la config
+  const siteNom = siteConfig.site_nom || 'MAGNY FC 78';
+  const siteDescription = siteConfig.site_description || 'Le club de football amateur de Magny-les-Hameaux depuis 2000. Rejoignez notre grande famille de passionnés !';
+  const contactAdresse = siteConfig.contact_adresse || 'Stade Jean Jaurès';
+  const contactTelephone = siteConfig.contact_telephone || '01 XX XX XX XX';
+  const contactEmail = siteConfig.contact_email || 'contact@magnyfc78.fr';
+  const socialFacebook = siteConfig.social_facebook || '';
+  const socialInstagram = siteConfig.social_instagram || '';
+  const socialTwitter = siteConfig.social_twitter || '';
 
   // Générer les liens du menu
   const menuLinks = menuItems.map(item =>
@@ -619,7 +822,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     <div class="container header-content">
       <a href="/" class="logo" data-link>
         <div class="logo-icon"></div>
-        <span class="logo-text">MAGNY FC 78</span>
+        <span class="logo-text">${siteNom}</span>
       </a>
       <button class="menu-toggle" id="menu-toggle">☰</button>
       <nav id="nav">
@@ -629,16 +832,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   `;
 
-  // Charger footer
+  // Charger footer avec les informations dynamiques
   document.getElementById('footer').innerHTML = `
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
           <div class="footer-logo">
             <div class="logo-icon"></div>
-            <span class="logo-text">MAGNY FC 78</span>
+            <span class="logo-text">${siteNom}</span>
           </div>
-          <p class="footer-desc">Le club de football amateur de Magny-les-Hameaux depuis 2000. Rejoignez notre grande famille de passionnés !</p>
+          <p class="footer-desc">${siteDescription}</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -649,21 +852,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <p>📍 Stade Jean Jaurès</p>
-          <p>📞 01 XX XX XX XX</p>
-          <p>✉️ contact@magnyfc78.fr</p>
+          <p>📍 ${contactAdresse.split(',')[0]}</p>
+          <p>📞 ${contactTelephone}</p>
+          <p>✉️ ${contactEmail}</p>
         </div>
         <div class="footer-col">
           <h4>Suivez-nous</h4>
           <div class="social-links">
-            <a href="#" class="social-link">📘</a>
-            <a href="#" class="social-link">📷</a>
-            <a href="#" class="social-link">🐦</a>
+            ${socialFacebook ? `<a href="${socialFacebook}" target="_blank" class="social-link">📘</a>` : ''}
+            ${socialInstagram ? `<a href="${socialInstagram}" target="_blank" class="social-link">📷</a>` : ''}
+            ${socialTwitter ? `<a href="${socialTwitter}" target="_blank" class="social-link">🐦</a>` : ''}
           </div>
         </div>
       </div>
       <div class="footer-bottom">
-        © ${new Date().getFullYear()} Magny Football Club 78. Tous droits réservés.
+        © ${new Date().getFullYear()} ${siteNom}. Tous droits réservés.
       </div>
     </div>
   `;
@@ -715,6 +918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/equipes', views.equipes);
   router.addRoute('/actualites', views.actualites);
   router.addRoute('/galerie', views.galerie);
+  router.addRoute('/galerie/histoire', views.galerieHistoire);
   router.addRoute('/partenaires', views.partenaires);
   router.addRoute('/calendrier', views.calendrier);
   router.addRoute('/contact', views.contact);

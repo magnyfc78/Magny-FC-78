@@ -4,6 +4,7 @@
 
 let currentSection = 'dashboard';
 let categories = [];
+let galerieCategories = [];
 let equipes = [];
 let menus = [];
 let matchs = [];
@@ -12,6 +13,7 @@ let albums = [];
 let partenaires = [];
 let contacts = [];
 let users = [];
+let histoireMoments = [];
 let editingId = null;
 let editingType = null;
 
@@ -47,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les données initiales
   await loadCategories();
   await loadEquipesList();
+  await loadGalerieCategories();
   loadDashboard();
 });
 
@@ -102,6 +105,7 @@ function handleEdit(type, id) {
     case 'album': item = albums.find(matchId); break;
     case 'partenaire': item = partenaires.find(matchId); break;
     case 'user': item = users.find(matchId); break;
+    case 'moment': item = histoireMoments.find(matchId); break;
   }
   if (item) openModal(type, item);
 }
@@ -119,8 +123,8 @@ function switchSection(section) {
   const titles = {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
-    galerie: 'Galerie', partenaires: 'Partenaires', contacts: 'Messages',
-    users: 'Utilisateurs', logs: 'Activité'
+    galerie: 'Galerie', histoire: 'Histoire du club', partenaires: 'Partenaires',
+    contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
   };
   document.getElementById('page-title').textContent = titles[section] || section;
 
@@ -128,8 +132,8 @@ function switchSection(section) {
   const loaders = {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
-    galerie: loadGalerie, partenaires: loadPartenaires, contacts: loadContacts,
-    users: loadUsers, logs: loadLogs
+    galerie: loadGalerie, histoire: loadHistoire, partenaires: loadPartenaires,
+    contacts: loadContacts, users: loadUsers, logs: loadLogs
   };
   loaders[section]?.();
 }
@@ -359,20 +363,48 @@ async function loadActualites() {
 }
 
 // =====================================================
+// GALERIE - CATÉGORIES
+// =====================================================
+async function loadGalerieCategories() {
+  try {
+    const res = await api.get('/admin/galerie/categories');
+    galerieCategories = res.data.categories;
+  } catch (e) { console.error(e); }
+}
+
+// =====================================================
 // GALERIE
 // =====================================================
 async function loadGalerie() {
   try {
+    await loadGalerieCategories();
     const res = await api.get('/admin/galerie/albums');
     albums = res.data.albums;
+
+    // Créer les badges de couleur pour les catégories
+    const getCategoryBadge = (album) => {
+      if (!album.categorie_nom) return '<span class="badge badge-info">-</span>';
+      const colors = {
+        'match': 'success',
+        'tournoi': 'warning',
+        'entrainement': 'info',
+        'evenement': 'info',
+        'histoire': 'secondary'
+      };
+      const badgeType = colors[album.categorie_slug] || 'info';
+      return `<span class="badge badge-${badgeType}" style="background:${album.categorie_couleur || '#6b7280'};color:white;">${album.categorie_nom}</span>`;
+    };
+
     document.getElementById('galerie-list').innerHTML = albums.length ? `
       <table class="table">
-        <thead><tr><th>Titre</th><th>Date</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Titre</th><th>Catégorie</th><th>Date</th><th>Année</th><th>Photos</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
           ${albums.map(a => `
             <tr>
               <td><strong>${a.titre}</strong></td>
+              <td>${getCategoryBadge(a)}</td>
               <td>${a.date_evenement ? new Date(a.date_evenement).toLocaleDateString('fr-FR') : '-'}</td>
+              <td>${a.annee || '-'}</td>
               <td>${a.nb_photos || 0}</td>
               <td><span class="badge badge-${a.actif ? 'success' : 'warning'}">${a.actif ? 'Oui' : 'Non'}</span></td>
               <td>
@@ -385,6 +417,93 @@ async function loadGalerie() {
       </table>
     ` : '<p>Aucun album</p>';
   } catch (e) { showAlert('Erreur chargement galerie', 'danger'); }
+}
+
+// =====================================================
+// HISTOIRE DU CLUB
+// =====================================================
+async function loadHistoire() {
+  try {
+    // Charger la configuration
+    const configRes = await api.get('/admin/histoire/config');
+    const config = configRes.data.config;
+
+    // Afficher le formulaire de configuration
+    document.getElementById('histoire-config-form').innerHTML = `
+      <form id="histoire-config-inner">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Titre de l'introduction</label>
+            <input type="text" class="form-control" name="intro_titre" value="${config.intro_titre?.valeur || ''}" placeholder="24 ans de passion footballistique">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Slogan</label>
+            <input type="text" class="form-control" name="slogan" value="${config.slogan?.valeur || ''}" placeholder="Magny FC 78 - Depuis 2000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Texte d'introduction</label>
+          <textarea class="form-control" name="intro_texte" rows="4">${config.intro_texte?.valeur || ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Année de création</label>
+            <input type="number" class="form-control" name="annee_creation" value="${config.annee_creation?.valeur || '2000'}" min="1900" max="2100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre de licenciés</label>
+            <input type="text" class="form-control" name="nombre_licencies" value="${config.nombre_licencies?.valeur || '300+'}" placeholder="300+">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre d'équipes</label>
+            <input type="text" class="form-control" name="nombre_equipes" value="${config.nombre_equipes?.valeur || '17'}" placeholder="17">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Enregistrer la configuration</button>
+      </form>
+    `;
+
+    document.getElementById('histoire-config-inner').addEventListener('submit', saveHistoireConfig);
+
+    // Charger les moments clés
+    const momentsRes = await api.get('/admin/histoire/moments');
+    histoireMoments = momentsRes.data.moments;
+
+    document.getElementById('histoire-moments-list').innerHTML = histoireMoments.length ? `
+      <table class="table">
+        <thead><tr><th>Année</th><th>Titre</th><th>Description</th><th>Actif</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${histoireMoments.map(m => `
+            <tr>
+              <td><strong>${m.annee}</strong></td>
+              <td>${m.titre}</td>
+              <td>${m.description ? m.description.substring(0, 50) + '...' : '-'}</td>
+              <td><span class="badge badge-${m.actif ? 'success' : 'warning'}">${m.actif ? 'Oui' : 'Non'}</span></td>
+              <td>
+                <button class="btn btn-sm" data-action="edit" data-type="moment" data-id="${m.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="histoire/moments" data-id="${m.id}">🗑️</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '<p>Aucun moment clé défini</p>';
+  } catch (e) {
+    console.error(e);
+    showAlert('Erreur chargement histoire', 'danger');
+  }
+}
+
+async function saveHistoireConfig(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  try {
+    await api.put('/admin/histoire/config', data);
+    showAlert('Configuration de l\'histoire enregistrée', 'success');
+  } catch (e) {
+    showAlert('Erreur sauvegarde: ' + e.message, 'danger');
+  }
 }
 
 // =====================================================
@@ -552,7 +671,8 @@ function openModal(type, data = null) {
 
   const titles = {
     menu: 'Élément de menu', equipe: 'Équipe', match: 'Match',
-    actualite: 'Article', album: 'Album', partenaire: 'Partenaire', user: 'Utilisateur'
+    actualite: 'Article', album: 'Album', partenaire: 'Partenaire',
+    user: 'Utilisateur', moment: 'Moment clé'
   };
   document.getElementById('modal-title').textContent = (editingId ? 'Modifier' : 'Ajouter') + ' ' + (titles[type] || '');
 
@@ -763,6 +883,19 @@ function openModal(type, data = null) {
           <label class="form-label">Titre *</label>
           <input type="text" class="form-control" id="f-titre" value="${data?.titre || ''}" required>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Catégorie *</label>
+            <select class="form-control" id="f-categorie_id">
+              <option value="">-- Sélectionner --</option>
+              ${galerieCategories.map(c => `<option value="${c.id}" ${data?.categorie_id == c.id ? 'selected' : ''}>${c.nom}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Année</label>
+            <input type="number" class="form-control" id="f-annee" value="${data?.annee || new Date().getFullYear()}" min="1990" max="2100">
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea class="form-control" id="f-description">${data?.description || ''}</textarea>
@@ -871,6 +1004,35 @@ function openModal(type, data = null) {
             </small>
           </div>
         ` : ''}
+      `;
+      break;
+    case 'moment':
+      html = `
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Année *</label>
+            <input type="number" class="form-control" id="f-annee" value="${data?.annee || new Date().getFullYear()}" min="1900" max="2100" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 0}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Titre *</label>
+          <input type="text" class="form-control" id="f-titre" value="${data?.titre || ''}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="f-description" rows="3">${data?.description || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image (URL)</label>
+          <input type="text" class="form-control" id="f-image" value="${data?.image || ''}" placeholder="/uploads/histoire/moment.jpg">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+        </div>
       `;
       break;
   }
@@ -1012,8 +1174,10 @@ async function saveModal() {
 
       data = {
         titre: getValue('f-titre'),
+        categorie_id: getValue('f-categorie_id') || null,
         description: getValue('f-description') || null,
         date_evenement: getValue('f-date_evenement') || null,
+        annee: parseInt(getValue('f-annee')) || new Date().getFullYear(),
         image_couverture: albumImagePath,
         actif: getChecked('f-actif'),
         ordre: parseInt(getValue('f-ordre')) || 0
@@ -1068,6 +1232,17 @@ async function saveModal() {
         data.password = password;
       }
       endpoint = '/admin/users';
+      break;
+    case 'moment':
+      data = {
+        annee: parseInt(getValue('f-annee')) || new Date().getFullYear(),
+        titre: getValue('f-titre'),
+        description: getValue('f-description') || null,
+        image: getValue('f-image') || null,
+        ordre: parseInt(getValue('f-ordre')) || 0,
+        actif: getChecked('f-actif')
+      };
+      endpoint = '/admin/histoire/moments';
       break;
   }
 
