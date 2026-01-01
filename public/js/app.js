@@ -9,22 +9,32 @@
 const views = {
   // Page d'accueil
   async home() {
-    const [matchsRes, actusRes] = await Promise.all([
+    const [matchsRes, actusRes, configRes, partenairesRes] = await Promise.all([
       api.getMatchs('a_venir', 6),
-      api.getActualites(3)
+      api.getActualites(3),
+      fetch('/api/config').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/partenaires').then(r => r.json()).catch(() => ({ success: false }))
     ]);
 
     const matchs = matchsRes?.data?.matchs || [];
     const actualites = actusRes?.data?.actualites || [];
+    const config = configRes?.success ? configRes.data : {};
+    const partenaires = partenairesRes?.success ? partenairesRes.data.partenaires : [];
+
+    // Valeurs dynamiques depuis la config
+    const heroTitre = config.hero_titre || 'MAGNY FC 78';
+    const heroSoustitre = config.hero_soustitre || 'Le club de football amateur de Magny-les-Hameaux, Yvelines.';
+    const heroBoutonTexte = config.hero_bouton_texte || 'REJOINDRE LE CLUB';
+    const heroBoutonLien = config.hero_bouton_lien || '/contact';
 
     return `
       <!-- Hero -->
       <section class="hero">
         <div class="hero-content">
-          <h1>MAGNY FC 78</h1>
-          <p class="hero-subtitle">Le club de football amateur de Magny-les-Hameaux, Yvelines.</p>
-          <a href="/contact" class="btn-hero" data-link>
-            REJOINDRE LE CLUB
+          <h1>${heroTitre}</h1>
+          <p class="hero-subtitle">${heroSoustitre}</p>
+          <a href="${heroBoutonLien}" class="btn-hero" data-link>
+            ${heroBoutonTexte}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -132,11 +142,11 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="partenaires-grid">
-            ${[1,2,3,4,5].map(i => `
+            ${partenaires.length ? partenaires.slice(0, 6).map(p => `
               <div class="partenaire-item">
-                <span style="color: var(--gris); font-size: 0.9rem;">Partenaire ${i}</span>
+                ${p.logo ? `<img src="${p.logo}" alt="${p.nom}" loading="lazy">` : `<span style="color: var(--gris); font-size: 0.9rem;">${p.nom}</span>`}
               </div>
-            `).join('')}
+            `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
           <div class="text-center mt-4">
             <a href="/partenaires" class="btn btn-secondary" data-link>DEVENIR PARTENAIRE</a>
@@ -772,17 +782,35 @@ window.handleContact = handleContact;
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Charger le menu depuis l'API
+  // Charger le menu et la config depuis l'API
   let menuItems = [];
+  let siteConfig = {};
   try {
-    const res = await fetch('/api/menu');
-    const data = await res.json();
-    if (data.success) {
-      menuItems = data.data.items;
+    const [menuRes, configRes] = await Promise.all([
+      fetch('/api/menu'),
+      fetch('/api/config')
+    ]);
+    const menuData = await menuRes.json();
+    const configData = await configRes.json();
+    if (menuData.success) {
+      menuItems = menuData.data.items;
+    }
+    if (configData.success) {
+      siteConfig = configData.data;
     }
   } catch (e) {
-    console.error('Erreur chargement menu:', e);
+    console.error('Erreur chargement menu/config:', e);
   }
+
+  // Valeurs dynamiques depuis la config
+  const siteNom = siteConfig.site_nom || 'MAGNY FC 78';
+  const siteDescription = siteConfig.site_description || 'Le club de football amateur de Magny-les-Hameaux depuis 2000. Rejoignez notre grande famille de passionnés !';
+  const contactAdresse = siteConfig.contact_adresse || 'Stade Jean Jaurès';
+  const contactTelephone = siteConfig.contact_telephone || '01 XX XX XX XX';
+  const contactEmail = siteConfig.contact_email || 'contact@magnyfc78.fr';
+  const socialFacebook = siteConfig.social_facebook || '';
+  const socialInstagram = siteConfig.social_instagram || '';
+  const socialTwitter = siteConfig.social_twitter || '';
 
   // Générer les liens du menu
   const menuLinks = menuItems.map(item =>
@@ -794,7 +822,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     <div class="container header-content">
       <a href="/" class="logo" data-link>
         <div class="logo-icon"></div>
-        <span class="logo-text">MAGNY FC 78</span>
+        <span class="logo-text">${siteNom}</span>
       </a>
       <button class="menu-toggle" id="menu-toggle">☰</button>
       <nav id="nav">
@@ -804,16 +832,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   `;
 
-  // Charger footer
+  // Charger footer avec les informations dynamiques
   document.getElementById('footer').innerHTML = `
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
           <div class="footer-logo">
             <div class="logo-icon"></div>
-            <span class="logo-text">MAGNY FC 78</span>
+            <span class="logo-text">${siteNom}</span>
           </div>
-          <p class="footer-desc">Le club de football amateur de Magny-les-Hameaux depuis 2000. Rejoignez notre grande famille de passionnés !</p>
+          <p class="footer-desc">${siteDescription}</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -824,21 +852,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <p>📍 Stade Jean Jaurès</p>
-          <p>📞 01 XX XX XX XX</p>
-          <p>✉️ contact@magnyfc78.fr</p>
+          <p>📍 ${contactAdresse.split(',')[0]}</p>
+          <p>📞 ${contactTelephone}</p>
+          <p>✉️ ${contactEmail}</p>
         </div>
         <div class="footer-col">
           <h4>Suivez-nous</h4>
           <div class="social-links">
-            <a href="#" class="social-link">📘</a>
-            <a href="#" class="social-link">📷</a>
-            <a href="#" class="social-link">🐦</a>
+            ${socialFacebook ? `<a href="${socialFacebook}" target="_blank" class="social-link">📘</a>` : ''}
+            ${socialInstagram ? `<a href="${socialInstagram}" target="_blank" class="social-link">📷</a>` : ''}
+            ${socialTwitter ? `<a href="${socialTwitter}" target="_blank" class="social-link">🐦</a>` : ''}
           </div>
         </div>
       </div>
       <div class="footer-bottom">
-        © ${new Date().getFullYear()} Magny Football Club 78. Tous droits réservés.
+        © ${new Date().getFullYear()} ${siteNom}. Tous droits réservés.
       </div>
     </div>
   `;
