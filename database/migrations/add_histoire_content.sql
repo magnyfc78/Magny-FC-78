@@ -43,3 +43,5 @@ SELECT * FROM (
     UNION SELECT 2024, 'Record de licenciés', 'Le club atteint le cap historique des 300 licenciés.', 7
 ) AS tmp
 WHERE NOT EXISTS (SELECT 1 FROM histoire_moments LIMIT 1);
+
+commit;

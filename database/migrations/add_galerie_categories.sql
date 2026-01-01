@@ -24,8 +24,8 @@ INSERT IGNORE INTO galerie_categories (nom, slug, description, icone, couleur, o
 
 -- Ajouter la colonne categorie_id à galerie_albums si elle n'existe pas
 ALTER TABLE galerie_albums
-ADD COLUMN IF NOT EXISTS categorie_id INT DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS annee INT DEFAULT NULL;
+ADD COLUMN categorie_id INT DEFAULT NULL,
+ADD COLUMN annee INT DEFAULT NULL;
 
 -- Ajouter la clé étrangère (si elle n'existe pas déjà)
 -- Note: MySQL ne supporte pas IF NOT EXISTS pour les contraintes, donc on ignore l'erreur
