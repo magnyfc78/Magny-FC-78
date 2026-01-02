@@ -4,23 +4,38 @@
 
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
+const config = require('../config');
 const logger = require('../utils/logger');
+
+// Valider les secrets au démarrage
+if (!config.jwt.secret) {
+  logger.error('JWT_SECRET n\'est pas défini dans les variables d\'environnement');
+}
+if (!config.jwt.refreshSecret) {
+  logger.error('REFRESH_TOKEN_SECRET n\'est pas défini dans les variables d\'environnement');
+}
 
 // Générer un Access Token
 const generateAccessToken = (userId, role) => {
+  if (!config.jwt.secret) {
+    throw new Error('JWT_SECRET non configuré');
+  }
   return jwt.sign(
     { id: userId, role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    config.jwt.secret,
+    { expiresIn: config.jwt.expiresIn }
   );
 };
 
 // Générer un Refresh Token
 const generateRefreshToken = (userId) => {
+  if (!config.jwt.refreshSecret) {
+    throw new Error('REFRESH_TOKEN_SECRET non configuré');
+  }
   return jwt.sign(
     { id: userId },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d' }
+    config.jwt.refreshSecret,
+    { expiresIn: config.jwt.refreshExpiresIn }
   );
 };
 
@@ -44,7 +59,7 @@ const protect = async (req, res, next) => {
     }
 
     // 2. Vérifier le token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.jwt.secret);
 
     // 3. Vérifier que l'utilisateur existe toujours
     const users = await db.query(
@@ -101,9 +116,9 @@ const restrictTo = (...roles) => {
 const optionalAuth = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.split(' ')[1] || req.cookies?.jwt;
-    
+
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, config.jwt.secret);
       const users = await db.query(
         'SELECT id, email, nom, role FROM users WHERE id = ? AND actif = 1',
         [decoded.id]

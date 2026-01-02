@@ -4,8 +4,10 @@
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const config = require('../config');
 const { generateAccessToken, generateRefreshToken, protect } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validator');
 const { AppError } = require('../middleware/errorHandler');
@@ -174,8 +176,7 @@ router.post('/refresh', async (req, res, next) => {
       throw new AppError('Token de rafraîchissement manquant.', 401);
     }
 
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret);
 
     const users = await db.query(
       'SELECT id, role FROM users WHERE id = ? AND actif = 1',
