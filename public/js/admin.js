@@ -14,6 +14,7 @@ let partenaires = [];
 let contacts = [];
 let users = [];
 let histoireMoments = [];
+let organigrammeMembres = [];
 let editingId = null;
 let editingType = null;
 
@@ -106,6 +107,7 @@ function handleEdit(type, id) {
     case 'partenaire': item = partenaires.find(matchId); break;
     case 'user': item = users.find(matchId); break;
     case 'moment': item = histoireMoments.find(matchId); break;
+    case 'organigramme': item = organigrammeMembres.find(matchId); break;
   }
   if (item) openModal(type, item);
 }
@@ -123,8 +125,8 @@ function switchSection(section) {
   const titles = {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
-    galerie: 'Galerie', histoire: 'Histoire du club', partenaires: 'Partenaires',
-    contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
+    galerie: 'Galerie', histoire: 'Histoire du club', organigramme: 'Organigramme',
+    partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
   };
   document.getElementById('page-title').textContent = titles[section] || section;
 
@@ -132,8 +134,8 @@ function switchSection(section) {
   const loaders = {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
-    galerie: loadGalerie, histoire: loadHistoire, partenaires: loadPartenaires,
-    contacts: loadContacts, users: loadUsers, logs: loadLogs
+    galerie: loadGalerie, histoire: loadHistoire, organigramme: loadOrganigramme,
+    partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers, logs: loadLogs
   };
   loaders[section]?.();
 }
@@ -565,6 +567,112 @@ async function saveHistoireConfig(e) {
 }
 
 // =====================================================
+// ORGANIGRAMME
+// =====================================================
+async function loadOrganigramme() {
+  try {
+    const res = await fetch('/organigramme/data.json');
+    const data = await res.json();
+    organigrammeMembres = data.membres || [];
+
+    const getNiveauLabel = (niveau) => {
+      const labels = { 1: 'Direction', 2: 'Bureau', 3: 'Responsables' };
+      return labels[niveau] || niveau;
+    };
+
+    const getParentName = (parentId) => {
+      if (!parentId) return '-';
+      const parent = organigrammeMembres.find(m => m.id === parentId);
+      return parent ? `${parent.role} - ${parent.nom}` : '-';
+    };
+
+    document.getElementById('organigramme-list').innerHTML = organigrammeMembres.length ? `
+      <table class="table">
+        <thead><tr><th>Photo</th><th>Nom</th><th>Rôle</th><th>Niveau</th><th>Rattaché à</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${organigrammeMembres.map(m => `
+            <tr>
+              <td>
+                ${m.photo ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.src='/assets/images/logo.png'">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#e0e0e0;"></span>'}
+              </td>
+              <td><strong>${m.nom}</strong></td>
+              <td>${m.role}</td>
+              <td><span class="badge badge-${m.niveau === 1 ? 'danger' : m.niveau === 2 ? 'warning' : 'info'}">${getNiveauLabel(m.niveau)}</span></td>
+              <td>${getParentName(m.parentId)}</td>
+              <td>
+                <button class="btn btn-sm" data-action="edit" data-type="organigramme" data-id="${m.id}">✏️</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-type="organigramme" data-id="${m.id}">🗑️</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="margin-top:20px; padding:15px; background:#f3f4f6; border-radius:8px;">
+        <p style="margin:0 0 10px 0;"><strong>Note:</strong> Les modifications sont sauvegardées localement. Pour une persistance permanente, exportez le JSON et remplacez le fichier <code>/organigramme/data.json</code></p>
+        <button class="btn btn-sm btn-secondary" onclick="exportOrganigramme()">📥 Exporter JSON</button>
+      </div>
+    ` : '<p>Aucun membre dans l\'organigramme</p>';
+  } catch (e) {
+    console.error(e);
+    showAlert('Erreur chargement organigramme', 'danger');
+  }
+}
+
+async function saveOrganigramme() {
+  try {
+    const data = {
+      config: {
+        titre: 'ORGANIGRAMME COMITE',
+        clubNom: 'MAGNY FC 78',
+        logoUrl: '/assets/images/logo.png',
+        defaultPhoto: '/assets/images/default-avatar.png'
+      },
+      membres: organigrammeMembres
+    };
+    // Sauvegarder en localStorage
+    localStorage.setItem('organigramme_data', JSON.stringify(data));
+    return true;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+function exportOrganigramme() {
+  const data = {
+    config: {
+      titre: 'ORGANIGRAMME COMITE',
+      clubNom: 'MAGNY FC 78',
+      logoUrl: '/assets/images/logo.png',
+      defaultPhoto: '/assets/images/default-avatar.png',
+      couleurs: {
+        headerBg: '#1a3a5c',
+        accentStripe: '#3b7ddd',
+        hexagonBorder: '#1e3a5f',
+        hexagonBg: '#ffffff',
+        textPrimary: '#1a3a5c',
+        textSecondary: '#333333',
+        background: '#e8ecf0',
+        watermarkColor: 'rgba(26, 58, 92, 0.08)'
+      }
+    },
+    membres: organigrammeMembres
+  };
+
+  const dataStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.json';
+  a.click();
+
+  URL.revokeObjectURL(url);
+  showAlert('Fichier JSON exporté', 'success');
+}
+
+// =====================================================
 // PARTENAIRES
 // =====================================================
 async function loadPartenaires() {
@@ -730,7 +838,7 @@ function openModal(type, data = null) {
   const titles = {
     menu: 'Élément de menu', equipe: 'Équipe', match: 'Match',
     actualite: 'Article', album: 'Album', partenaire: 'Partenaire',
-    user: 'Utilisateur', moment: 'Moment clé'
+    user: 'Utilisateur', moment: 'Moment clé', organigramme: 'Membre du comité'
   };
   document.getElementById('modal-title').textContent = (editingId ? 'Modifier' : 'Ajouter') + ' ' + (titles[type] || '');
 
@@ -1093,6 +1201,56 @@ function openModal(type, data = null) {
         </div>
       `;
       break;
+    case 'organigramme':
+      // Récupérer les membres potentiels pour le select parent
+      const potentialParents = organigrammeMembres.filter(m => {
+        // On ne peut pas être son propre parent
+        if (data?.id && m.id === data.id) return false;
+        // On ne peut rattacher qu'à un niveau supérieur
+        const targetNiveau = parseInt(data?.niveau) || 2;
+        return m.niveau < targetNiveau;
+      });
+      html = `
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input type="text" class="form-control" id="f-nom" value="${data?.nom || ''}" required placeholder="Ex: Jean Dupont">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rôle / Fonction *</label>
+            <input type="text" class="form-control" id="f-role" value="${data?.role || ''}" required placeholder="Ex: Vice Président">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Photo (URL)</label>
+          <input type="text" class="form-control" id="f-photo" value="${data?.photo || ''}" placeholder="/assets/images/comite/nom.jpg">
+          ${data?.photo ? `<div style="margin-top:8px;"><img src="${data.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'"></div>` : ''}
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Niveau hiérarchique *</label>
+            <select class="form-control" id="f-niveau" onchange="updateOrgParentOptions()">
+              <option value="1" ${data?.niveau === 1 ? 'selected' : ''}>Niveau 1 - Direction</option>
+              <option value="2" ${data?.niveau === 2 || !data?.niveau ? 'selected' : ''}>Niveau 2 - Bureau</option>
+              <option value="3" ${data?.niveau === 3 ? 'selected' : ''}>Niveau 3 - Responsables</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 1}" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rattaché à</label>
+          <select class="form-control" id="f-parent">
+            <option value="">Aucun (niveau supérieur)</option>
+            ${organigrammeMembres.filter(m => !data?.id || m.id !== data.id).map(m =>
+              `<option value="${m.id}" ${data?.parentId === m.id ? 'selected' : ''}>${m.role} - ${m.nom} (Niv. ${m.niveau})</option>`
+            ).join('')}
+          </select>
+        </div>
+      `;
+      break;
   }
 
   document.getElementById('modal-body').innerHTML = html;
@@ -1302,6 +1460,34 @@ async function saveModal() {
       };
       endpoint = '/admin/histoire/moments';
       break;
+    case 'organigramme':
+      const orgId = editingId || 'membre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      data = {
+        id: orgId,
+        nom: getValue('f-nom'),
+        role: getValue('f-role'),
+        photo: getValue('f-photo') || '',
+        niveau: parseInt(getValue('f-niveau')) || 2,
+        parentId: getValue('f-parent') || null,
+        ordre: parseInt(getValue('f-ordre')) || 1
+      };
+
+      // Mise à jour locale des données
+      if (editingId) {
+        const index = organigrammeMembres.findIndex(m => m.id === editingId);
+        if (index !== -1) {
+          organigrammeMembres[index] = data;
+        }
+      } else {
+        organigrammeMembres.push(data);
+      }
+
+      // Sauvegarder en localStorage
+      await saveOrganigramme();
+      showAlert('Membre enregistré. N\'oubliez pas d\'exporter le JSON pour une sauvegarde permanente.', 'success');
+      closeModal();
+      loadOrganigramme();
+      return;
   }
 
   try {
@@ -1323,6 +1509,22 @@ async function saveModal() {
 // =====================================================
 async function deleteItem(endpoint, id) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) return;
+
+  // Cas spécial pour l'organigramme (géré localement)
+  if (endpoint === 'organigramme') {
+    // Vérifier s'il a des subordonnés
+    const hasSubordinates = organigrammeMembres.some(m => m.parentId === id);
+    if (hasSubordinates) {
+      showAlert('Impossible de supprimer: ce membre a des subordonnés', 'danger');
+      return;
+    }
+    organigrammeMembres = organigrammeMembres.filter(m => m.id !== id);
+    await saveOrganigramme();
+    showAlert('Membre supprimé. Exportez le JSON pour sauvegarder.', 'success');
+    loadOrganigramme();
+    return;
+  }
+
   try {
     await api.delete(`/admin/${endpoint}/${id}`);
     showAlert('Supprimé avec succès', 'success');

@@ -490,6 +490,118 @@ const views = {
     `;
   },
 
+  // Page club (organigramme)
+  async club() {
+    // Charger les données de l'organigramme
+    let orgData = { config: {}, membres: [] };
+    try {
+      const res = await fetch('/organigramme/data.json');
+      if (res.ok) {
+        orgData = await res.json();
+      }
+    } catch (e) {
+      console.error('Erreur chargement organigramme:', e);
+    }
+
+    const config = orgData.config || {};
+    const membres = orgData.membres || [];
+
+    // Fonctions helper pour l'organigramme
+    const getMembersByLevel = (level) => membres.filter(m => m.niveau === level).sort((a, b) => a.ordre - b.ordre);
+    const getSubordinates = (parentId) => membres.filter(m => m.parentId === parentId).sort((a, b) => a.ordre - b.ordre);
+
+    const renderHexagon = (member) => {
+      const hasPhoto = member.photo && member.photo !== '';
+      return `
+        <div class="hexagon-container" data-member-id="${member.id}">
+          <div class="hexagon">
+            <div class="hexagon-inner">
+              ${hasPhoto ?
+                `<img src="${member.photo}" alt="${member.nom}" onerror="this.src='/assets/images/logo.png'">`
+                :
+                `<div class="placeholder">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderMember = (member) => `
+      <div class="org-member" data-member-id="${member.id}">
+        ${renderHexagon(member)}
+        <div class="member-info">
+          <div class="member-role">${member.role}</div>
+          <div class="member-name">${member.nom}</div>
+        </div>
+      </div>
+    `;
+
+    const level1 = getMembersByLevel(1);
+    const level2 = getMembersByLevel(2);
+    const level3 = getMembersByLevel(3);
+
+    // Grouper le niveau 3 par parent
+    const level3ByParent = {};
+    level3.forEach(m => {
+      if (!level3ByParent[m.parentId]) {
+        level3ByParent[m.parentId] = [];
+      }
+      level3ByParent[m.parentId].push(m);
+    });
+
+    return `
+      <section class="organigramme-header">
+        <h1>${config.titre || 'ORGANIGRAMME COMITE'}</h1>
+        <div class="club-name">${config.clubNom || 'MAGNY FC 78'}</div>
+      </section>
+
+      <section class="organigramme-page">
+        <div class="organigramme-container">
+          <!-- Niveau 1: Président -->
+          <div class="org-level org-level-1">
+            ${level1.map(m => renderMember(m)).join('')}
+          </div>
+
+          <!-- Connecteur vertical du président vers niveau 2 -->
+          <div class="org-connector-vertical" style="height: 50px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+
+          <!-- Ligne horizontale niveau 2 -->
+          <div class="org-connector-horizontal" style="height: 2px; background: #1e3a5f; margin: 0 auto; width: 80%; max-width: 1000px;"></div>
+
+          <!-- Niveau 2: Bureau -->
+          <div class="org-level org-level-2" style="padding-top: 0;">
+            ${level2.map(m => {
+              const subordinates = level3ByParent[m.id] || [];
+              const hasSubordinates = subordinates.length > 0;
+
+              return `
+                <div class="org-group ${hasSubordinates ? 'has-subordinates' : ''}">
+                  <div class="org-connector-up" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+                  ${renderMember(m)}
+                  ${hasSubordinates ? `
+                    <div class="org-connector-down" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto; margin-top: 10px;"></div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Niveau 3: Responsables -->
+          ${level3.length > 0 ? `
+            <div class="org-level org-level-3">
+              ${level3.map(m => renderMember(m)).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </section>
+    `;
+  },
+
   // Page contact
   async contact() {
     // Charger la configuration depuis l'API
@@ -925,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/galerie/histoire', views.galerieHistoire);
   router.addRoute('/partenaires', views.partenaires);
   router.addRoute('/calendrier', views.calendrier);
+  router.addRoute('/club', views.club);
   router.addRoute('/contact', views.contact);
 
   // Initialiser

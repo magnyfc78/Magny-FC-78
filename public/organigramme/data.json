@@ -1,0 +1,110 @@
+{
+  "config": {
+    "titre": "ORGANIGRAMME COMITE",
+    "clubNom": "MAGNY FC 78",
+    "logoUrl": "/assets/images/logo.png",
+    "defaultPhoto": "/assets/images/default-avatar.png",
+    "couleurs": {
+      "headerBg": "#1a3a5c",
+      "accentStripe": "#3b7ddd",
+      "hexagonBorder": "#1e3a5f",
+      "hexagonBg": "#ffffff",
+      "textPrimary": "#1a3a5c",
+      "textSecondary": "#333333",
+      "background": "#e8ecf0",
+      "watermarkColor": "rgba(26, 58, 92, 0.08)"
+    }
+  },
+  "membres": [
+    {
+      "id": "president",
+      "nom": "Jaafar",
+      "role": "Président",
+      "photo": "/assets/images/comite/jaafar.jpg",
+      "niveau": 1,
+      "parentId": null,
+      "ordre": 1
+    },
+    {
+      "id": "secretaire-adjointe",
+      "nom": "Maud",
+      "role": "Secretaire Adjointe",
+      "photo": "/assets/images/comite/maud.jpg",
+      "niveau": 2,
+      "parentId": "president",
+      "ordre": 1
+    },
+    {
+      "id": "secretaire",
+      "nom": "Morgane",
+      "role": "Secretaire",
+      "photo": "/assets/images/comite/morgane.jpg",
+      "niveau": 2,
+      "parentId": "president",
+      "ordre": 2
+    },
+    {
+      "id": "vice-president",
+      "nom": "Benjamin",
+      "role": "Vice Président",
+      "photo": "/assets/images/comite/benjamin.jpg",
+      "niveau": 2,
+      "parentId": "president",
+      "ordre": 3
+    },
+    {
+      "id": "tresorier",
+      "nom": "Bruno. L",
+      "role": "Trésorier",
+      "photo": "/assets/images/comite/bruno-l.jpg",
+      "niveau": 2,
+      "parentId": "president",
+      "ordre": 4
+    },
+    {
+      "id": "tresorier-adjoint",
+      "nom": "Hassan",
+      "role": "Trésorier adjoint",
+      "photo": "/assets/images/comite/hassan.jpg",
+      "niveau": 2,
+      "parentId": "president",
+      "ordre": 5
+    },
+    {
+      "id": "resp-com",
+      "nom": "Romain",
+      "role": "Resp. Com'/Sponsors",
+      "photo": "/assets/images/comite/romain.jpg",
+      "niveau": 3,
+      "parentId": "secretaire",
+      "ordre": 1
+    },
+    {
+      "id": "resp-pef",
+      "nom": "Marianne",
+      "role": "Resp. Programme éducatif fédéral",
+      "photo": "/assets/images/comite/marianne.jpg",
+      "niveau": 3,
+      "parentId": "vice-president",
+      "ordre": 2
+    },
+    {
+      "id": "resp-buvette",
+      "nom": "Hassan",
+      "role": "Resp. Buvette",
+      "photo": "/assets/images/comite/hassan-buvette.jpg",
+      "niveau": 3,
+      "parentId": "tresorier",
+      "ordre": 3
+    },
+    {
+      "id": "resp-secu",
+      "nom": "Bruno.V",
+      "role": "Resp. Secu/FMI",
+      "photo": "/assets/images/comite/bruno-v.jpg",
+      "niveau": 3,
+      "parentId": "tresorier-adjoint",
+      "ordre": 4
+    }
+  ]
+}

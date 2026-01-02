@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Organigramme du comité Magny FC 78">
+    <meta http-equiv="X-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#1a2744">
+
+    <title>Organigramme Comité - Magny FC 78</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/style.css?v=1.1.0">
+    <link rel="stylesheet" href="/css/organigram.css?v=1.0.0">
+    <link rel="icon" href="/assets/images/logo.png" type="image/png">
+
+    <style>
+        /* Styles spécifiques pour la page standalone */
+        body {
+            padding-top: 0;
+        }
+
+        .standalone-header {
+            background: var(--bleu-fonce);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .standalone-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--blanc);
+            text-decoration: none;
+        }
+
+        .standalone-header .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: url('/assets/images/logo.png') center/contain no-repeat;
+        }
+
+        .standalone-header .logo-text {
+            font-family: var(--font-titre);
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .standalone-header .back-link {
+            color: var(--blanc);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .standalone-header .back-link:hover {
+            opacity: 1;
+        }
+
+        .admin-tools {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .admin-tools button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-family: var(--font-texte);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-tools button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-export {
+            background: var(--turquoise);
+            color: var(--bleu-fonce);
+        }
+
+        .btn-import {
+            background: var(--blanc);
+            color: var(--bleu-fonce);
+        }
+
+        .btn-print {
+            background: var(--or);
+            color: var(--bleu-fonce);
+        }
+
+        #import-file {
+            display: none;
+        }
+
+        @media print {
+            .standalone-header,
+            .admin-tools,
+            .admin-toggle {
+                display: none !important;
+            }
+
+            .organigramme-header {
+                padding-top: 40px !important;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .standalone-header {
+                padding: 10px 20px;
+            }
+
+            .admin-tools {
+                top: auto;
+                bottom: 80px;
+                right: 10px;
+            }
+
+            .admin-tools button {
+                padding: 8px 15px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header simplifié -->
+    <header class="standalone-header">
+        <a href="/" class="logo">
+            <div class="logo-icon"></div>
+            <span class="logo-text">MAGNY FC 78</span>
+        </a>
+        <a href="/" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Retour au site
+        </a>
+    </header>
+
+    <!-- Toggle admin mode -->
+    <div class="admin-toggle">
+        <label>
+            <span>Mode Admin</span>
+            <input type="checkbox" id="admin-toggle" onchange="organigramme.toggleAdminMode(this.checked)">
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+
+    <!-- Outils admin -->
+    <div class="admin-tools">
+        <button class="btn-export" onclick="organigramme.exportData()" title="Exporter les données JSON">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+            </svg>
+            Exporter
+        </button>
+        <button class="btn-import" onclick="document.getElementById('import-file').click()" title="Importer des données JSON">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+            </svg>
+            Importer
+        </button>
+        <input type="file" id="import-file" accept=".json" onchange="handleImport(event)">
+        <button class="btn-print" onclick="window.print()" title="Imprimer l'organigramme">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+            </svg>
+            Imprimer
+        </button>
+    </div>
+
+    <!-- Section organigramme -->
+    <section class="organigramme-header">
+        <h1>ORGANIGRAMME COMITE</h1>
+        <div class="club-name">MAGNY FC 78</div>
+    </section>
+
+    <section class="organigramme-page">
+        <div class="organigramme-container" id="organigramme-content">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script src="/js/organigram.js?v=1.0.0"></script>
+    <script>
+        // Gestionnaire d'import
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (file && organigramme) {
+                organigramme.importData(file);
+            }
+            event.target.value = '';
+        }
+    </script>
+</body>
+</html>

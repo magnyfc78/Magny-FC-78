@@ -214,6 +214,7 @@
             <button class="nav-item" data-section="actualites"><span class="nav-item-icon">📰</span> Actualités</button>
             <button class="nav-item" data-section="galerie"><span class="nav-item-icon">🖼️</span> Galerie</button>
             <button class="nav-item" data-section="histoire"><span class="nav-item-icon">📜</span> Histoire</button>
+            <button class="nav-item" data-section="organigramme"><span class="nav-item-icon">🏛️</span> Organigramme</button>
             <button class="nav-item" data-section="partenaires"><span class="nav-item-icon">🤝</span> Partenaires</button>
         </nav>
         
@@ -335,6 +336,20 @@
                         <button class="btn btn-primary btn-sm" data-action="add" data-type="moment">+ Ajouter un moment</button>
                     </div>
                     <div class="card-body" id="histoire-moments-list"></div>
+                </div>
+            </div>
+
+            <!-- Organigramme -->
+            <div class="section" id="section-organigramme">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Membres du comité</h3>
+                        <div style="display:flex; gap:10px;">
+                            <a href="/organigramme/" target="_blank" class="btn btn-sm" style="background:#f3f4f6;">👁️ Voir</a>
+                            <button class="btn btn-primary btn-sm" data-action="add" data-type="organigramme">+ Ajouter un membre</button>
+                        </div>
+                    </div>
+                    <div class="card-body" id="organigramme-list"></div>
                 </div>
             </div>
 
