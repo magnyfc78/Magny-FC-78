@@ -14,7 +14,8 @@ let partenaires = [];
 let contacts = [];
 let users = [];
 let histoireMoments = [];
-let organigrammeMembres = [];
+let organigrammesData = { config: {}, organigrammes: [] };
+let currentOrganigrammeId = null;
 let editingId = null;
 let editingType = null;
 
@@ -107,7 +108,14 @@ function handleEdit(type, id) {
     case 'partenaire': item = partenaires.find(matchId); break;
     case 'user': item = users.find(matchId); break;
     case 'moment': item = histoireMoments.find(matchId); break;
-    case 'organigramme': item = organigrammeMembres.find(matchId); break;
+    case 'organigramme':
+      // Chercher le membre dans l'organigramme courant
+      const currentOrg = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
+      if (currentOrg) item = currentOrg.membres.find(matchId);
+      break;
+    case 'organigramme-group':
+      item = organigrammesData.organigrammes.find(matchId);
+      break;
   }
   if (item) openModal(type, item);
 }
@@ -567,13 +575,22 @@ async function saveHistoireConfig(e) {
 }
 
 // =====================================================
-// ORGANIGRAMME
+// ORGANIGRAMME (Multi-organigrammes)
 // =====================================================
 async function loadOrganigramme() {
   try {
     const res = await fetch('/organigramme/data.json');
-    const data = await res.json();
-    organigrammeMembres = data.membres || [];
+    organigrammesData = await res.json();
+
+    const organigrammes = organigrammesData.organigrammes || [];
+
+    // Si pas d'organigramme sélectionné, prendre le premier
+    if (!currentOrganigrammeId && organigrammes.length > 0) {
+      currentOrganigrammeId = organigrammes[0].id;
+    }
+
+    const currentOrg = organigrammes.find(o => o.id === currentOrganigrammeId);
+    const membres = currentOrg ? currentOrg.membres || [] : [];
 
     const getNiveauLabel = (niveau) => {
       const labels = { 1: 'Direction', 2: 'Bureau', 3: 'Responsables' };
@@ -582,55 +599,94 @@ async function loadOrganigramme() {
 
     const getParentName = (parentId) => {
       if (!parentId) return '-';
-      const parent = organigrammeMembres.find(m => m.id === parentId);
+      const parent = membres.find(m => m.id === parentId);
       return parent ? `${parent.role} - ${parent.nom}` : '-';
     };
 
-    document.getElementById('organigramme-list').innerHTML = organigrammeMembres.length ? `
-      <table class="table">
-        <thead><tr><th>Photo</th><th>Nom</th><th>Rôle</th><th>Niveau</th><th>Rattaché à</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${organigrammeMembres.map(m => `
-            <tr>
-              <td>
-                ${m.photo ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.src='/assets/images/logo.png'">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#e0e0e0;"></span>'}
-              </td>
-              <td><strong>${m.nom}</strong></td>
-              <td>${m.role}</td>
-              <td><span class="badge badge-${m.niveau === 1 ? 'danger' : m.niveau === 2 ? 'warning' : 'info'}">${getNiveauLabel(m.niveau)}</span></td>
-              <td>${getParentName(m.parentId)}</td>
-              <td>
-                <button class="btn btn-sm" data-action="edit" data-type="organigramme" data-id="${m.id}">✏️</button>
-                <button class="btn btn-sm btn-danger" data-action="delete" data-type="organigramme" data-id="${m.id}">🗑️</button>
-              </td>
-            </tr>
+    document.getElementById('organigramme-list').innerHTML = `
+      <!-- Liste des organigrammes -->
+      <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border:1px solid #e0e0e0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h4 style="margin:0; color:#1a4d92;">Organigrammes</h4>
+          <button class="btn btn-sm btn-primary" data-action="add" data-type="organigramme-group">+ Nouvel organigramme</button>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+          ${organigrammes.map(o => `
+            <div class="org-tab ${o.id === currentOrganigrammeId ? 'active' : ''}"
+                 style="padding:10px 15px; background:${o.id === currentOrganigrammeId ? '#1a4d92' : '#fff'};
+                        color:${o.id === currentOrganigrammeId ? '#fff' : '#333'};
+                        border-radius:6px; cursor:pointer; border:1px solid #ddd;
+                        display:flex; align-items:center; gap:10px;"
+                 onclick="selectOrganigramme('${o.id}')">
+              <span>${o.titre}</span>
+              <span style="display:flex; gap:5px;">
+                <button class="btn btn-sm" style="padding:2px 6px; background:rgba(255,255,255,0.2);"
+                        data-action="edit" data-type="organigramme-group" data-id="${o.id}"
+                        onclick="event.stopPropagation()">✏️</button>
+                <button class="btn btn-sm btn-danger" style="padding:2px 6px;"
+                        data-action="delete" data-type="organigramme-group" data-id="${o.id}"
+                        onclick="event.stopPropagation()">🗑️</button>
+              </span>
+            </div>
           `).join('')}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      <!-- Membres de l'organigramme sélectionné -->
+      ${currentOrg ? `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h4 style="margin:0;">Membres de "${currentOrg.titre}"</h4>
+          <button class="btn btn-sm btn-primary" data-action="add" data-type="organigramme">+ Ajouter un membre</button>
+        </div>
+        ${membres.length ? `
+          <table class="table">
+            <thead><tr><th>Photo</th><th>Nom</th><th>Rôle</th><th>Niveau</th><th>Rattaché à</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${membres.map(m => `
+                <tr>
+                  <td>
+                    ${m.photo ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.src='/assets/images/logo.png'">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#e0e0e0;"></span>'}
+                  </td>
+                  <td><strong>${m.nom}</strong></td>
+                  <td>${m.role}</td>
+                  <td><span class="badge badge-${m.niveau === 1 ? 'danger' : m.niveau === 2 ? 'warning' : 'info'}">${getNiveauLabel(m.niveau)}</span></td>
+                  <td>${getParentName(m.parentId)}</td>
+                  <td>
+                    <button class="btn btn-sm" data-action="edit" data-type="organigramme" data-id="${m.id}">✏️</button>
+                    <button class="btn btn-sm btn-danger" data-action="delete" data-type="organigramme" data-id="${m.id}">🗑️</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<p>Aucun membre dans cet organigramme</p>'}
+      ` : '<p>Sélectionnez ou créez un organigramme</p>'}
+
       <div style="margin-top:20px; padding:15px; background:#f3f4f6; border-radius:8px;">
         <p style="margin:0 0 10px 0;"><strong>Note:</strong> Les modifications sont sauvegardées localement. Pour une persistance permanente, exportez le JSON et remplacez le fichier <code>/organigramme/data.json</code></p>
         <button class="btn btn-sm btn-secondary" onclick="exportOrganigramme()">📥 Exporter JSON</button>
       </div>
-    ` : '<p>Aucun membre dans l\'organigramme</p>';
+    `;
   } catch (e) {
     console.error(e);
     showAlert('Erreur chargement organigramme', 'danger');
   }
 }
 
+function selectOrganigramme(orgId) {
+  currentOrganigrammeId = orgId;
+  loadOrganigramme();
+}
+
+function getCurrentOrgMembres() {
+  const org = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
+  return org ? org.membres || [] : [];
+}
+
 async function saveOrganigramme() {
   try {
-    const data = {
-      config: {
-        titre: 'ORGANIGRAMME COMITE',
-        clubNom: 'MAGNY FC 78',
-        logoUrl: '/assets/images/logo.png',
-        defaultPhoto: '/assets/images/default-avatar.png'
-      },
-      membres: organigrammeMembres
-    };
     // Sauvegarder en localStorage
-    localStorage.setItem('organigramme_data', JSON.stringify(data));
+    localStorage.setItem('organigramme_data', JSON.stringify(organigrammesData));
     return true;
   } catch (e) {
     console.error(e);
@@ -639,27 +695,7 @@ async function saveOrganigramme() {
 }
 
 function exportOrganigramme() {
-  const data = {
-    config: {
-      titre: 'ORGANIGRAMME COMITE',
-      clubNom: 'MAGNY FC 78',
-      logoUrl: '/assets/images/logo.png',
-      defaultPhoto: '/assets/images/default-avatar.png',
-      couleurs: {
-        headerBg: '#1a3a5c',
-        accentStripe: '#3b7ddd',
-        hexagonBorder: '#1e3a5f',
-        hexagonBg: '#ffffff',
-        textPrimary: '#1a3a5c',
-        textSecondary: '#333333',
-        background: '#e8ecf0',
-        watermarkColor: 'rgba(26, 58, 92, 0.08)'
-      }
-    },
-    membres: organigrammeMembres
-  };
-
-  const dataStr = JSON.stringify(data, null, 2);
+  const dataStr = JSON.stringify(organigrammesData, null, 2);
   const blob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
@@ -838,7 +874,8 @@ function openModal(type, data = null) {
   const titles = {
     menu: 'Élément de menu', equipe: 'Équipe', match: 'Match',
     actualite: 'Article', album: 'Album', partenaire: 'Partenaire',
-    user: 'Utilisateur', moment: 'Moment clé', organigramme: 'Membre du comité'
+    user: 'Utilisateur', moment: 'Moment clé', organigramme: 'Membre',
+    'organigramme-group': 'Organigramme'
   };
   document.getElementById('modal-title').textContent = (editingId ? 'Modifier' : 'Ajouter') + ' ' + (titles[type] || '');
 
@@ -1202,14 +1239,8 @@ function openModal(type, data = null) {
       `;
       break;
     case 'organigramme':
-      // Récupérer les membres potentiels pour le select parent
-      const potentialParents = organigrammeMembres.filter(m => {
-        // On ne peut pas être son propre parent
-        if (data?.id && m.id === data.id) return false;
-        // On ne peut rattacher qu'à un niveau supérieur
-        const targetNiveau = parseInt(data?.niveau) || 2;
-        return m.niveau < targetNiveau;
-      });
+      // Récupérer les membres de l'organigramme courant
+      const currentOrgMembres = getCurrentOrgMembres();
       html = `
         <div class="form-row">
           <div class="form-group">
@@ -1230,7 +1261,7 @@ function openModal(type, data = null) {
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Niveau hiérarchique *</label>
-            <select class="form-control" id="f-niveau" onchange="updateOrgParentOptions()">
+            <select class="form-control" id="f-niveau">
               <option value="1" ${data?.niveau === 1 ? 'selected' : ''}>Niveau 1 - Direction</option>
               <option value="2" ${data?.niveau === 2 || !data?.niveau ? 'selected' : ''}>Niveau 2 - Bureau</option>
               <option value="3" ${data?.niveau === 3 ? 'selected' : ''}>Niveau 3 - Responsables</option>
@@ -1245,10 +1276,27 @@ function openModal(type, data = null) {
           <label class="form-label">Rattaché à</label>
           <select class="form-control" id="f-parent">
             <option value="">Aucun (niveau supérieur)</option>
-            ${organigrammeMembres.filter(m => !data?.id || m.id !== data.id).map(m =>
+            ${currentOrgMembres.filter(m => !data?.id || m.id !== data.id).map(m =>
               `<option value="${m.id}" ${data?.parentId === m.id ? 'selected' : ''}>${m.role} - ${m.nom} (Niv. ${m.niveau})</option>`
             ).join('')}
           </select>
+        </div>
+      `;
+      break;
+    case 'organigramme-group':
+      html = `
+        <div class="form-group">
+          <label class="form-label">Titre de l'organigramme *</label>
+          <input type="text" class="form-control" id="f-titre" value="${data?.titre || ''}" required placeholder="Ex: ORGANIGRAMME FOOT A 5">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ordre d'affichage</label>
+            <input type="number" class="form-control" id="f-ordre" value="${data?.ordre || 1}" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
+          </div>
         </div>
       `;
       break;
@@ -1480,9 +1528,9 @@ async function saveModal() {
         }
       }
 
-      const orgId = editingId || 'membre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      const orgMembreId = editingId || 'membre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
       data = {
-        id: orgId,
+        id: orgMembreId,
         nom: getValue('f-nom'),
         role: getValue('f-role'),
         photo: orgPhotoPath,
@@ -1491,19 +1539,56 @@ async function saveModal() {
         ordre: parseInt(getValue('f-ordre')) || 1
       };
 
+      // Trouver l'organigramme courant
+      const currentOrgForSave = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
+      if (!currentOrgForSave) {
+        showAlert('Erreur: organigramme non trouvé', 'danger');
+        return;
+      }
+
       // Mise à jour locale des données
       if (editingId) {
-        const index = organigrammeMembres.findIndex(m => m.id === editingId);
+        const index = currentOrgForSave.membres.findIndex(m => m.id === editingId);
         if (index !== -1) {
-          organigrammeMembres[index] = data;
+          currentOrgForSave.membres[index] = data;
         }
       } else {
-        organigrammeMembres.push(data);
+        currentOrgForSave.membres.push(data);
       }
 
       // Sauvegarder en localStorage
       await saveOrganigramme();
       showAlert('Membre enregistré. N\'oubliez pas d\'exporter le JSON pour une sauvegarde permanente.', 'success');
+      closeModal();
+      loadOrganigramme();
+      return;
+
+    case 'organigramme-group':
+      const orgGroupId = editingId || 'org-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      data = {
+        id: orgGroupId,
+        titre: getValue('f-titre'),
+        ordre: parseInt(getValue('f-ordre')) || 1,
+        actif: getChecked('f-actif'),
+        membres: []
+      };
+
+      if (editingId) {
+        // Mise à jour - conserver les membres existants
+        const existingOrg = organigrammesData.organigrammes.find(o => o.id === editingId);
+        if (existingOrg) {
+          data.membres = existingOrg.membres;
+          const index = organigrammesData.organigrammes.findIndex(o => o.id === editingId);
+          organigrammesData.organigrammes[index] = data;
+        }
+      } else {
+        // Nouvel organigramme
+        organigrammesData.organigrammes.push(data);
+        currentOrganigrammeId = orgGroupId;
+      }
+
+      await saveOrganigramme();
+      showAlert('Organigramme enregistré. N\'oubliez pas d\'exporter le JSON.', 'success');
       closeModal();
       loadOrganigramme();
       return;
@@ -1529,17 +1614,41 @@ async function saveModal() {
 async function deleteItem(endpoint, id) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) return;
 
-  // Cas spécial pour l'organigramme (géré localement)
+  // Cas spécial pour la suppression d'un membre d'organigramme
   if (endpoint === 'organigramme') {
+    const currentOrg = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
+    if (!currentOrg) return;
+
     // Vérifier s'il a des subordonnés
-    const hasSubordinates = organigrammeMembres.some(m => m.parentId === id);
+    const hasSubordinates = currentOrg.membres.some(m => m.parentId === id);
     if (hasSubordinates) {
       showAlert('Impossible de supprimer: ce membre a des subordonnés', 'danger');
       return;
     }
-    organigrammeMembres = organigrammeMembres.filter(m => m.id !== id);
+    currentOrg.membres = currentOrg.membres.filter(m => m.id !== id);
     await saveOrganigramme();
     showAlert('Membre supprimé. Exportez le JSON pour sauvegarder.', 'success');
+    loadOrganigramme();
+    return;
+  }
+
+  // Cas spécial pour la suppression d'un organigramme complet
+  if (endpoint === 'organigramme-group') {
+    const org = organigrammesData.organigrammes.find(o => o.id === id);
+    if (org && org.membres && org.membres.length > 0) {
+      if (!confirm(`Cet organigramme contient ${org.membres.length} membre(s). Voulez-vous vraiment le supprimer ?`)) {
+        return;
+      }
+    }
+    organigrammesData.organigrammes = organigrammesData.organigrammes.filter(o => o.id !== id);
+
+    // Sélectionner un autre organigramme si celui supprimé était le courant
+    if (currentOrganigrammeId === id) {
+      currentOrganigrammeId = organigrammesData.organigrammes[0]?.id || null;
+    }
+
+    await saveOrganigramme();
+    showAlert('Organigramme supprimé. Exportez le JSON pour sauvegarder.', 'success');
     loadOrganigramme();
     return;
   }

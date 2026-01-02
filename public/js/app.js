@@ -490,10 +490,10 @@ const views = {
     `;
   },
 
-  // Page club (organigramme)
+  // Page club (organigrammes multiples)
   async club() {
-    // Charger les données de l'organigramme
-    let orgData = { config: {}, membres: [] };
+    // Charger les données des organigrammes
+    let orgData = { config: {}, organigrammes: [] };
     try {
       const res = await fetch('/organigramme/data.json');
       if (res.ok) {
@@ -504,12 +504,11 @@ const views = {
     }
 
     const config = orgData.config || {};
-    const membres = orgData.membres || [];
+    const organigrammes = (orgData.organigrammes || [])
+      .filter(o => o.actif !== false)
+      .sort((a, b) => a.ordre - b.ordre);
 
-    // Fonctions helper pour l'organigramme
-    const getMembersByLevel = (level) => membres.filter(m => m.niveau === level).sort((a, b) => a.ordre - b.ordre);
-    const getSubordinates = (parentId) => membres.filter(m => m.parentId === parentId).sort((a, b) => a.ordre - b.ordre);
-
+    // Fonction pour rendre un hexagone
     const renderHexagon = (member) => {
       const hasPhoto = member.photo && member.photo !== '';
       return `
@@ -531,6 +530,7 @@ const views = {
       `;
     };
 
+    // Fonction pour rendre un membre
     const renderMember = (member) => `
       <div class="org-member" data-member-id="${member.id}">
         ${renderHexagon(member)}
@@ -541,64 +541,80 @@ const views = {
       </div>
     `;
 
-    const level1 = getMembersByLevel(1);
-    const level2 = getMembersByLevel(2);
-    const level3 = getMembersByLevel(3);
+    // Fonction pour rendre un organigramme complet
+    const renderOrganigramme = (org) => {
+      const membres = org.membres || [];
+      const getMembersByLevel = (level) => membres.filter(m => m.niveau === level).sort((a, b) => a.ordre - b.ordre);
 
-    // Grouper le niveau 3 par parent
-    const level3ByParent = {};
-    level3.forEach(m => {
-      if (!level3ByParent[m.parentId]) {
-        level3ByParent[m.parentId] = [];
-      }
-      level3ByParent[m.parentId].push(m);
-    });
+      const level1 = getMembersByLevel(1);
+      const level2 = getMembersByLevel(2);
+      const level3 = getMembersByLevel(3);
+
+      // Grouper le niveau 3 par parent
+      const level3ByParent = {};
+      level3.forEach(m => {
+        if (!level3ByParent[m.parentId]) {
+          level3ByParent[m.parentId] = [];
+        }
+        level3ByParent[m.parentId].push(m);
+      });
+
+      return `
+        <section class="organigramme-section" data-org-id="${org.id}">
+          <div class="organigramme-header">
+            <h1>${org.titre}</h1>
+            <div class="club-name">${config.clubNom || 'MAGNY FC 78'}</div>
+          </div>
+
+          <div class="organigramme-page">
+            <div class="organigramme-container">
+              <!-- Niveau 1 -->
+              <div class="org-level org-level-1">
+                ${level1.map(m => renderMember(m)).join('')}
+              </div>
+
+              ${level2.length > 0 ? `
+                <!-- Connecteur vertical -->
+                <div class="org-connector-vertical" style="height: 50px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+
+                <!-- Ligne horizontale niveau 2 -->
+                <div class="org-connector-horizontal" style="height: 2px; background: #1e3a5f; margin: 0 auto; width: 80%; max-width: 1000px;"></div>
+
+                <!-- Niveau 2 -->
+                <div class="org-level org-level-2" style="padding-top: 0;">
+                  ${level2.map(m => {
+                    const subordinates = level3ByParent[m.id] || [];
+                    const hasSubordinates = subordinates.length > 0;
+
+                    return `
+                      <div class="org-group ${hasSubordinates ? 'has-subordinates' : ''}">
+                        <div class="org-connector-up" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+                        ${renderMember(m)}
+                        ${hasSubordinates ? `
+                          <div class="org-connector-down" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto; margin-top: 10px;"></div>
+                        ` : ''}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : ''}
+
+              <!-- Niveau 3 -->
+              ${level3.length > 0 ? `
+                <div class="org-level org-level-3">
+                  ${level3.map(m => renderMember(m)).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </section>
+      `;
+    };
 
     return `
-      <section class="organigramme-header">
-        <h1>${config.titre || 'ORGANIGRAMME COMITE'}</h1>
-        <div class="club-name">${config.clubNom || 'MAGNY FC 78'}</div>
-      </section>
-
-      <section class="organigramme-page">
-        <div class="organigramme-container">
-          <!-- Niveau 1: Président -->
-          <div class="org-level org-level-1">
-            ${level1.map(m => renderMember(m)).join('')}
-          </div>
-
-          <!-- Connecteur vertical du président vers niveau 2 -->
-          <div class="org-connector-vertical" style="height: 50px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
-
-          <!-- Ligne horizontale niveau 2 -->
-          <div class="org-connector-horizontal" style="height: 2px; background: #1e3a5f; margin: 0 auto; width: 80%; max-width: 1000px;"></div>
-
-          <!-- Niveau 2: Bureau -->
-          <div class="org-level org-level-2" style="padding-top: 0;">
-            ${level2.map(m => {
-              const subordinates = level3ByParent[m.id] || [];
-              const hasSubordinates = subordinates.length > 0;
-
-              return `
-                <div class="org-group ${hasSubordinates ? 'has-subordinates' : ''}">
-                  <div class="org-connector-up" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
-                  ${renderMember(m)}
-                  ${hasSubordinates ? `
-                    <div class="org-connector-down" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto; margin-top: 10px;"></div>
-                  ` : ''}
-                </div>
-              `;
-            }).join('')}
-          </div>
-
-          <!-- Niveau 3: Responsables -->
-          ${level3.length > 0 ? `
-            <div class="org-level org-level-3">
-              ${level3.map(m => renderMember(m)).join('')}
-            </div>
-          ` : ''}
-        </div>
-      </section>
+      <div class="organigrammes-wrapper">
+        ${organigrammes.map(org => renderOrganigramme(org)).join('')}
+      </div>
     `;
   },
 
