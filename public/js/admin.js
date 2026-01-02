@@ -92,6 +92,12 @@ function handleGlobalClick(e) {
     case 'logout':
       logout();
       break;
+    case 'select-org':
+      selectOrganigramme(btn.dataset.orgId);
+      break;
+    case 'export-org':
+      exportOrganigramme();
+      break;
   }
 }
 
@@ -617,15 +623,13 @@ async function loadOrganigramme() {
                         color:${o.id === currentOrganigrammeId ? '#fff' : '#333'};
                         border-radius:6px; cursor:pointer; border:1px solid #ddd;
                         display:flex; align-items:center; gap:10px;"
-                 onclick="selectOrganigramme('${o.id}')">
+                 data-action="select-org" data-org-id="${o.id}">
               <span>${o.titre}</span>
               <span style="display:flex; gap:5px;">
                 <button class="btn btn-sm" style="padding:2px 6px; background:rgba(255,255,255,0.2);"
-                        data-action="edit" data-type="organigramme-group" data-id="${o.id}"
-                        onclick="event.stopPropagation()">✏️</button>
+                        data-action="edit" data-type="organigramme-group" data-id="${o.id}">✏️</button>
                 <button class="btn btn-sm btn-danger" style="padding:2px 6px;"
-                        data-action="delete" data-type="organigramme-group" data-id="${o.id}"
-                        onclick="event.stopPropagation()">🗑️</button>
+                        data-action="delete" data-type="organigramme-group" data-id="${o.id}">🗑️</button>
               </span>
             </div>
           `).join('')}
@@ -664,7 +668,7 @@ async function loadOrganigramme() {
 
       <div style="margin-top:20px; padding:15px; background:#f3f4f6; border-radius:8px;">
         <p style="margin:0 0 10px 0;"><strong>Note:</strong> Les modifications sont sauvegardées localement. Pour une persistance permanente, exportez le JSON et remplacez le fichier <code>/organigramme/data.json</code></p>
-        <button class="btn btn-sm btn-secondary" onclick="exportOrganigramme()">📥 Exporter JSON</button>
+        <button class="btn btn-sm btn-secondary" data-action="export-org">📥 Exporter JSON</button>
       </div>
     `;
   } catch (e) {
@@ -1672,9 +1676,3 @@ function logout() {
   api.logout();
   window.location.href = '/admin/login.html';
 }
-
-// =====================================================
-// EXPOSITION GLOBALE POUR LES HANDLERS ONCLICK
-// =====================================================
-window.selectOrganigramme = selectOrganigramme;
-window.exportOrganigramme = exportOrganigramme;
