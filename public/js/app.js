@@ -26,10 +26,14 @@ const views = {
     const heroSoustitre = config.hero_soustitre || 'Le club de football amateur de Magny-les-Hameaux, Yvelines.';
     const heroBoutonTexte = config.hero_bouton_texte || 'REJOINDRE LE CLUB';
     const heroBoutonLien = config.hero_bouton_lien || '/contact';
+    const heroImage = config.hero_image || 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=1920';
+
+    // Style inline pour l'image de fond dynamique
+    const heroStyle = `background: linear-gradient(to bottom, rgba(13, 24, 41, 0.7) 0%, rgba(13, 24, 41, 0.5) 50%, rgba(13, 24, 41, 0.8) 100%), url('${heroImage}') center/cover no-repeat;`;
 
     return `
       <!-- Hero -->
-      <section class="hero">
+      <section class="hero" style="${heroStyle}">
         <div class="hero-content">
           <h1>${heroTitre}</h1>
           <p class="hero-subtitle">${heroSoustitre}</p>
