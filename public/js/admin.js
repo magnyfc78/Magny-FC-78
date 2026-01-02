@@ -1672,3 +1672,9 @@ function logout() {
   api.logout();
   window.location.href = '/admin/login.html';
 }
+
+// =====================================================
+// EXPOSITION GLOBALE POUR LES HANDLERS ONCLICK
+// =====================================================
+window.selectOrganigramme = selectOrganigramme;
+window.exportOrganigramme = exportOrganigramme;
