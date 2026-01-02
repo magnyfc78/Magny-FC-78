@@ -35,7 +35,9 @@ const config = {
   // JWT
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    refreshSecret: process.env.REFRESH_TOKEN_SECRET,
+    refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d'
   },
 
   // Sécurité
@@ -58,7 +60,7 @@ const config = {
 
 // Validation des variables critiques en production
 if (config.isProduction) {
-  const requiredVars = ['JWT_SECRET', 'DB_PASSWORD', 'SESSION_SECRET'];
+  const requiredVars = ['JWT_SECRET', 'REFRESH_TOKEN_SECRET', 'DB_PASSWORD', 'SESSION_SECRET'];
   const missing = requiredVars.filter(varName => !process.env[varName]);
 
   if (missing.length > 0) {
