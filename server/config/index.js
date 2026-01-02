@@ -70,6 +70,10 @@ if (config.isProduction) {
   if (config.jwt.secret && config.jwt.secret.length < 32) {
     throw new Error('JWT_SECRET doit contenir au moins 32 caractères en production');
   }
+
+  if (config.jwt.refreshSecret && config.jwt.refreshSecret.length < 32) {
+    throw new Error('REFRESH_TOKEN_SECRET doit contenir au moins 32 caractères en production');
+  }
 }
 
 module.exports = config;
