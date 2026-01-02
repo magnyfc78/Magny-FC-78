@@ -200,25 +200,83 @@ async function loadConfig(groupe = 'general') {
     const res = await api.get('/admin/config');
     const items = res.data.raw.filter(c => c.groupe === groupe);
 
+    const renderField = (c) => {
+      if (c.type === 'textarea') {
+        return `<textarea class="form-control" name="${c.cle}">${c.valeur || ''}</textarea>`;
+      } else if (c.type === 'color') {
+        return `<input type="color" class="form-control" name="${c.cle}" value="${c.valeur || '#000000'}" style="height:50px;">`;
+      } else if (c.type === 'image') {
+        return `
+          <div class="image-upload-field" data-key="${c.cle}">
+            <input type="file" class="form-control" id="config-file-${c.cle}" accept="image/*" style="margin-bottom:8px;">
+            <input type="hidden" name="${c.cle}" value="${c.valeur || ''}">
+            ${c.valeur ? `
+              <div class="image-preview" style="margin-top:8px;">
+                <img src="${c.valeur}" style="max-height:120px;max-width:300px;border-radius:8px;border:1px solid #ddd;">
+                <div style="margin-top:4px;font-size:0.85rem;color:#6b7280;">${c.valeur}</div>
+              </div>
+            ` : '<div class="image-preview"></div>'}
+          </div>
+        `;
+      } else {
+        return `<input type="text" class="form-control" name="${c.cle}" value="${c.valeur || ''}">`;
+      }
+    };
+
     document.getElementById('config-form').innerHTML = `
       <form id="config-form-inner">
         ${items.map(c => `
           <div class="form-group">
             <label class="form-label">${c.label || c.cle}</label>
-            ${c.type === 'textarea'
-              ? `<textarea class="form-control" name="${c.cle}">${c.valeur || ''}</textarea>`
-              : c.type === 'color'
-              ? `<input type="color" class="form-control" name="${c.cle}" value="${c.valeur || '#000000'}" style="height:50px;">`
-              : `<input type="text" class="form-control" name="${c.cle}" value="${c.valeur || ''}">`
-            }
+            ${renderField(c)}
           </div>
         `).join('')}
         <button type="submit" class="btn btn-primary">Enregistrer</button>
       </form>
     `;
 
+    // Ajouter les listeners pour les uploads d'image
+    document.querySelectorAll('.image-upload-field input[type="file"]').forEach(fileInput => {
+      fileInput.addEventListener('change', handleConfigImageUpload);
+    });
+
     document.getElementById('config-form-inner').addEventListener('submit', saveConfig);
   } catch (e) { showAlert('Erreur chargement config', 'danger'); }
+}
+
+// Gérer l'upload d'image pour les champs de configuration
+async function handleConfigImageUpload(e) {
+  const fileInput = e.target;
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const container = fileInput.closest('.image-upload-field');
+  const key = container.dataset.key;
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const previewDiv = container.querySelector('.image-preview');
+
+  // Afficher un indicateur de chargement
+  previewDiv.innerHTML = '<div style="color:#6b7280;">Upload en cours...</div>';
+
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const uploadRes = await api.upload('/upload/single/config', formData);
+
+    if (uploadRes.success) {
+      const imagePath = uploadRes.data.path;
+      hiddenInput.value = imagePath;
+      previewDiv.innerHTML = `
+        <img src="${imagePath}" style="max-height:120px;max-width:300px;border-radius:8px;border:1px solid #ddd;">
+        <div style="margin-top:4px;font-size:0.85rem;color:#6b7280;">${imagePath}</div>
+      `;
+      showAlert('Image uploadée avec succès', 'success');
+    }
+  } catch (error) {
+    previewDiv.innerHTML = `<div style="color:#ef4444;">Erreur: ${error.message}</div>`;
+    showAlert('Erreur upload image: ' + error.message, 'danger');
+  }
 }
 
 async function saveConfig(e) {
