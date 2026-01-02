@@ -1222,9 +1222,10 @@ function openModal(type, data = null) {
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Photo (URL)</label>
-          <input type="text" class="form-control" id="f-photo" value="${data?.photo || ''}" placeholder="/assets/images/comite/nom.jpg">
-          ${data?.photo ? `<div style="margin-top:8px;"><img src="${data.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'"></div>` : ''}
+          <label class="form-label">Photo</label>
+          <input type="file" class="form-control" id="f-photo_file" accept="image/*">
+          <input type="hidden" id="f-photo" value="${data?.photo || ''}">
+          ${data?.photo ? `<div style="margin-top:8px;"><img src="${data.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #1a4d92;" onerror="this.style.display='none'"> <small style="color:#6b7280;">${data.photo}</small></div>` : ''}
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1461,12 +1462,30 @@ async function saveModal() {
       endpoint = '/admin/histoire/moments';
       break;
     case 'organigramme':
+      // Upload photo si un fichier est sélectionné
+      const orgPhotoFile = document.getElementById('f-photo_file')?.files[0];
+      let orgPhotoPath = getValue('f-photo') || '';
+
+      if (orgPhotoFile) {
+        const formData = new FormData();
+        formData.append('image', orgPhotoFile);
+        try {
+          const uploadRes = await api.upload('/upload/single/comite', formData);
+          if (uploadRes.success) {
+            orgPhotoPath = uploadRes.data.path;
+          }
+        } catch (uploadError) {
+          showAlert('Erreur upload photo: ' + uploadError.message, 'danger');
+          return;
+        }
+      }
+
       const orgId = editingId || 'membre-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
       data = {
         id: orgId,
         nom: getValue('f-nom'),
         role: getValue('f-role'),
-        photo: getValue('f-photo') || '',
+        photo: orgPhotoPath,
         niveau: parseInt(getValue('f-niveau')) || 2,
         parentId: getValue('f-parent') || null,
         ordre: parseInt(getValue('f-ordre')) || 1
