@@ -1,0 +1,251 @@
+{
+  "config": {
+    "clubNom": "MAGNY FC 78",
+    "logoUrl": "/assets/images/logo.png",
+    "defaultPhoto": "/assets/images/default-avatar.png",
+    "couleurs": {
+      "headerBg": "#1a3a5c",
+      "accentStripe": "#3b7ddd",
+      "hexagonBorder": "#1e3a5f",
+      "hexagonBg": "#ffffff",
+      "textPrimary": "#1a3a5c",
+      "textSecondary": "#333333",
+      "background": "#e8ecf0",
+      "watermarkColor": "rgba(26, 58, 92, 0.08)"
+    }
+  },
+  "organigrammes": [
+    {
+      "id": "comite",
+      "titre": "ORGANIGRAMME COMITE",
+      "ordre": 1,
+      "actif": true,
+      "membres": [
+        {
+          "id": "president",
+          "nom": "Jaafar",
+          "role": "Président",
+          "photo": "/assets/images/comite/jaafar.jpg",
+          "niveau": 1,
+          "parentId": null,
+          "ordre": 1
+        },
+        {
+          "id": "secretaire-adjointe",
+          "nom": "Maud",
+          "role": "Secretaire Adjointe",
+          "photo": "/assets/images/comite/maud.jpg",
+          "niveau": 2,
+          "parentId": "president",
+          "ordre": 1
+        },
+        {
+          "id": "secretaire",
+          "nom": "Morgane",
+          "role": "Secretaire",
+          "photo": "/assets/images/comite/morgane.jpg",
+          "niveau": 2,
+          "parentId": "president",
+          "ordre": 2
+        },
+        {
+          "id": "vice-president",
+          "nom": "Benjamin",
+          "role": "Vice Président",
+          "photo": "/assets/images/comite/benjamin.jpg",
+          "niveau": 2,
+          "parentId": "president",
+          "ordre": 3
+        },
+        {
+          "id": "tresorier",
+          "nom": "Bruno. L",
+          "role": "Trésorier",
+          "photo": "/assets/images/comite/bruno-l.jpg",
+          "niveau": 2,
+          "parentId": "president",
+          "ordre": 4
+        },
+        {
+          "id": "tresorier-adjoint",
+          "nom": "Hassan",
+          "role": "Trésorier adjoint",
+          "photo": "/assets/images/comite/hassan.jpg",
+          "niveau": 2,
+          "parentId": "president",
+          "ordre": 5
+        },
+        {
+          "id": "resp-com",
+          "nom": "Romain",
+          "role": "Resp. Com'/Sponsors",
+          "photo": "/assets/images/comite/romain.jpg",
+          "niveau": 3,
+          "parentId": "secretaire",
+          "ordre": 1
+        },
+        {
+          "id": "resp-pef",
+          "nom": "Marianne",
+          "role": "Resp. Programme éducatif fédéral",
+          "photo": "/assets/images/comite/marianne.jpg",
+          "niveau": 3,
+          "parentId": "vice-president",
+          "ordre": 2
+        },
+        {
+          "id": "resp-buvette",
+          "nom": "Hassan",
+          "role": "Resp. Buvette",
+          "photo": "/assets/images/comite/hassan-buvette.jpg",
+          "niveau": 3,
+          "parentId": "tresorier",
+          "ordre": 3
+        },
+        {
+          "id": "resp-secu",
+          "nom": "Bruno.V",
+          "role": "Resp. Secu/FMI",
+          "photo": "/assets/images/comite/bruno-v.jpg",
+          "niveau": 3,
+          "parentId": "tresorier-adjoint",
+          "ordre": 4
+        }
+      ]
+    },
+    {
+      "id": "foot-a-11",
+      "titre": "ORGANIGRAMME FOOT A 11",
+      "ordre": 2,
+      "actif": true,
+      "membres": [
+        {
+          "id": "coordinateur-f11",
+          "nom": "Nicolas",
+          "role": "Coordinateur technique foot à 11",
+          "photo": "/assets/images/comite/nicolas.jpg",
+          "niveau": 1,
+          "parentId": null,
+          "ordre": 1
+        },
+        {
+          "id": "u14-coach",
+          "nom": "Quentin",
+          "role": "U14",
+          "photo": "/assets/images/comite/quentin.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 1
+        },
+        {
+          "id": "u16-coach",
+          "nom": "Hubert",
+          "role": "U16",
+          "photo": "/assets/images/comite/hubert.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 2
+        },
+        {
+          "id": "u18-coach",
+          "nom": "Anderson",
+          "role": "U18",
+          "photo": "/assets/images/comite/anderson.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 3
+        },
+        {
+          "id": "senior-h-coach",
+          "nom": "Pascal",
+          "role": "Senior H",
+          "photo": "/assets/images/comite/pascal.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 4
+        },
+        {
+          "id": "senior-f-coach",
+          "nom": "Benjamin",
+          "role": "Senior F",
+          "photo": "/assets/images/comite/benjamin-f.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 5
+        },
+        {
+          "id": "veteran-coach",
+          "nom": "Hervé",
+          "role": "Vétéran",
+          "photo": "/assets/images/comite/herve.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f11",
+          "ordre": 6
+        },
+        {
+          "id": "u14-souley",
+          "nom": "Souley",
+          "role": "U14",
+          "photo": "/assets/images/comite/souley.jpg",
+          "niveau": 3,
+          "parentId": "u14-coach",
+          "ordre": 1
+        },
+        {
+          "id": "u14-benjamin",
+          "nom": "Benjamin",
+          "role": "U14",
+          "photo": "/assets/images/comite/benjamin-u14.jpg",
+          "niveau": 3,
+          "parentId": "u14-coach",
+          "ordre": 2
+        },
+        {
+          "id": "u16-nassim",
+          "nom": "Nassim",
+          "role": "U16",
+          "photo": "/assets/images/comite/nassim.jpg",
+          "niveau": 3,
+          "parentId": "u16-coach",
+          "ordre": 1
+        },
+        {
+          "id": "u18-nabil",
+          "nom": "Nabil",
+          "role": "U18",
+          "photo": "/assets/images/comite/nabil.jpg",
+          "niveau": 3,
+          "parentId": "u18-coach",
+          "ordre": 1
+        },
+        {
+          "id": "senior-h-samir",
+          "nom": "Samir",
+          "role": "Senior H",
+          "photo": "/assets/images/comite/samir.jpg",
+          "niveau": 3,
+          "parentId": "senior-h-coach",
+          "ordre": 1
+        },
+        {
+          "id": "veteran-sushi",
+          "nom": "Sushi",
+          "role": "Vétéran",
+          "photo": "/assets/images/comite/sushi.jpg",
+          "niveau": 3,
+          "parentId": "veteran-coach",
+          "ordre": 1
+        },
+        {
+          "id": "veteran-joachim",
+          "nom": "Joachim",
+          "role": "Vétéran",
+          "photo": "/assets/images/comite/joachim.jpg",
+          "niveau": 3,
+          "parentId": "veteran-coach",
+          "ordre": 2
+        }
+      ]
+    }
+  ]
+}

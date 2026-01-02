@@ -1,0 +1,812 @@
+/* =====================================================
+   ORGANIGRAMME COMITE - MAGNY FC 78
+   ===================================================== */
+
+.organigramme-page {
+  background: linear-gradient(135deg, #e8ecf0 0%, #d5dce3 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header de page spécifique */
+.organigramme-header {
+  background: linear-gradient(135deg, var(--bleu-fonce) 0%, #0d1829 100%);
+  padding: 120px 0 60px;
+  text-align: center;
+  position: relative;
+}
+
+.organigramme-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #3b7ddd, #5ce1e6, #3b7ddd);
+}
+
+.organigramme-header h1 {
+  font-family: var(--font-titre);
+  font-size: 2.8rem;
+  font-weight: 600;
+  color: var(--blanc);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.organigramme-header .club-name {
+  font-family: var(--font-titre);
+  font-size: 1.4rem;
+  color: var(--or);
+  letter-spacing: 3px;
+  font-weight: 500;
+}
+
+/* Container principal */
+.organigramme-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 20px 100px;
+  position: relative;
+}
+
+/* Watermark logo en arriere-plan */
+.organigramme-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  background: url('/assets/images/logo.png') center/contain no-repeat;
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+/* Structure des niveaux */
+.org-level {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 30px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.org-level-1 {
+  margin-bottom: 40px;
+}
+
+.org-level-2 {
+  margin-bottom: 40px;
+}
+
+.org-level-3 {
+  margin-top: 20px;
+}
+
+/* Conteneur de membre */
+.org-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-width: 160px;
+}
+
+/* Hexagone container */
+.hexagon-container {
+  position: relative;
+  width: 130px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.hexagon-container:hover {
+  transform: scale(1.05);
+}
+
+/* Hexagone avec photo */
+.hexagon {
+  width: 120px;
+  height: 138px;
+  background: #1e3a5f;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 8px 25px rgba(26, 58, 92, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.hexagon-container:hover .hexagon {
+  box-shadow: 0 12px 35px rgba(26, 58, 92, 0.4);
+}
+
+.hexagon-inner {
+  width: 108px;
+  height: 124px;
+  background: var(--blanc);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hexagon-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* Placeholder si pas de photo */
+.hexagon-inner .placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #3b7ddd 0%, #1e3a5f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hexagon-inner .placeholder svg {
+  width: 50px;
+  height: 50px;
+  fill: rgba(255, 255, 255, 0.5);
+}
+
+/* Info membre sous l'hexagone */
+.member-info {
+  text-align: center;
+  margin-top: 15px;
+  max-width: 180px;
+}
+
+.member-role {
+  font-family: var(--font-texte);
+  font-size: 0.85rem;
+  color: #1a3a5c;
+  margin-bottom: 3px;
+  font-weight: 400;
+}
+
+.member-name {
+  font-family: var(--font-titre);
+  font-size: 1.1rem;
+  color: #1a3a5c;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Niveau 1 - President (plus grand) */
+.org-level-1 .hexagon-container {
+  width: 150px;
+  height: 170px;
+}
+
+.org-level-1 .hexagon {
+  width: 140px;
+  height: 161px;
+}
+
+.org-level-1 .hexagon-inner {
+  width: 126px;
+  height: 145px;
+}
+
+.org-level-1 .member-name {
+  font-size: 1.3rem;
+}
+
+/* Lignes de connexion */
+.org-connections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.org-connections svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.org-connections line,
+.org-connections path {
+  stroke: #1e3a5f;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Lignes verticales et horizontales */
+.connection-line {
+  position: absolute;
+  background: #1e3a5f;
+}
+
+.connection-line.vertical {
+  width: 2px;
+}
+
+.connection-line.horizontal {
+  height: 2px;
+}
+
+/* Wrapper pour les groupes avec subordonnés */
+.org-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.org-group::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  background: #1e3a5f;
+  transform: translateX(-50%);
+}
+
+/* Section responsive layout */
+.org-section {
+  position: relative;
+  width: 100%;
+}
+
+/* Niveau 2 layout */
+.level-2-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  padding-top: 50px;
+}
+
+.level-2-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 50px;
+  background: #1e3a5f;
+  transform: translateX(-50%);
+}
+
+/* Ligne horizontale connectant le niveau 2 */
+.level-2-line {
+  position: absolute;
+  top: 50px;
+  height: 2px;
+  background: #1e3a5f;
+}
+
+/* Lignes verticales vers les membres niveau 2 */
+.org-member-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.org-member-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  background: #1e3a5f;
+  transform: translateX(-50%);
+}
+
+/* Niveau 3 - subordonnés */
+.level-3-container {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 30px;
+  padding-top: 30px;
+}
+
+.subordinate-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.subordinate-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  background: #1e3a5f;
+  transform: translateX(-50%);
+}
+
+/* Actions d'édition (mode admin) */
+.org-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: none;
+  gap: 5px;
+}
+
+.org-member:hover .org-actions {
+  display: flex;
+}
+
+.org-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.org-action-btn.edit {
+  background: var(--or);
+  color: var(--bleu-fonce);
+}
+
+.org-action-btn.delete {
+  background: #dc3545;
+  color: white;
+}
+
+.org-action-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Modal d'édition */
+.org-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 24, 41, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.org-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.org-modal {
+  background: var(--blanc);
+  width: 90%;
+  max-width: 500px;
+  border-radius: 10px;
+  overflow: hidden;
+  transform: translateY(-20px);
+  transition: transform 0.3s ease;
+}
+
+.org-modal-overlay.active .org-modal {
+  transform: translateY(0);
+}
+
+.org-modal-header {
+  background: var(--bleu-fonce);
+  color: var(--blanc);
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.org-modal-header h3 {
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+}
+
+.org-modal-close {
+  background: none;
+  border: none;
+  color: var(--blanc);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.org-modal-close:hover {
+  color: var(--or);
+}
+
+.org-modal-body {
+  padding: 25px;
+}
+
+.org-form-group {
+  margin-bottom: 20px;
+}
+
+.org-form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bleu-fonce);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.org-form-group input,
+.org-form-group select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 5px;
+  font-family: var(--font-texte);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.org-form-group input:focus,
+.org-form-group select:focus {
+  outline: none;
+  border-color: var(--turquoise);
+}
+
+.org-form-group .photo-preview {
+  margin-top: 10px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--bleu-fonce);
+}
+
+.org-form-group .photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.org-modal-footer {
+  padding: 15px 25px 25px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.org-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-texte);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.org-btn-primary {
+  background: var(--turquoise);
+  color: var(--bleu-fonce);
+}
+
+.org-btn-primary:hover {
+  background: var(--turquoise-hover);
+}
+
+.org-btn-secondary {
+  background: #e0e0e0;
+  color: var(--gris-fonce);
+}
+
+.org-btn-secondary:hover {
+  background: #d0d0d0;
+}
+
+.org-btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.org-btn-danger:hover {
+  background: #c82333;
+}
+
+/* Bouton ajouter membre */
+.add-member-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--or);
+  color: var(--bleu-fonce);
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(201, 162, 39, 0.4);
+  transition: all 0.3s ease;
+  display: none;
+  z-index: 100;
+}
+
+.add-member-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(201, 162, 39, 0.5);
+}
+
+.admin-mode .add-member-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-mode .org-actions {
+  display: flex;
+}
+
+/* Toggle admin mode */
+.admin-toggle {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 100;
+}
+
+.admin-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--blanc);
+  padding: 10px 20px;
+  border-radius: 25px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bleu-fonce);
+}
+
+.admin-toggle input {
+  display: none;
+}
+
+.admin-toggle .toggle-slider {
+  width: 40px;
+  height: 22px;
+  background: #ccc;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.admin-toggle .toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s ease;
+}
+
+.admin-toggle input:checked + .toggle-slider {
+  background: var(--turquoise);
+}
+
+.admin-toggle input:checked + .toggle-slider::after {
+  transform: translateX(18px);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .org-level-2 {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .level-2-container {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .organigramme-header h1 {
+    font-size: 2rem;
+  }
+
+  .org-level {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .level-2-container {
+    flex-direction: column;
+    padding-top: 30px;
+  }
+
+  .level-2-container::before {
+    height: 30px;
+  }
+
+  .org-member-wrapper::before {
+    display: none;
+  }
+
+  .level-3-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .hexagon-container {
+    width: 110px;
+    height: 127px;
+  }
+
+  .hexagon {
+    width: 100px;
+    height: 115px;
+  }
+
+  .hexagon-inner {
+    width: 90px;
+    height: 104px;
+  }
+
+  .org-level-1 .hexagon-container {
+    width: 130px;
+    height: 150px;
+  }
+
+  .org-level-1 .hexagon {
+    width: 120px;
+    height: 138px;
+  }
+
+  .org-level-1 .hexagon-inner {
+    width: 108px;
+    height: 124px;
+  }
+}
+
+@media (max-width: 600px) {
+  .organigramme-header {
+    padding: 100px 20px 40px;
+  }
+
+  .organigramme-header h1 {
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+  }
+
+  .organigramme-header .club-name {
+    font-size: 1.1rem;
+  }
+
+  .organigramme-container {
+    padding: 40px 15px 80px;
+  }
+
+  .member-info {
+    max-width: 150px;
+  }
+
+  .member-role {
+    font-size: 0.75rem;
+  }
+
+  .member-name {
+    font-size: 0.95rem;
+  }
+
+  .admin-toggle {
+    top: auto;
+    bottom: 100px;
+    right: 10px;
+  }
+
+  .admin-toggle label {
+    padding: 8px 15px;
+    font-size: 0.75rem;
+  }
+
+  .add-member-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* Animation d'entrée */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.org-member {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.org-level-1 .org-member {
+  animation-delay: 0.1s;
+}
+
+.org-level-2 .org-member:nth-child(1) { animation-delay: 0.2s; }
+.org-level-2 .org-member:nth-child(2) { animation-delay: 0.3s; }
+.org-level-2 .org-member:nth-child(3) { animation-delay: 0.4s; }
+.org-level-2 .org-member:nth-child(4) { animation-delay: 0.5s; }
+.org-level-2 .org-member:nth-child(5) { animation-delay: 0.6s; }
+
+.org-level-3 .org-member:nth-child(1) { animation-delay: 0.7s; }
+.org-level-3 .org-member:nth-child(2) { animation-delay: 0.8s; }
+.org-level-3 .org-member:nth-child(3) { animation-delay: 0.9s; }
+.org-level-3 .org-member:nth-child(4) { animation-delay: 1.0s; }
+
+/* Export/Print styles */
+@media print {
+  .admin-toggle,
+  .add-member-btn,
+  .org-actions {
+    display: none !important;
+  }
+
+  .organigramme-page {
+    background: white;
+  }
+
+  .organigramme-container::before {
+    opacity: 0.03;
+  }
+}
