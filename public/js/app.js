@@ -113,12 +113,13 @@ const views = {
           </div>
           <div class="actualites-grid">
             ${actualites.map((a, index) => {
-              // Utiliser l'image de la BDD si disponible
-              const imageSrc = a.image || '/assets/images/logo.png';
+              const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
+              const imgType = imageMap[a.categorie] || 'club';
+              const imgNum = (index % 2) + 1;
               return `
               <article class="actu-card">
                 <div class="actu-image">
-                  <img src="${imageSrc}" alt="${a.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+                  <img src="/assets/images/actualites/${imgType}_${imgNum}.jpg" alt="${a.titre}" loading="lazy">
                 </div>
                 <div class="actu-body">
                   <div class="actu-meta">
@@ -147,7 +148,7 @@ const views = {
           <div class="partenaires-grid">
             ${partenaires.length ? partenaires.slice(0, 6).map(p => `
               <div class="partenaire-item">
-                <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" onerror="this.src='/assets/images/logo.png'" title="${p.nom}">
+                ${p.logo ? `<img src="${p.logo}" alt="${p.nom}" loading="lazy">` : `<span style="color: var(--gris); font-size: 0.9rem;">${p.nom}</span>`}
               </div>
             `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
@@ -334,7 +335,7 @@ const views = {
                     <div class="timeline-album-card">
                       <div class="timeline-year">${album.annee}</div>
                       <div class="timeline-album-image">
-                        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+                        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
                       </div>
                       <div class="timeline-album-info">
                         <h3>${album.titre}</h3>
@@ -770,13 +771,16 @@ async function filterEquipes(categorie) {
 
 // Render actualités
 function renderActualites(actualites) {
-  return actualites.map((a) => {
-    // Utiliser l'image de la BDD si disponible, sinon logo du club
-    const imageSrc = a.image || '/assets/images/logo.png';
+  const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
+  return actualites.map((a, index) => {
+    const imgType = imageMap[a.categorie] || 'club';
+    const imgNum = (index % 2) + 1;
+    // Utiliser l'image de la BDD si disponible, sinon image par défaut
+    const imageSrc = a.image || `/assets/images/actualites/${imgType}_${imgNum}.jpg`;
     return `
       <article class="actu-card" data-category="${a.categorie}">
         <div class="actu-image">
-          <img src="${imageSrc}" alt="${a.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+          <img src="${imageSrc}" alt="${a.titre}" loading="lazy">
         </div>
         <div class="actu-body">
           <div class="actu-meta">
@@ -810,7 +814,7 @@ function renderGalerieAlbums(albums) {
   return albums.map(album => `
     <div class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
-        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+        <img src="${album.image_couverture || '/assets/images/gallery/default.jpg'}" alt="${album.titre}" loading="lazy">
         <span class="album-count">${album.nb_photos || 0} photos</span>
         ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
       </div>
@@ -850,7 +854,7 @@ function renderPartenaires(partenaires) {
   return partenaires.map(p => `
     <div class="partenaire-item" data-category="${p.type}">
       <div class="partenaire-logo">
-        <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+        ${p.logo ? `<img src="${p.logo}" alt="${p.nom}" loading="lazy">` : '<span style="font-size: 2rem;">🏢</span>'}
       </div>
       <div class="partenaire-info">
         <h3>${p.nom}</h3>
