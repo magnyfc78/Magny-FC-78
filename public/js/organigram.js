@@ -95,7 +95,7 @@ class Organigramme {
         <div class="hexagon">
           <div class="hexagon-inner">
             ${hasPhoto ?
-              `<img src="${photoSrc}" alt="${member.nom}" onerror="this.parentElement.innerHTML='<div class=\\'placeholder\\'><svg viewBox=\\'0 0 24 24\\'><path d=\\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\\'/></svg></div>'">`
+              `<img src="${photoSrc}" alt="${member.nom}" data-fallback="placeholder">`
               :
               `<div class="placeholder">
                 <svg viewBox="0 0 24 24">
@@ -106,12 +106,12 @@ class Organigramme {
           </div>
         </div>
         <div class="org-actions">
-          <button class="org-action-btn edit" onclick="organigramme.editMember('${member.id}')" title="Modifier">
+          <button class="org-action-btn edit" data-action="edit-member" data-member-id="${member.id}" title="Modifier">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
             </svg>
           </button>
-          <button class="org-action-btn delete" onclick="organigramme.deleteMember('${member.id}')" title="Supprimer">
+          <button class="org-action-btn delete" data-action="delete-member" data-member-id="${member.id}" title="Supprimer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
             </svg>
@@ -194,7 +194,7 @@ class Organigramme {
         <div class="org-modal">
           <div class="org-modal-header">
             <h3 id="modal-title">Modifier un membre</h3>
-            <button class="org-modal-close" onclick="organigramme.closeModal()">&times;</button>
+            <button class="org-modal-close" data-action="close-modal">&times;</button>
           </div>
           <div class="org-modal-body">
             <form id="member-form">
@@ -241,14 +241,14 @@ class Organigramme {
             </form>
           </div>
           <div class="org-modal-footer">
-            <button class="org-btn org-btn-secondary" onclick="organigramme.closeModal()">Annuler</button>
-            <button class="org-btn org-btn-primary" onclick="organigramme.saveMember()">Enregistrer</button>
+            <button class="org-btn org-btn-secondary" data-action="close-modal">Annuler</button>
+            <button class="org-btn org-btn-primary" data-action="save-member">Enregistrer</button>
           </div>
         </div>
       </div>
 
       <!-- Bouton ajouter -->
-      <button class="add-member-btn" onclick="organigramme.addMember()" title="Ajouter un membre">+</button>
+      <button class="add-member-btn" data-action="add-member" title="Ajouter un membre">+</button>
     `;
 
     this.container.innerHTML = html;
@@ -259,6 +259,41 @@ class Organigramme {
    * Configure les écouteurs d'événements
    */
   setupEventListeners() {
+    // Délégation d'événements pour les actions (remplace les onclick inline)
+    this.container.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const memberId = btn.dataset.memberId;
+
+      switch (action) {
+        case 'edit-member':
+          this.editMember(memberId);
+          break;
+        case 'delete-member':
+          this.deleteMember(memberId);
+          break;
+        case 'close-modal':
+          this.closeModal();
+          break;
+        case 'save-member':
+          this.saveMember();
+          break;
+        case 'add-member':
+          this.addMember();
+          break;
+      }
+    });
+
+    // Gestionnaire d'erreurs d'images - affiche placeholder si image cassée
+    this.container.addEventListener('error', (e) => {
+      if (e.target.tagName === 'IMG' && e.target.dataset.fallback === 'placeholder') {
+        const placeholder = `<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
+        e.target.parentElement.innerHTML = placeholder;
+      }
+    }, true);
+
     // Aperçu de la photo
     const photoInput = document.getElementById('member-photo');
     if (photoInput) {
@@ -455,9 +490,11 @@ class Organigramme {
     this.container.innerHTML = `
       <div style="text-align: center; padding: 60px 20px;">
         <p style="color: #dc3545; font-size: 1.2rem; margin-bottom: 20px;">${message}</p>
-        <button class="org-btn org-btn-primary" onclick="location.reload()">Réessayer</button>
+        <button class="org-btn org-btn-primary" data-action="reload">Réessayer</button>
       </div>
     `;
+    // Ajouter listener pour le reload
+    this.container.querySelector('[data-action="reload"]')?.addEventListener('click', () => location.reload());
   }
 
   /**

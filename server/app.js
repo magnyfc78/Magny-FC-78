@@ -96,21 +96,44 @@ app.use(cors(corsOptions));
 // =====================================================
 // SÉCURITÉ - RATE LIMITING (Anti-DDoS)
 // =====================================================
-const limiter = rateLimit({
+
+// Rate limit général pour les routes publiques (plus permissif)
+const publicLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // 500 requêtes / 15 min
   message: { error: 'Trop de requêtes, réessayez plus tard.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.ip === '127.0.0.1' && process.env.NODE_ENV === 'development'
+  skip: (req) => {
+    // Skip en développement local
+    if (req.ip === '127.0.0.1' && process.env.NODE_ENV === 'development') return true;
+    // Skip pour les routes admin (elles ont leur propre limite basée sur le token)
+    if (req.path.startsWith('/admin')) return true;
+    return false;
+  }
 });
-app.use('/api', limiter);
+app.use('/api', publicLimiter);
 
-// Rate limit plus strict pour l'authentification
+// Rate limit pour les routes admin (plus permissif car authentifié)
+const adminLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // 200 requêtes / minute pour les admins
+  message: { error: 'Trop de requêtes admin, patientez quelques secondes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Utilise le token comme clé si disponible, sinon l'IP
+    const token = req.headers.authorization?.split(' ')[1];
+    return token || req.ip;
+  }
+});
+app.use('/api/admin', adminLimiter);
+
+// Rate limit strict pour l'authentification (anti-bruteforce)
 const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 heure
-  max: 5, // 5 tentatives
-  message: { error: 'Trop de tentatives de connexion. Réessayez dans 1 heure.' }
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 tentatives / 15 min
+  message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' }
 });
 app.use('/api/auth/login', authLimiter);
 
@@ -214,6 +237,17 @@ app.use('/assets', express.static(path.join(__dirname, '../assets'), {
 // =====================================================
 // ROUTES API
 // =====================================================
+
+// Middleware pour désactiver le cache sur toutes les réponses API
+// Ceci empêche le navigateur de mettre en cache les données sensibles
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);

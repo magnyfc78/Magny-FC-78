@@ -133,10 +133,19 @@ class API {
   }
 
   async logout() {
-    await this.post('/auth/logout', {});
-    this.token = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    // TOUJOURS nettoyer le localStorage, même si la requête échoue
+    // Ceci garantit que l'utilisateur sera déconnecté côté client
+    try {
+      await this.post('/auth/logout', {});
+    } catch (error) {
+      console.warn('Logout API call failed, but clearing local storage anyway');
+    } finally {
+      this.token = null;
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      // Supprimer aussi les données en cache de l'organigramme
+      localStorage.removeItem('organigramme_data');
+    }
   }
 
   async refreshToken() {

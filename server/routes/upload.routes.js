@@ -18,6 +18,17 @@ router.use(restrictTo('admin', 'editor'));
 // =====================================================
 // UPLOAD SIMPLE (une image)
 // =====================================================
+// Mapping des types vers les noms de dossiers réels
+const typeToDirName = {
+  equipe: 'equipes',
+  actualite: 'actualites',
+  galerie: 'galerie',
+  partenaire: 'partenaires',
+  avatar: 'avatars',
+  config: 'config',
+  comite: 'avatars'
+};
+
 router.post('/single/:type', uploadSingle('image'), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -25,7 +36,9 @@ router.post('/single/:type', uploadSingle('image'), async (req, res, next) => {
     }
 
     const type = req.params.type;
-    const relativePath = `/uploads/${type}/${req.file.filename}`;
+    // Utiliser le nom de dossier correct (pluriel pour actualites, partenaires, etc.)
+    const dirName = typeToDirName[type] || type;
+    const relativePath = `/uploads/${dirName}/${req.file.filename}`;
 
     res.json({
       success: true,
@@ -52,9 +65,11 @@ router.post('/multiple/:type', uploadMultiple('images', 20), async (req, res, ne
     }
 
     const type = req.params.type;
+    // Utiliser le nom de dossier correct (pluriel pour actualites, partenaires, etc.)
+    const dirName = typeToDirName[type] || type;
     const files = req.files.map(file => ({
       filename: file.filename,
-      path: `/uploads/${type}/${file.filename}`,
+      path: `/uploads/${dirName}/${file.filename}`,
       thumbnail: file.thumbnail || null,
       size: file.size
     }));
@@ -185,7 +200,9 @@ router.delete('/file', async (req, res, next) => {
 router.get('/list/:type', async (req, res, next) => {
   try {
     const { type } = req.params;
-    const dirPath = path.join(process.cwd(), 'public/uploads', type);
+    // Utiliser le nom de dossier correct (pluriel pour actualites, partenaires, etc.)
+    const dirName = typeToDirName[type] || type;
+    const dirPath = path.join(process.cwd(), 'public/uploads', dirName);
 
     if (!fs.existsSync(dirPath)) {
       return res.json({ success: true, data: { files: [] } });
@@ -197,7 +214,7 @@ router.get('/list/:type', async (req, res, next) => {
         const stat = fs.statSync(path.join(dirPath, filename));
         return {
           filename,
-          path: `/uploads/${type}/${filename}`,
+          path: `/uploads/${dirName}/${filename}`,
           size: stat.size,
           created: stat.birthtime
         };

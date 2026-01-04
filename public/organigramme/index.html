@@ -169,27 +169,27 @@
     <div class="admin-toggle">
         <label>
             <span>Mode Admin</span>
-            <input type="checkbox" id="admin-toggle" onchange="organigramme.toggleAdminMode(this.checked)">
+            <input type="checkbox" id="admin-toggle">
             <span class="toggle-slider"></span>
         </label>
     </div>
 
     <!-- Outils admin -->
     <div class="admin-tools">
-        <button class="btn-export" onclick="organigramme.exportData()" title="Exporter les données JSON">
+        <button class="btn-export" id="btn-export" title="Exporter les données JSON">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
             </svg>
             Exporter
         </button>
-        <button class="btn-import" onclick="document.getElementById('import-file').click()" title="Importer des données JSON">
+        <button class="btn-import" id="btn-import" title="Importer des données JSON">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
             </svg>
             Importer
         </button>
-        <input type="file" id="import-file" accept=".json" onchange="handleImport(event)">
-        <button class="btn-print" onclick="window.print()" title="Imprimer l'organigramme">
+        <input type="file" id="import-file" accept=".json">
+        <button class="btn-print" id="btn-print" title="Imprimer l'organigramme">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
             </svg>
@@ -214,14 +214,52 @@
     <!-- Scripts -->
     <script src="/js/organigram.js?v=1.0.0"></script>
     <script>
-        // Gestionnaire d'import
-        function handleImport(event) {
-            const file = event.target.files[0];
-            if (file && organigramme) {
-                organigramme.importData(file);
+        // Attacher les gestionnaires d'événements après chargement du DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle admin mode
+            const adminToggle = document.getElementById('admin-toggle');
+            if (adminToggle) {
+                adminToggle.addEventListener('change', function() {
+                    if (typeof organigramme !== 'undefined') {
+                        organigramme.toggleAdminMode(this.checked);
+                    }
+                });
             }
-            event.target.value = '';
-        }
+
+            // Export button
+            const btnExport = document.getElementById('btn-export');
+            if (btnExport) {
+                btnExport.addEventListener('click', function() {
+                    if (typeof organigramme !== 'undefined') {
+                        organigramme.exportData();
+                    }
+                });
+            }
+
+            // Import button
+            const btnImport = document.getElementById('btn-import');
+            const importFile = document.getElementById('import-file');
+            if (btnImport && importFile) {
+                btnImport.addEventListener('click', function() {
+                    importFile.click();
+                });
+                importFile.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (file && typeof organigramme !== 'undefined') {
+                        organigramme.importData(file);
+                    }
+                    event.target.value = '';
+                });
+            }
+
+            // Print button
+            const btnPrint = document.getElementById('btn-print');
+            if (btnPrint) {
+                btnPrint.addEventListener('click', function() {
+                    window.print();
+                });
+            }
+        });
     </script>
 </body>
 </html>

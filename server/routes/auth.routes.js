@@ -144,14 +144,29 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
 // POST /api/auth/logout - Déconnexion
 // =====================================================
 router.post('/logout', (req, res) => {
-  res.cookie('refreshToken', '', {
+  // Options de cookie identiques à celles utilisées lors de la création
+  // pour garantir la suppression correcte
+  const cookieOptions = {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
     expires: new Date(0)
-  });
-  res.cookie('jwt', '', {
-    httpOnly: true,
-    expires: new Date(0)
-  });
+  };
+
+  res.cookie('refreshToken', '', cookieOptions);
+  res.cookie('jwt', '', cookieOptions);
+
+  // Forcer la suppression des cookies avec clearCookie aussi
+  res.clearCookie('refreshToken', cookieOptions);
+  res.clearCookie('jwt', cookieOptions);
+
+  // Headers pour empêcher le cache de cette réponse
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  logger.info(`Déconnexion utilisateur`);
 
   res.json({
     success: true,
