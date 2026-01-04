@@ -708,7 +708,7 @@ const views = {
 
             <div class="contact-form">
               <h2>ENVOYER UN MESSAGE</h2>
-              <form id="contact-form" onsubmit="handleContact(event)">
+              <form id="contact-form">
                 <div class="form-group">
                   <label for="nom">Nom complet</label>
                   <input type="text" id="nom" name="nom" class="form-control" required>
@@ -1049,6 +1049,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       case 'partenaires':
         filterPartenaires(category);
         break;
+    }
+  });
+
+  // Event delegation for contact form submission
+  document.addEventListener('submit', (e) => {
+    if (e.target.id === 'contact-form') {
+      handleContact(e);
     }
   });
 
