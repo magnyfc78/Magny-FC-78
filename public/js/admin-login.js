@@ -25,7 +25,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (api.isAdmin()) {
             window.location.href = '/admin/';
         } else {
-            api.logout();
+            await api.logout();
             alertEl.textContent = 'Accès refusé. Vous devez être administrateur.';
             alertEl.className = 'alert alert-danger';
             alertEl.style.display = 'block';

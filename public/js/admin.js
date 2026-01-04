@@ -1672,7 +1672,8 @@ function showAlert(message, type = 'success') {
   setTimeout(() => container.innerHTML = '', 4000);
 }
 
-function logout() {
-  api.logout();
-  window.location.href = '/admin/login.html';
+async function logout() {
+  await api.logout();
+  // Force reload pour vider le cache du navigateur
+  window.location.replace('/admin/login.html');
 }

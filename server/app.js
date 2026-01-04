@@ -214,6 +214,17 @@ app.use('/assets', express.static(path.join(__dirname, '../assets'), {
 // =====================================================
 // ROUTES API
 // =====================================================
+
+// Middleware pour désactiver le cache sur toutes les réponses API
+// Ceci empêche le navigateur de mettre en cache les données sensibles
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
