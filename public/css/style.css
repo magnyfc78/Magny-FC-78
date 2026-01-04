@@ -483,37 +483,32 @@ nav a.active {
 
 .actu-card {
   background: var(--blanc);
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 5px 25px rgba(0,0,0,0.1);
   overflow: hidden;
   transition: all 0.3s ease;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .actu-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .actu-image {
-  position: relative;
-  height: 200px;
+  height: 220px;
   background: var(--bleu-fonce);
   overflow: hidden;
 }
 
 .actu-image img {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.5s ease;
 }
 
 .actu-card:hover .actu-image img {
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
 .actu-body {
@@ -987,6 +982,15 @@ footer {
   transform: translateY(-5px);
 }
 
+/* Image directe dans partenaire-item (page d'accueil) */
+.partenaire-item > img {
+  max-width: 100%;
+  max-height: 120px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
 .partenaire-logo {
   width: 120px;
   height: 80px;
@@ -1003,7 +1007,6 @@ footer {
   width: auto;
   height: auto;
   object-fit: contain;
-  object-position: center;
 }
 
 .partenaire-info h3 {
