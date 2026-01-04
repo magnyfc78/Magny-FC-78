@@ -486,22 +486,29 @@ nav a.active {
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   overflow: hidden;
   transition: all 0.3s ease;
+  border-radius: 12px;
 }
 
 .actu-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
 .actu-image {
+  position: relative;
   height: 200px;
   background: var(--bleu-fonce);
   overflow: hidden;
 }
 
 .actu-image img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 0.3s ease;
 }
 
@@ -981,14 +988,22 @@ footer {
 }
 
 .partenaire-logo {
-  width: 60px;
-  height: 60px;
-  background: var(--gris-clair);
-  border-radius: 50%;
+  width: 120px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.partenaire-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
 }
 
 .partenaire-info h3 {
