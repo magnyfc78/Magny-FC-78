@@ -477,38 +477,38 @@ nav a.active {
    ===================================================== */
 .actualites-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 30px;
 }
 
 .actu-card {
   background: var(--blanc);
-  box-shadow: 0 5px 25px rgba(0,0,0,0.1);
   overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
-  border-radius: 8px;
 }
 
 .actu-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-10px);
   box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .actu-image {
-  height: 220px;
-  background: var(--bleu-fonce);
+  width: 100%;
+  height: 200px;
   overflow: hidden;
 }
 
 .actu-image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.3s ease;
 }
 
 .actu-card:hover .actu-image img {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .actu-body {
@@ -549,18 +549,6 @@ nav a.active {
   font-size: 0.9rem;
   color: var(--gris);
   line-height: 1.7;
-}
-
-@media (max-width: 992px) {
-  .actualites-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .actualites-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* =====================================================
