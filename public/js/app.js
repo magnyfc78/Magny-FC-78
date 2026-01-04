@@ -3,6 +3,17 @@
  */
 
 // =====================================================
+// GESTIONNAIRE GLOBAL D'ERREURS D'IMAGES
+// =====================================================
+// Remplace les images cassées par le logo du club
+document.addEventListener('error', function(e) {
+  if (e.target.tagName === 'IMG' && !e.target.dataset.fallbackApplied) {
+    e.target.dataset.fallbackApplied = 'true';
+    e.target.src = '/assets/images/logo.png';
+  }
+}, true);
+
+// =====================================================
 // VUES / PAGES
 // =====================================================
 
@@ -118,7 +129,7 @@ const views = {
               return `
               <article class="actu-card">
                 <div class="actu-image">
-                  <img src="${imageSrc}" alt="${a.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+                  <img src="${imageSrc}" alt="${a.titre}" loading="lazy">
                 </div>
                 <div class="actu-body">
                   <div class="actu-meta">
@@ -147,7 +158,7 @@ const views = {
           <div class="partenaires-grid">
             ${partenaires.length ? partenaires.slice(0, 6).map(p => `
               <div class="partenaire-item">
-                <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" onerror="this.src='/assets/images/logo.png'" title="${p.nom}">
+                <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" title="${p.nom}">
               </div>
             `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
@@ -334,7 +345,7 @@ const views = {
                     <div class="timeline-album-card">
                       <div class="timeline-year">${album.annee}</div>
                       <div class="timeline-album-image">
-                        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+                        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
                       </div>
                       <div class="timeline-album-info">
                         <h3>${album.titre}</h3>
@@ -515,7 +526,7 @@ const views = {
           <div class="hexagon">
             <div class="hexagon-inner">
               ${hasPhoto ?
-                `<img src="${member.photo}" alt="${member.nom}" onerror="this.src='/assets/images/logo.png'">`
+                `<img src="${member.photo || '/assets/images/logo.png'}" alt="${member.nom}">`
                 :
                 `<div class="placeholder">
                   <svg viewBox="0 0 24 24">
@@ -776,7 +787,7 @@ function renderActualites(actualites) {
     return `
       <article class="actu-card" data-category="${a.categorie}">
         <div class="actu-image">
-          <img src="${imageSrc}" alt="${a.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+          <img src="${imageSrc}" alt="${a.titre}" loading="lazy">
         </div>
         <div class="actu-body">
           <div class="actu-meta">
@@ -810,7 +821,7 @@ function renderGalerieAlbums(albums) {
   return albums.map(album => `
     <div class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
-        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+        <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
         <span class="album-count">${album.nb_photos || 0} photos</span>
         ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
       </div>
@@ -850,7 +861,7 @@ function renderPartenaires(partenaires) {
   return partenaires.map(p => `
     <div class="partenaire-item" data-category="${p.type}">
       <div class="partenaire-logo">
-        <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" onerror="this.src='/assets/images/logo.png'">
+        <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy">
       </div>
       <div class="partenaire-info">
         <h3>${p.nom}</h3>

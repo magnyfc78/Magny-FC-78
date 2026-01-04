@@ -2,6 +2,14 @@
  * MAGNY FC 78 - Administration Panel
  */
 
+// Gestionnaire global d'erreurs d'images - remplace par le logo si image cassée
+document.addEventListener('error', function(e) {
+  if (e.target.tagName === 'IMG' && !e.target.dataset.fallbackApplied) {
+    e.target.dataset.fallbackApplied = 'true';
+    e.target.src = '/assets/images/logo.png';
+  }
+}, true);
+
 let currentSection = 'dashboard';
 let categories = [];
 let galerieCategories = [];
@@ -673,7 +681,7 @@ async function loadOrganigramme() {
               ${membres.map(m => `
                 <tr>
                   <td>
-                    ${m.photo ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.src='/assets/images/logo.png'">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#e0e0e0;"></span>'}
+                    ${m.photo ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#e0e0e0;"></span>'}
                   </td>
                   <td><strong>${m.nom}</strong></td>
                   <td>${m.role}</td>
@@ -1284,7 +1292,7 @@ function openModal(type, data = null) {
           <label class="form-label">Photo</label>
           <input type="file" class="form-control" id="f-photo_file" accept="image/*">
           <input type="hidden" id="f-photo" value="${data?.photo || ''}">
-          ${data?.photo ? `<div style="margin-top:8px;"><img src="${data.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #1a4d92;" onerror="this.style.display='none'"> <small style="color:#6b7280;">${data.photo}</small></div>` : ''}
+          ${data?.photo ? `<div style="margin-top:8px;"><img src="${data.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #1a4d92;"> <small style="color:#6b7280;">${data.photo}</small></div>` : ''}
         </div>
         <div class="form-row">
           <div class="form-group">
