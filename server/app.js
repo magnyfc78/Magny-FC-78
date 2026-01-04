@@ -165,17 +165,50 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // =====================================================
-// FICHIERS STATIQUES
+// FICHIERS STATIQUES (avec gestion du cache optimisée)
 // =====================================================
+
+// Middleware pour désactiver le cache sur les fichiers HTML
+const noCacheForHtml = (req, res, next) => {
+  if (req.path.endsWith('.html') || req.path === '/' || !req.path.includes('.')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+};
+
+// Middleware pour forcer la revalidation des JS/CSS (cache avec revalidation)
+const revalidateCacheForAssets = (req, res, next) => {
+  if (req.path.endsWith('.js') || req.path.endsWith('.css')) {
+    // Cache mais doit toujours revalider (ETag sera utilisé)
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  }
+  next();
+};
+
+app.use(noCacheForHtml);
+app.use(revalidateCacheForAssets);
+
 app.use(express.static(path.join(__dirname, '../public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
+  etag: true,
+  lastModified: true,
+  // Images et fonts: cache long (7 jours), JS/CSS: géré par le middleware
+  setHeaders: (res, filePath) => {
+    if (filePath.match(/\.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 jours
+    }
+  }
 }));
 
 // Serve assets folder (logo, images, etc.)
 app.use('/assets', express.static(path.join(__dirname, '../assets'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
-  etag: true
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Images: cache long avec revalidation
+    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate'); // 7 jours
+  }
 }));
 
 // =====================================================
@@ -195,6 +228,10 @@ app.get('/api/health', (req, res) => {
 // ROUTES FRONTEND (SPA)
 // =====================================================
 app.get('*', (req, res) => {
+  // Désactiver le cache pour toutes les pages HTML (SPA)
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

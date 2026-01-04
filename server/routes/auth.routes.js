@@ -92,7 +92,13 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
     }
 
     // Vérifier le mot de passe
+    // Debug temporaire: log pour diagnostiquer les problèmes d'authentification
+    // TODO: Supprimer ces logs une fois le problème résolu
+    logger.info(`Auth debug - Email: ${email}, Hash longueur: ${user.password?.length}, Format valide: ${user.password?.startsWith('$2')}`);
+
     const isValid = await bcrypt.compare(password, user.password);
+    logger.info(`Auth debug - Résultat bcrypt.compare: ${isValid}`);
+
     if (!isValid) {
       logger.warn(`Tentative de connexion échouée pour: ${email}`);
       throw new AppError('Email ou mot de passe incorrect.', 401);
