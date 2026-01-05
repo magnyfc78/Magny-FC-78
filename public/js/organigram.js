@@ -42,7 +42,7 @@ class Organigramme {
   async loadData() {
     try {
       if (this.useApi) {
-        const response = await fetch(`${this.apiBase}/public/organigrammes`);
+        const response = await fetch(`${this.apiBase}/organigrammes`);
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data.organigrammes) {
