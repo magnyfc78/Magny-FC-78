@@ -899,10 +899,12 @@ footer {
   line-height: 1;
 }
 
-.social-link svg {
+.social-link svg,
+.social-link img {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
+  filter: brightness(0) invert(1);
 }
 
 .social-link:hover {
