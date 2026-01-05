@@ -496,6 +496,7 @@ nav a.active {
 }
 
 .actu-image {
+  position: relative;
   width: 100%;
   height: 200px;
   overflow: hidden;
@@ -512,6 +513,37 @@ nav a.active {
 
 .actu-card:hover .actu-image img {
   transform: scale(1.05);
+}
+
+/* Icône Instagram sur les images */
+.instagram-link {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.instagram-link:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.instagram-link svg {
+  width: 20px;
+  height: 20px;
 }
 
 .actu-body {
@@ -856,16 +888,34 @@ footer {
   width: 45px;
   height: 45px;
   background: rgba(255,255,255,0.1);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
+  color: white;
   transition: all 0.3s ease;
 }
 
+.social-link svg {
+  width: 22px;
+  height: 22px;
+}
+
 .social-link:hover {
-  background: var(--turquoise);
   transform: translateY(-3px);
+}
+
+.social-facebook:hover {
+  background: #1877f2;
+}
+
+.social-instagram:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.social-twitter:hover {
+  background: #000;
 }
 
 .footer-bottom {

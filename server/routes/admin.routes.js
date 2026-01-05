@@ -280,12 +280,12 @@ router.get('/actualites', async (req, res, next) => {
 
 router.post('/actualites', async (req, res, next) => {
   try {
-    const { titre, contenu, extrait, image, categorie, tags, publie, a_la_une, date_publication } = req.body;
+    const { titre, contenu, extrait, image, categorie, tags, lien_instagram, publie, a_la_une, date_publication } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 100);
     const [result] = await db.pool.execute(
-      `INSERT INTO actualites (titre, slug, contenu, extrait, image, categorie, auteur_id, tags, publie, a_la_une, date_publication) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [titre, slug, contenu, extrait, image, categorie || 'Club', req.user.id, JSON.stringify(tags), publie !== false, a_la_une || false, date_publication || new Date()]
+      `INSERT INTO actualites (titre, slug, contenu, extrait, image, categorie, auteur_id, tags, lien_instagram, publie, a_la_une, date_publication)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [titre, slug, contenu, extrait, image, categorie || 'Club', req.user.id, JSON.stringify(tags), lien_instagram || null, publie !== false, a_la_une || false, date_publication || new Date()]
     );
     await logActivity(req.user.id, 'create', 'actualites', result.insertId, { titre });
     res.status(201).json({ success: true, data: { id: result.insertId } });
@@ -295,12 +295,12 @@ router.post('/actualites', async (req, res, next) => {
 router.put('/actualites/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { titre, contenu, extrait, image, categorie, tags, publie, a_la_une, date_publication } = req.body;
+    const { titre, contenu, extrait, image, categorie, tags, lien_instagram, publie, a_la_une, date_publication } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 100);
     await db.pool.execute(
-      `UPDATE actualites SET titre = ?, slug = ?, contenu = ?, extrait = ?, image = ?, categorie = ?, 
-       tags = ?, publie = ?, a_la_une = ?, date_publication = ? WHERE id = ?`,
-      [titre, slug, contenu, extrait, image, categorie, JSON.stringify(tags), publie, a_la_une, date_publication, id]
+      `UPDATE actualites SET titre = ?, slug = ?, contenu = ?, extrait = ?, image = ?, categorie = ?,
+       tags = ?, lien_instagram = ?, publie = ?, a_la_une = ?, date_publication = ? WHERE id = ?`,
+      [titre, slug, contenu, extrait, image, categorie, JSON.stringify(tags), lien_instagram || null, publie, a_la_une, date_publication, id]
     );
     await logActivity(req.user.id, 'update', 'actualites', id, { titre });
     res.json({ success: true, message: 'Article mis à jour' });
@@ -376,12 +376,12 @@ router.get('/galerie/albums', async (req, res, next) => {
 
 router.post('/galerie/albums', async (req, res, next) => {
   try {
-    const { titre, description, image_couverture, categorie_id, date_evenement, annee } = req.body;
+    const { titre, description, image_couverture, categorie_id, date_evenement, annee, lien_instagram } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const albumYear = annee || (date_evenement ? new Date(date_evenement).getFullYear() : new Date().getFullYear());
     const [result] = await db.pool.execute(
-      'INSERT INTO galerie_albums (titre, slug, description, image_couverture, categorie_id, date_evenement, annee) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, albumYear]
+      'INSERT INTO galerie_albums (titre, slug, description, image_couverture, categorie_id, date_evenement, lien_instagram, annee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, lien_instagram || null, albumYear]
     );
     res.status(201).json({ success: true, data: { id: result.insertId } });
   } catch (error) { next(error); }
@@ -389,12 +389,12 @@ router.post('/galerie/albums', async (req, res, next) => {
 
 router.put('/galerie/albums/:id', async (req, res, next) => {
   try {
-    const { titre, description, image_couverture, categorie_id, date_evenement, annee, actif, ordre } = req.body;
+    const { titre, description, image_couverture, categorie_id, date_evenement, annee, lien_instagram, actif, ordre } = req.body;
     const slug = titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const albumYear = annee || (date_evenement ? new Date(date_evenement).getFullYear() : null);
     await db.pool.execute(
-      'UPDATE galerie_albums SET titre = ?, slug = ?, description = ?, image_couverture = ?, categorie_id = ?, date_evenement = ?, annee = ?, actif = ?, ordre = ? WHERE id = ?',
-      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, albumYear, actif, ordre, req.params.id]
+      'UPDATE galerie_albums SET titre = ?, slug = ?, description = ?, image_couverture = ?, categorie_id = ?, date_evenement = ?, lien_instagram = ?, annee = ?, actif = ?, ordre = ? WHERE id = ?',
+      [titre, slug, description, image_couverture, categorie_id || null, date_evenement, lien_instagram || null, albumYear, actif, ordre, req.params.id]
     );
     res.json({ success: true, message: 'Album mis à jour' });
   } catch (error) { next(error); }

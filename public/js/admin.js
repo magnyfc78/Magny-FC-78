@@ -1117,6 +1117,11 @@ function openModal(type, data = null) {
           ${data?.image ? `<div style="margin-top:5px;"><img src="${data.image}" style="max-height:60px;border-radius:4px;"> <small>${data.image}</small></div>` : ''}
         </div>
         <div class="form-group">
+          <label class="form-label">Lien Instagram</label>
+          <input type="url" class="form-control" id="f-lien_instagram" value="${data?.lien_instagram || ''}" placeholder="https://www.instagram.com/p/...">
+          <small class="text-muted">Lien vers le post Instagram associé (optionnel)</small>
+        </div>
+        <div class="form-group">
           <label class="form-label">Extrait</label>
           <textarea class="form-control" id="f-extrait" rows="2" placeholder="Résumé court de l'article (max 500 caractères)">${data?.extrait || ''}</textarea>
         </div>
@@ -1167,6 +1172,11 @@ function openModal(type, data = null) {
           <input type="file" class="form-control" id="f-image_couverture_file" accept="image/*">
           <input type="hidden" id="f-image_couverture" value="${data?.image_couverture || ''}">
           ${data?.image_couverture ? `<div style="margin-top:5px;"><img src="${data.image_couverture}" style="max-height:60px;border-radius:4px;"> <small>${data.image_couverture}</small></div>` : ''}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lien Instagram</label>
+          <input type="url" class="form-control" id="f-lien_instagram" value="${data?.lien_instagram || ''}" placeholder="https://www.instagram.com/p/...">
+          <small class="text-muted">Lien vers le post/album Instagram associé (optionnel)</small>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1473,7 +1483,8 @@ async function saveModal() {
         publie: getChecked('f-publie'),
         a_la_une: getChecked('f-a_la_une'),
         image: actuImagePath,
-        tags: tagsArray
+        tags: tagsArray,
+        lien_instagram: getValue('f-lien_instagram') || null
       };
       endpoint = '/admin/actualites';
       break;
@@ -1503,6 +1514,7 @@ async function saveModal() {
         date_evenement: getValue('f-date_evenement') || null,
         annee: parseInt(getValue('f-annee')) || new Date().getFullYear(),
         image_couverture: albumImagePath,
+        lien_instagram: getValue('f-lien_instagram') || null,
         actif: getChecked('f-actif'),
         ordre: parseInt(getValue('f-ordre')) || 0
       };
