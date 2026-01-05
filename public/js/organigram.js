@@ -2,13 +2,15 @@
  * MAGNY FC 78 - Organigramme Dynamique
  *
  * Ce module gère l'affichage et la modification dynamique de l'organigramme du comité.
- * Les données sont chargées depuis un fichier JSON et peuvent être modifiées via une interface admin.
+ * Les données sont chargées depuis la base de données via l'API.
  */
+
+console.log('[Organigramme] Script chargé - version 2024-01-05');
 
 class Organigramme {
   constructor(containerId, options = {}) {
+    console.log('[Organigramme] Constructeur appelé');
     this.container = document.getElementById(containerId);
-    this.useApi = options.useApi !== false; // Par défaut, utiliser l'API
     this.apiBase = options.apiBase || '/api';
     this.data = null;
     this.currentOrgId = null;
@@ -21,6 +23,7 @@ class Organigramme {
    * Initialise l'organigramme
    */
   async init() {
+    console.log('[Organigramme] init() appelé');
     try {
       await this.loadData();
       // Sélectionner le premier organigramme actif par défaut
@@ -32,54 +35,48 @@ class Organigramme {
       this.setupEventListeners();
     } catch (error) {
       console.error('Erreur initialisation organigramme:', error);
-      this.showError('Impossible de charger l\'organigramme');
+      this.showError('Impossible de charger l\'organigramme: ' + error.message);
     }
   }
 
   /**
-   * Charge les données depuis l'API ou le JSON de fallback
+   * Charge les données depuis l'API (base de données)
    */
   async loadData() {
-    try {
-      if (this.useApi) {
-        console.log('[Organigramme] Appel API:', `${this.apiBase}/organigrammes`);
-        const response = await fetch(`${this.apiBase}/organigrammes`);
-        console.log('[Organigramme] Réponse status:', response.status, response.ok);
-        if (response.ok) {
-          const result = await response.json();
-          console.log('[Organigramme] Données reçues:', result);
-          if (result.success && result.data.organigrammes) {
-            // Transformer les données API en format compatible
-            this.data = {
-              config: {
-                clubNom: 'MAGNY FC 78',
-                logoUrl: '/assets/images/logo.png',
-                defaultPhoto: '/assets/images/default-avatar.png'
-              },
-              organigrammes: result.data.organigrammes.map(org => ({
-                ...org,
-                actif: true,
-                membres: (org.membres || []).map(m => ({
-                  ...m,
-                  parentId: m.parent_id // Normaliser le nom du champ
-                }))
-              }))
-            };
-            return this.data;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[Organigramme] Erreur API:', error);
+    console.log('[Organigramme] loadData() - Appel API:', `${this.apiBase}/organigrammes`);
+
+    const response = await fetch(`${this.apiBase}/organigrammes`);
+    console.log('[Organigramme] Réponse:', response.status, response.statusText);
+
+    if (!response.ok) {
+      throw new Error(`Erreur API: ${response.status} ${response.statusText}`);
     }
 
-    // Fallback: charger depuis le fichier JSON statique
-    console.log('[Organigramme] Utilisation du fallback JSON');
-    const response = await fetch('/organigramme/data.json');
-    if (!response.ok) {
-      throw new Error('Erreur chargement données');
+    const result = await response.json();
+    console.log('[Organigramme] Données reçues:', result);
+
+    if (!result.success || !result.data.organigrammes) {
+      throw new Error('Format de réponse invalide');
     }
-    this.data = await response.json();
+
+    // Transformer les données API en format compatible
+    this.data = {
+      config: {
+        clubNom: 'MAGNY FC 78',
+        logoUrl: '/assets/images/logo.png',
+        defaultPhoto: '/assets/images/default-avatar.png'
+      },
+      organigrammes: result.data.organigrammes.map(org => ({
+        ...org,
+        actif: true,
+        membres: (org.membres || []).map(m => ({
+          ...m,
+          parentId: m.parent_id // Normaliser le nom du champ
+        }))
+      }))
+    };
+
+    console.log('[Organigramme] Données transformées:', this.data);
     return this.data;
   }
 
@@ -87,11 +84,6 @@ class Organigramme {
    * Sauvegarde l'ordre des organigrammes via l'API
    */
   async saveOrganigrammesOrdre(ordres) {
-    if (!this.useApi) {
-      console.log('Mode hors-ligne: ordre non sauvegardé');
-      return false;
-    }
-
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.apiBase}/admin/organigrammes-ordre`, {
@@ -114,11 +106,6 @@ class Organigramme {
    * Sauvegarde un membre via l'API
    */
   async saveMemberToApi(membre, isNew = false) {
-    if (!this.useApi) {
-      console.log('Mode hors-ligne: membre non sauvegardé');
-      return false;
-    }
-
     try {
       const token = localStorage.getItem('auth_token');
       const orgId = this.currentOrgId;
@@ -158,11 +145,6 @@ class Organigramme {
    * Supprime un membre via l'API
    */
   async deleteMemberFromApi(membreId) {
-    if (!this.useApi) {
-      console.log('Mode hors-ligne: membre non supprimé');
-      return false;
-    }
-
     try {
       const token = localStorage.getItem('auth_token');
       const orgId = this.currentOrgId;
