@@ -25,7 +25,7 @@
           "id": "president",
           "nom": "Jaafar",
           "role": "Président",
-          "photo": "/assets/images/comite/jaafar.jpg",
+          "photo": null,
           "niveau": 1,
           "parentId": null,
           "ordre": 1
@@ -34,7 +34,7 @@
           "id": "secretaire-adjointe",
           "nom": "Maud",
           "role": "Secretaire Adjointe",
-          "photo": "/assets/images/comite/maud.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "president",
           "ordre": 1
@@ -43,7 +43,7 @@
           "id": "secretaire",
           "nom": "Morgane",
           "role": "Secretaire",
-          "photo": "/assets/images/comite/morgane.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "president",
           "ordre": 2
@@ -52,7 +52,7 @@
           "id": "vice-president",
           "nom": "Benjamin",
           "role": "Vice Président",
-          "photo": "/assets/images/comite/benjamin.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "president",
           "ordre": 3
@@ -61,7 +61,7 @@
           "id": "tresorier",
           "nom": "Bruno. L",
           "role": "Trésorier",
-          "photo": "/assets/images/comite/bruno-l.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "president",
           "ordre": 4
@@ -70,7 +70,7 @@
           "id": "tresorier-adjoint",
           "nom": "Hassan",
           "role": "Trésorier adjoint",
-          "photo": "/assets/images/comite/hassan.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "president",
           "ordre": 5
@@ -79,7 +79,7 @@
           "id": "resp-com",
           "nom": "Romain",
           "role": "Resp. Com'/Sponsors",
-          "photo": "/assets/images/comite/romain.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "secretaire",
           "ordre": 1
@@ -88,7 +88,7 @@
           "id": "resp-pef",
           "nom": "Marianne",
           "role": "Resp. Programme éducatif fédéral",
-          "photo": "/assets/images/comite/marianne.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "vice-president",
           "ordre": 2
@@ -97,7 +97,7 @@
           "id": "resp-buvette",
           "nom": "Hassan",
           "role": "Resp. Buvette",
-          "photo": "/assets/images/comite/hassan-buvette.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "tresorier",
           "ordre": 3
@@ -106,7 +106,7 @@
           "id": "resp-secu",
           "nom": "Bruno.V",
           "role": "Resp. Secu/FMI",
-          "photo": "/assets/images/comite/bruno-v.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "tresorier-adjoint",
           "ordre": 4
@@ -123,7 +123,7 @@
           "id": "coordinateur-f11",
           "nom": "Nicolas",
           "role": "Coordinateur technique foot à 11",
-          "photo": "/assets/images/comite/nicolas.jpg",
+          "photo": null,
           "niveau": 1,
           "parentId": null,
           "ordre": 1
@@ -132,7 +132,7 @@
           "id": "u14-coach",
           "nom": "Quentin",
           "role": "U14",
-          "photo": "/assets/images/comite/quentin.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 1
@@ -141,7 +141,7 @@
           "id": "u16-coach",
           "nom": "Hubert",
           "role": "U16",
-          "photo": "/assets/images/comite/hubert.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 2
@@ -150,7 +150,7 @@
           "id": "u18-coach",
           "nom": "Anderson",
           "role": "U18",
-          "photo": "/assets/images/comite/anderson.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 3
@@ -159,7 +159,7 @@
           "id": "senior-h-coach",
           "nom": "Pascal",
           "role": "Senior H",
-          "photo": "/assets/images/comite/pascal.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 4
@@ -168,7 +168,7 @@
           "id": "senior-f-coach",
           "nom": "Benjamin",
           "role": "Senior F",
-          "photo": "/assets/images/comite/benjamin-f.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 5
@@ -177,7 +177,7 @@
           "id": "veteran-coach",
           "nom": "Hervé",
           "role": "Vétéran",
-          "photo": "/assets/images/comite/herve.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f11",
           "ordre": 6
@@ -186,7 +186,7 @@
           "id": "u14-souley",
           "nom": "Souley",
           "role": "U14",
-          "photo": "/assets/images/comite/souley.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "u14-coach",
           "ordre": 1
@@ -195,7 +195,7 @@
           "id": "u14-benjamin",
           "nom": "Benjamin",
           "role": "U14",
-          "photo": "/assets/images/comite/benjamin-u14.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "u14-coach",
           "ordre": 2
@@ -204,7 +204,7 @@
           "id": "u16-nassim",
           "nom": "Nassim",
           "role": "U16",
-          "photo": "/assets/images/comite/nassim.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "u16-coach",
           "ordre": 1
@@ -213,7 +213,7 @@
           "id": "u18-nabil",
           "nom": "Nabil",
           "role": "U18",
-          "photo": "/assets/images/comite/nabil.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "u18-coach",
           "ordre": 1
@@ -222,7 +222,7 @@
           "id": "senior-h-samir",
           "nom": "Samir",
           "role": "Senior H",
-          "photo": "/assets/images/comite/samir.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "senior-h-coach",
           "ordre": 1
@@ -231,7 +231,7 @@
           "id": "veteran-sushi",
           "nom": "Sushi",
           "role": "Vétéran",
-          "photo": "/assets/images/comite/sushi.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "veteran-coach",
           "ordre": 1
@@ -240,7 +240,7 @@
           "id": "veteran-joachim",
           "nom": "Joachim",
           "role": "Vétéran",
-          "photo": "/assets/images/comite/joachim.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "veteran-coach",
           "ordre": 2
@@ -257,7 +257,7 @@
           "id": "coordinateur-f5",
           "nom": "Anthony",
           "role": "Coordinateur technique foot à 5",
-          "photo": "/assets/images/comite/anthony-f5.jpg",
+          "photo": null,
           "niveau": 1,
           "parentId": null,
           "ordre": 1
@@ -266,7 +266,7 @@
           "id": "crevettes-elodie",
           "nom": "Elodie",
           "role": "Crevettes",
-          "photo": "/assets/images/comite/elodie.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f5",
           "ordre": 1
@@ -275,7 +275,7 @@
           "id": "u67-delphine",
           "nom": "Delphine",
           "role": "U6/7",
-          "photo": "/assets/images/comite/delphine.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f5",
           "ordre": 2
@@ -284,7 +284,7 @@
           "id": "u67-alexandra",
           "nom": "Alexandra",
           "role": "U6/7",
-          "photo": "/assets/images/comite/alexandra.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f5",
           "ordre": 3
@@ -293,7 +293,7 @@
           "id": "u89-greg",
           "nom": "Greg",
           "role": "U8/9",
-          "photo": "/assets/images/comite/greg.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f5",
           "ordre": 4
@@ -302,7 +302,7 @@
           "id": "crevettes-maud",
           "nom": "Maud",
           "role": "Crevettes",
-          "photo": "/assets/images/comite/maud-crevettes.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "crevettes-elodie",
           "ordre": 1
@@ -311,7 +311,7 @@
           "id": "crevettes-marianne",
           "nom": "Marianne",
           "role": "Crevettes",
-          "photo": "/assets/images/comite/marianne-crevettes.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "crevettes-elodie",
           "ordre": 2
@@ -328,7 +328,7 @@
           "id": "coordinateur-f8",
           "nom": "Jalil",
           "role": "Coordinateur technique foot à 8",
-          "photo": "/assets/images/comite/jalil-coord.jpg",
+          "photo": null,
           "niveau": 1,
           "parentId": null,
           "ordre": 1
@@ -337,7 +337,7 @@
           "id": "u10-jalil",
           "nom": "Jalil",
           "role": "U10",
-          "photo": "/assets/images/comite/jalil-u10.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f8",
           "ordre": 1
@@ -346,7 +346,7 @@
           "id": "u11-jimmy",
           "nom": "Jimmy",
           "role": "U11",
-          "photo": "/assets/images/comite/jimmy.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f8",
           "ordre": 2
@@ -355,7 +355,7 @@
           "id": "u12-quentin",
           "nom": "Quentin",
           "role": "U12",
-          "photo": "/assets/images/comite/quentin-u12.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f8",
           "ordre": 3
@@ -364,7 +364,7 @@
           "id": "u13-anthony",
           "nom": "Anthony",
           "role": "U13",
-          "photo": "/assets/images/comite/anthony-u13.jpg",
+          "photo": null,
           "niveau": 2,
           "parentId": "coordinateur-f8",
           "ordre": 4
@@ -373,7 +373,7 @@
           "id": "u10-marco",
           "nom": "Marco",
           "role": "U10",
-          "photo": "/assets/images/comite/marco.jpg",
+          "photo": null,
           "niveau": 3,
           "parentId": "u10-jalil",
           "ordre": 1

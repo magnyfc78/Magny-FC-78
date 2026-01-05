@@ -424,7 +424,7 @@ class Organigramme {
 
               <div class="org-form-group">
                 <label for="member-photo">URL de la photo</label>
-                <input type="text" id="member-photo" placeholder="/assets/images/comite/nom.jpg">
+                <input type="text" id="member-photo" placeholder="/uploads/organigramme/photo.jpg">
                 <div class="photo-preview" id="photo-preview" style="display: none;">
                   <img src="" alt="Aperçu">
                 </div>
