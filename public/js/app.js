@@ -502,21 +502,31 @@ const views = {
 
   // Page club (organigrammes multiples)
   async club() {
-    // Charger les données des organigrammes
-    let orgData = { config: {}, organigrammes: [] };
+    // Charger les données des organigrammes depuis l'API
+    let organigrammes = [];
     try {
-      const res = await fetch('/organigramme/data.json');
+      const res = await fetch('/api/organigrammes');
       if (res.ok) {
-        orgData = await res.json();
+        const result = await res.json();
+        if (result.success && result.data.organigrammes) {
+          organigrammes = result.data.organigrammes.map(org => ({
+            ...org,
+            actif: true,
+            membres: (org.membres || []).map(m => ({
+              ...m,
+              parentId: m.parent_id
+            }))
+          }));
+        }
       }
     } catch (e) {
       console.error('Erreur chargement organigramme:', e);
     }
 
-    const config = orgData.config || {};
-    const organigrammes = (orgData.organigrammes || [])
+    const config = { clubNom: 'MAGNY FC 78', defaultPhoto: '/assets/images/default-avatar.png' };
+    organigrammes = organigrammes
       .filter(o => o.actif !== false)
-      .sort((a, b) => a.ordre - b.ordre);
+      .sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
 
     // Fonction pour rendre un hexagone
     const renderHexagon = (member) => {

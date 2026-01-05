@@ -639,11 +639,8 @@ async function loadOrganigramme() {
         organigrammes = res.data.organigrammes;
       }
     } catch (apiError) {
-      console.warn('API non disponible, fallback sur JSON:', apiError);
-      // Fallback sur le fichier JSON
-      const res = await fetch('/organigramme/data.json');
-      organigrammesData = await res.json();
-      organigrammes = organigrammesData.organigrammes || [];
+      console.error('Erreur API organigramme:', apiError);
+      showAlert('Erreur de chargement des organigrammes', 'danger');
     }
 
     organigrammes = organigrammesData.organigrammes || [];
