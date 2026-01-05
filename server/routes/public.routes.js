@@ -336,6 +336,49 @@ router.get('/galerie/:slug', async (req, res, next) => {
 });
 
 // =====================================================
+// ORGANIGRAMMES
+// =====================================================
+router.get('/organigrammes', async (req, res, next) => {
+  try {
+    const [organigrammes] = await db.pool.execute(
+      'SELECT id, titre, ordre FROM organigrammes WHERE actif = 1 ORDER BY ordre'
+    );
+
+    // Récupérer les membres pour chaque organigramme
+    for (const org of organigrammes) {
+      const [membres] = await db.pool.execute(
+        'SELECT id, nom, role, photo, niveau, parent_id, ordre FROM organigramme_membres WHERE organigramme_id = ? AND actif = 1 ORDER BY niveau, ordre',
+        [org.id]
+      );
+      org.membres = membres;
+    }
+
+    res.json({ success: true, data: { organigrammes } });
+  } catch (error) { next(error); }
+});
+
+router.get('/organigrammes/:id', async (req, res, next) => {
+  try {
+    const [[org]] = await db.pool.execute(
+      'SELECT id, titre, ordre FROM organigrammes WHERE id = ? AND actif = 1',
+      [req.params.id]
+    );
+
+    if (!org) {
+      return res.status(404).json({ success: false, error: 'Organigramme non trouvé' });
+    }
+
+    const [membres] = await db.pool.execute(
+      'SELECT id, nom, role, photo, niveau, parent_id, ordre FROM organigramme_membres WHERE organigramme_id = ? AND actif = 1 ORDER BY niveau, ordre',
+      [org.id]
+    );
+    org.membres = membres;
+
+    res.json({ success: true, data: { organigramme: org } });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
 // PARTENAIRES
 // =====================================================
 router.get('/partenaires', async (req, res, next) => {

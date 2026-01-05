@@ -533,6 +533,154 @@ router.delete('/partenaires/:id', async (req, res, next) => {
 });
 
 // =====================================================
+// ORGANIGRAMMES (Admin CRUD)
+// =====================================================
+
+// Liste des organigrammes
+router.get('/organigrammes', async (req, res, next) => {
+  try {
+    const [organigrammes] = await db.pool.execute(`
+      SELECT o.*, (SELECT COUNT(*) FROM organigramme_membres WHERE organigramme_id = o.id) as nb_membres
+      FROM organigrammes o ORDER BY o.ordre
+    `);
+    res.json({ success: true, data: { organigrammes } });
+  } catch (error) { next(error); }
+});
+
+// Obtenir un organigramme avec ses membres
+router.get('/organigrammes/:id', async (req, res, next) => {
+  try {
+    const [[org]] = await db.pool.execute('SELECT * FROM organigrammes WHERE id = ?', [req.params.id]);
+    if (!org) {
+      return res.status(404).json({ success: false, error: 'Organigramme non trouvé' });
+    }
+    const [membres] = await db.pool.execute(
+      'SELECT * FROM organigramme_membres WHERE organigramme_id = ? ORDER BY niveau, ordre',
+      [req.params.id]
+    );
+    res.json({ success: true, data: { organigramme: { ...org, membres } } });
+  } catch (error) { next(error); }
+});
+
+// Créer un organigramme
+router.post('/organigrammes', async (req, res, next) => {
+  try {
+    const { id, titre, ordre, actif } = req.body;
+    const orgId = id || titre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    await db.pool.execute(
+      'INSERT INTO organigrammes (id, titre, ordre, actif) VALUES (?, ?, ?, ?)',
+      [orgId, titre, ordre || 0, actif !== false]
+    );
+    await logActivity(req.user.id, 'create', 'organigrammes', null, { id: orgId, titre });
+    res.status(201).json({ success: true, data: { id: orgId } });
+  } catch (error) { next(error); }
+});
+
+// Mettre à jour un organigramme
+router.put('/organigrammes/:id', async (req, res, next) => {
+  try {
+    const { titre, ordre, actif } = req.body;
+    await db.pool.execute(
+      'UPDATE organigrammes SET titre = ?, ordre = ?, actif = ? WHERE id = ?',
+      [titre, ordre, actif, req.params.id]
+    );
+    await logActivity(req.user.id, 'update', 'organigrammes', null, { id: req.params.id, titre });
+    res.json({ success: true, message: 'Organigramme mis à jour' });
+  } catch (error) { next(error); }
+});
+
+// Mettre à jour l'ordre de tous les organigrammes
+router.put('/organigrammes-ordre', async (req, res, next) => {
+  try {
+    const { ordres } = req.body; // [{id: 'comite', ordre: 1}, {id: 'foot-a-11', ordre: 2}, ...]
+    for (const item of ordres) {
+      await db.pool.execute('UPDATE organigrammes SET ordre = ? WHERE id = ?', [item.ordre, item.id]);
+    }
+    await logActivity(req.user.id, 'update_ordre', 'organigrammes', null, { ordres });
+    res.json({ success: true, message: 'Ordre mis à jour' });
+  } catch (error) { next(error); }
+});
+
+// Supprimer un organigramme (cascade supprime les membres)
+router.delete('/organigrammes/:id', async (req, res, next) => {
+  try {
+    await logActivity(req.user.id, 'delete', 'organigrammes', null, { id: req.params.id });
+    await db.pool.execute('DELETE FROM organigrammes WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Organigramme supprimé' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// ORGANIGRAMME MEMBRES (Admin CRUD)
+// =====================================================
+
+// Créer un membre
+router.post('/organigrammes/:orgId/membres', async (req, res, next) => {
+  try {
+    const { orgId } = req.params;
+    const { id, nom, role, photo, niveau, parent_id, ordre } = req.body;
+    const membreId = id || `${orgId}-${Date.now()}`;
+    await db.pool.execute(
+      `INSERT INTO organigramme_membres (id, organigramme_id, nom, role, photo, niveau, parent_id, ordre)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [membreId, orgId, nom, role, photo || null, niveau || 1, parent_id || null, ordre || 0]
+    );
+    await logActivity(req.user.id, 'create', 'organigramme_membres', null, { id: membreId, nom, orgId });
+    res.status(201).json({ success: true, data: { id: membreId } });
+  } catch (error) { next(error); }
+});
+
+// Mettre à jour un membre
+router.put('/organigrammes/:orgId/membres/:membreId', async (req, res, next) => {
+  try {
+    const { membreId } = req.params;
+    const { nom, role, photo, niveau, parent_id, ordre, actif } = req.body;
+    await db.pool.execute(
+      `UPDATE organigramme_membres SET nom = ?, role = ?, photo = ?, niveau = ?, parent_id = ?, ordre = ?, actif = ?
+       WHERE id = ?`,
+      [nom, role, photo, niveau, parent_id || null, ordre, actif !== false, membreId]
+    );
+    await logActivity(req.user.id, 'update', 'organigramme_membres', null, { id: membreId, nom });
+    res.json({ success: true, message: 'Membre mis à jour' });
+  } catch (error) { next(error); }
+});
+
+// Mettre à jour l'ordre des membres
+router.put('/organigrammes/:orgId/membres-ordre', async (req, res, next) => {
+  try {
+    const { ordres } = req.body; // [{id: 'president', ordre: 1, niveau: 1}, ...]
+    for (const item of ordres) {
+      await db.pool.execute(
+        'UPDATE organigramme_membres SET ordre = ?, niveau = ?, parent_id = ? WHERE id = ?',
+        [item.ordre, item.niveau, item.parent_id || null, item.id]
+      );
+    }
+    res.json({ success: true, message: 'Ordre des membres mis à jour' });
+  } catch (error) { next(error); }
+});
+
+// Supprimer un membre
+router.delete('/organigrammes/:orgId/membres/:membreId', async (req, res, next) => {
+  try {
+    const { membreId } = req.params;
+    // Vérifier si le membre a des subordonnés
+    const [[{ count }]] = await db.pool.execute(
+      'SELECT COUNT(*) as count FROM organigramme_membres WHERE parent_id = ?',
+      [membreId]
+    );
+    if (count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Impossible de supprimer un membre avec des subordonnés. Supprimez d\'abord ses subordonnés.'
+      });
+    }
+    await logActivity(req.user.id, 'delete', 'organigramme_membres', null, { id: membreId });
+    await db.pool.execute('DELETE FROM organigramme_membres WHERE id = ?', [membreId]);
+    res.json({ success: true, message: 'Membre supprimé' });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
 // MESSAGES CONTACT
 // =====================================================
 router.get('/contacts', async (req, res, next) => {

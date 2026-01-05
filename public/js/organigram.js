@@ -6,9 +6,10 @@
  */
 
 class Organigramme {
-  constructor(containerId, dataUrl = '/organigramme/data.json') {
+  constructor(containerId, options = {}) {
     this.container = document.getElementById(containerId);
-    this.dataUrl = dataUrl;
+    this.useApi = options.useApi !== false; // Par défaut, utiliser l'API
+    this.apiBase = options.apiBase || '/api';
     this.data = null;
     this.currentOrgId = null;
     this.adminMode = false;
@@ -36,10 +37,41 @@ class Organigramme {
   }
 
   /**
-   * Charge les données depuis le JSON
+   * Charge les données depuis l'API ou le JSON de fallback
    */
   async loadData() {
-    const response = await fetch(this.dataUrl);
+    try {
+      if (this.useApi) {
+        const response = await fetch(`${this.apiBase}/public/organigrammes`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.organigrammes) {
+            // Transformer les données API en format compatible
+            this.data = {
+              config: {
+                clubNom: 'MAGNY FC 78',
+                logoUrl: '/assets/images/logo.png',
+                defaultPhoto: '/assets/images/default-avatar.png'
+              },
+              organigrammes: result.data.organigrammes.map(org => ({
+                ...org,
+                actif: true,
+                membres: (org.membres || []).map(m => ({
+                  ...m,
+                  parentId: m.parent_id // Normaliser le nom du champ
+                }))
+              }))
+            };
+            return this.data;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('API non disponible, fallback sur JSON statique:', error);
+    }
+
+    // Fallback: charger depuis le fichier JSON statique
+    const response = await fetch('/organigramme/data.json');
     if (!response.ok) {
       throw new Error('Erreur chargement données');
     }
@@ -48,13 +80,112 @@ class Organigramme {
   }
 
   /**
-   * Sauvegarde les données (simulation - en production, envoyer vers une API)
+   * Sauvegarde l'ordre des organigrammes via l'API
+   */
+  async saveOrganigrammesOrdre(ordres) {
+    if (!this.useApi) {
+      console.log('Mode hors-ligne: ordre non sauvegardé');
+      return false;
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${this.apiBase}/admin/organigrammes-ordre`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ordres })
+      });
+      const result = await response.json();
+      return result.success;
+    } catch (error) {
+      console.error('Erreur sauvegarde ordre:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Sauvegarde un membre via l'API
+   */
+  async saveMemberToApi(membre, isNew = false) {
+    if (!this.useApi) {
+      console.log('Mode hors-ligne: membre non sauvegardé');
+      return false;
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const orgId = this.currentOrgId;
+      const url = isNew
+        ? `${this.apiBase}/admin/organigrammes/${orgId}/membres`
+        : `${this.apiBase}/admin/organigrammes/${orgId}/membres/${membre.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: membre.id,
+          nom: membre.nom,
+          role: membre.role,
+          photo: membre.photo,
+          niveau: membre.niveau,
+          parent_id: membre.parentId,
+          ordre: membre.ordre
+        })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur de sauvegarde');
+      }
+      return result;
+    } catch (error) {
+      console.error('Erreur sauvegarde membre:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime un membre via l'API
+   */
+  async deleteMemberFromApi(membreId) {
+    if (!this.useApi) {
+      console.log('Mode hors-ligne: membre non supprimé');
+      return false;
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const orgId = this.currentOrgId;
+      const response = await fetch(`${this.apiBase}/admin/organigrammes/${orgId}/membres/${membreId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur de suppression');
+      }
+      return true;
+    } catch (error) {
+      console.error('Erreur suppression membre:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sauvegarde les données localement (fallback si API non disponible)
    */
   async saveData() {
-    // En mode production, envoyer vers une API backend
-    // Pour le moment, on stocke en localStorage comme démonstration
+    // Sauvegarde locale en fallback
     localStorage.setItem('organigramme_data', JSON.stringify(this.data));
-    console.log('Données sauvegardées:', this.data);
+    console.log('Données sauvegardées localement:', this.data);
   }
 
   /**
@@ -510,6 +641,7 @@ class Organigramme {
     }
 
     const id = document.getElementById('member-id').value;
+    const isNew = !id;
     const memberData = {
       id: id || this.generateId(),
       nom: document.getElementById('member-nom').value.trim(),
@@ -523,21 +655,29 @@ class Organigramme {
     const currentOrg = this.getCurrentOrg();
     if (!currentOrg) return;
 
-    if (this.currentEditMember) {
-      // Mise à jour
-      const index = currentOrg.membres.findIndex(m => m.id === id);
-      if (index !== -1) {
-        currentOrg.membres[index] = memberData;
-      }
-    } else {
-      // Ajout
-      currentOrg.membres.push(memberData);
-    }
+    try {
+      // Sauvegarder via l'API
+      await this.saveMemberToApi(memberData, isNew);
 
-    await this.saveData();
-    this.render();
-    this.setupEventListeners();
-    this.closeModal();
+      // Mettre à jour les données locales
+      if (this.currentEditMember) {
+        // Mise à jour
+        const index = currentOrg.membres.findIndex(m => m.id === id);
+        if (index !== -1) {
+          currentOrg.membres[index] = memberData;
+        }
+      } else {
+        // Ajout
+        currentOrg.membres.push(memberData);
+      }
+
+      await this.saveData();
+      this.render();
+      this.setupEventListeners();
+      this.closeModal();
+    } catch (error) {
+      alert('Erreur lors de la sauvegarde: ' + error.message);
+    }
   }
 
   /**
@@ -560,10 +700,19 @@ class Organigramme {
 
     const currentOrg = this.getCurrentOrg();
     if (!currentOrg) return;
-    currentOrg.membres = currentOrg.membres.filter(m => m.id !== memberId);
-    await this.saveData();
-    this.render();
-    this.setupEventListeners();
+
+    try {
+      // Supprimer via l'API
+      await this.deleteMemberFromApi(memberId);
+
+      // Mettre à jour les données locales
+      currentOrg.membres = currentOrg.membres.filter(m => m.id !== memberId);
+      await this.saveData();
+      this.render();
+      this.setupEventListeners();
+    } catch (error) {
+      alert('Erreur lors de la suppression: ' + error.message);
+    }
   }
 
   /**
