@@ -17,7 +17,8 @@ const uploadDirs = [
   'public/uploads/galerie/thumbnails',
   'public/uploads/partenaires',
   'public/uploads/avatars',
-  'public/uploads/config'
+  'public/uploads/config',
+  'public/uploads/organigramme'
 ];
 
 uploadDirs.forEach(dir => {
@@ -44,6 +45,7 @@ const storage = multer.diskStorage({
       partenaire: 'public/uploads/partenaires',
       avatar: 'public/uploads/avatars',
       config: 'public/uploads/config',
+      organigramme: 'public/uploads/organigramme',
       general: 'public/uploads'
     };
     cb(null, destinations[type] || destinations.general);
