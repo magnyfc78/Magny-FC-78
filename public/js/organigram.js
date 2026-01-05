@@ -42,9 +42,12 @@ class Organigramme {
   async loadData() {
     try {
       if (this.useApi) {
+        console.log('[Organigramme] Appel API:', `${this.apiBase}/organigrammes`);
         const response = await fetch(`${this.apiBase}/organigrammes`);
+        console.log('[Organigramme] Réponse status:', response.status, response.ok);
         if (response.ok) {
           const result = await response.json();
+          console.log('[Organigramme] Données reçues:', result);
           if (result.success && result.data.organigrammes) {
             // Transformer les données API en format compatible
             this.data = {
@@ -67,10 +70,11 @@ class Organigramme {
         }
       }
     } catch (error) {
-      console.warn('API non disponible, fallback sur JSON statique:', error);
+      console.error('[Organigramme] Erreur API:', error);
     }
 
     // Fallback: charger depuis le fichier JSON statique
+    console.log('[Organigramme] Utilisation du fallback JSON');
     const response = await fetch('/organigramme/data.json');
     if (!response.ok) {
       throw new Error('Erreur chargement données');
