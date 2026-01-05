@@ -10,6 +10,7 @@ class Organigramme {
     this.container = document.getElementById(containerId);
     this.dataUrl = dataUrl;
     this.data = null;
+    this.currentOrgId = null;
     this.adminMode = false;
     this.modal = null;
     this.currentEditMember = null;
@@ -21,6 +22,11 @@ class Organigramme {
   async init() {
     try {
       await this.loadData();
+      // Sélectionner le premier organigramme actif par défaut
+      const activeOrgs = this.data.organigrammes.filter(o => o.actif);
+      if (activeOrgs.length > 0) {
+        this.currentOrgId = activeOrgs[0].id;
+      }
       this.render();
       this.setupEventListeners();
     } catch (error) {
@@ -49,20 +55,31 @@ class Organigramme {
     // Pour le moment, on stocke en localStorage comme démonstration
     localStorage.setItem('organigramme_data', JSON.stringify(this.data));
     console.log('Données sauvegardées:', this.data);
+  }
 
-    // Simuler un appel API
-    // await fetch('/api/organigramme', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(this.data)
-    // });
+  /**
+   * Récupère l'organigramme courant
+   */
+  getCurrentOrg() {
+    return this.data.organigrammes.find(o => o.id === this.currentOrgId);
+  }
+
+  /**
+   * Change l'organigramme affiché
+   */
+  switchOrg(orgId) {
+    this.currentOrgId = orgId;
+    this.render();
+    this.setupEventListeners();
   }
 
   /**
    * Récupère les membres par niveau
    */
   getMembersByLevel(level) {
-    return this.data.membres
+    const org = this.getCurrentOrg();
+    if (!org) return [];
+    return org.membres
       .filter(m => m.niveau === level)
       .sort((a, b) => a.ordre - b.ordre);
   }
@@ -71,7 +88,9 @@ class Organigramme {
    * Récupère les subordonnés d'un membre
    */
   getSubordinates(parentId) {
-    return this.data.membres
+    const org = this.getCurrentOrg();
+    if (!org) return [];
+    return org.membres
       .filter(m => m.parentId === parentId)
       .sort((a, b) => a.ordre - b.ordre);
   }
@@ -80,7 +99,9 @@ class Organigramme {
    * Récupère un membre par son ID
    */
   getMemberById(id) {
-    return this.data.membres.find(m => m.id === id);
+    const org = this.getCurrentOrg();
+    if (!org) return null;
+    return org.membres.find(m => m.id === id);
   }
 
   /**
@@ -141,6 +162,14 @@ class Organigramme {
    */
   render() {
     const config = this.data.config;
+    const currentOrg = this.getCurrentOrg();
+    const activeOrgs = this.data.organigrammes.filter(o => o.actif);
+
+    if (!currentOrg) {
+      this.container.innerHTML = '<p style="text-align: center; padding: 40px;">Aucun organigramme disponible</p>';
+      return;
+    }
+
     const level1 = this.getMembersByLevel(1);
     const level2 = this.getMembersByLevel(2);
     const level3 = this.getMembersByLevel(3);
@@ -154,40 +183,92 @@ class Organigramme {
       level3ByParent[m.parentId].push(m);
     });
 
+    // Calculer le nombre de membres niveau 2 pour la ligne horizontale
+    const level2Count = level2.length;
+
+    // Mettre à jour le titre de la page si l'élément existe
+    const headerTitle = document.querySelector('.organigramme-header h1');
+    if (headerTitle) {
+      headerTitle.textContent = currentOrg.titre;
+    }
+
     let html = `
-      <!-- Niveau 1: Président -->
+      <!-- Sélecteur d'organigramme -->
+      ${activeOrgs.length > 1 ? `
+        <div class="org-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
+          ${activeOrgs.map(org => `
+            <button class="org-selector-btn ${org.id === this.currentOrgId ? 'active' : ''}"
+                    data-action="switch-org" data-org-id="${org.id}"
+                    style="padding: 10px 20px; border: 2px solid #1e3a5f; background: ${org.id === this.currentOrgId ? '#1e3a5f' : 'white'};
+                           color: ${org.id === this.currentOrgId ? 'white' : '#1e3a5f'}; border-radius: 25px; cursor: pointer;
+                           font-family: var(--font-titre); font-weight: 500; letter-spacing: 1px; transition: all 0.3s ease;">
+              ${org.titre.replace('ORGANIGRAMME ', '')}
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Niveau 1: Président/Coordinateur -->
       <div class="org-level org-level-1">
         ${level1.map(m => this.renderMember(m)).join('')}
       </div>
 
-      <!-- Connecteur vertical du président vers niveau 2 -->
-      <div class="org-connector-vertical" style="height: 50px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+      <!-- Connecteur vertical arrondi du président vers niveau 2 -->
+      <svg class="org-svg-connector" width="100%" height="50" style="display: block;">
+        <path d="M 50% 0 L 50% 50" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </svg>
 
-      <!-- Ligne horizontale niveau 2 -->
-      <div class="org-connector-horizontal" style="height: 2px; background: #1e3a5f; margin: 0 auto; width: 80%; max-width: 1000px;"></div>
+      <!-- Ligne horizontale avec coins arrondis niveau 2 -->
+      <div class="org-horizontal-wrapper" style="position: relative; height: 30px; width: 80%; max-width: 1000px; margin: 0 auto;">
+        <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+          <path d="M 0 0 Q 0 15, 15 15 L calc(100% - 15px) 15 Q 100% 15, 100% 30" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
 
       <!-- Niveau 2: Bureau -->
       <div class="org-level org-level-2" style="padding-top: 0;">
-        ${level2.map(m => {
+        ${level2.map((m, index) => {
           const subordinates = level3ByParent[m.id] || [];
           const hasSubordinates = subordinates.length > 0;
+          const isFirst = index === 0;
+          const isLast = index === level2Count - 1;
+          const isMiddle = !isFirst && !isLast;
 
           return `
             <div class="org-group ${hasSubordinates ? 'has-subordinates' : ''}">
-              <div class="org-connector-up" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto;"></div>
+              <svg class="org-svg-connector-up" width="50" height="30" style="display: block; margin: 0 auto;">
+                ${isFirst ?
+                  `<path d="M 25 30 L 25 10 Q 25 0, 35 0 L 50 0" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>` :
+                  isLast ?
+                  `<path d="M 25 30 L 25 10 Q 25 0, 15 0 L 0 0" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>` :
+                  `<path d="M 25 30 L 25 0" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>`
+                }
+              </svg>
               ${this.renderMember(m)}
               ${hasSubordinates ? `
-                <div class="org-connector-down" style="height: 30px; width: 2px; background: #1e3a5f; margin: 0 auto; margin-top: 10px;"></div>
+                <svg class="org-svg-connector-down" width="100" height="40" style="display: block; margin: 10px auto 0;">
+                  ${subordinates.length === 1 ?
+                    `<path d="M 50 0 L 50 40" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>` :
+                    subordinates.length === 2 ?
+                    `<path d="M 50 0 L 50 20 M 50 20 Q 50 30, 40 30 L 10 30 L 10 40 M 50 20 Q 50 30, 60 30 L 90 30 L 90 40" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>` :
+                    `<path d="M 50 0 L 50 40" stroke="#1e3a5f" stroke-width="2" fill="none" stroke-linecap="round"/>`
+                  }
+                </svg>
+                <div class="org-subordinates" style="display: flex; justify-content: center; gap: 20px;">
+                  ${subordinates.map(sub => this.renderMember(sub)).join('')}
+                </div>
               ` : ''}
             </div>
           `;
         }).join('')}
       </div>
 
-      <!-- Niveau 3: Responsables -->
-      <div class="org-level org-level-3">
-        ${level3.map(m => this.renderMember(m)).join('')}
-      </div>
+      <!-- Niveau 3: Responsables sans parent direct au niveau 2 -->
+      ${level3.filter(m => !level2.some(l2 => l2.id === m.parentId)).length > 0 ? `
+        <div class="org-level org-level-3">
+          ${level3.filter(m => !level2.some(l2 => l2.id === m.parentId)).map(m => this.renderMember(m)).join('')}
+        </div>
+      ` : ''}
 
       <!-- Modal d'édition -->
       <div class="org-modal-overlay" id="org-modal">
@@ -282,6 +363,10 @@ class Organigramme {
           break;
         case 'add-member':
           this.addMember();
+          break;
+        case 'switch-org':
+          const orgId = btn.dataset.orgId;
+          if (orgId) this.switchOrg(orgId);
           break;
       }
     });
@@ -435,15 +520,18 @@ class Organigramme {
       ordre: parseInt(document.getElementById('member-ordre').value)
     };
 
+    const currentOrg = this.getCurrentOrg();
+    if (!currentOrg) return;
+
     if (this.currentEditMember) {
       // Mise à jour
-      const index = this.data.membres.findIndex(m => m.id === id);
+      const index = currentOrg.membres.findIndex(m => m.id === id);
       if (index !== -1) {
-        this.data.membres[index] = memberData;
+        currentOrg.membres[index] = memberData;
       }
     } else {
       // Ajout
-      this.data.membres.push(memberData);
+      currentOrg.membres.push(memberData);
     }
 
     await this.saveData();
@@ -470,7 +558,9 @@ class Organigramme {
       return;
     }
 
-    this.data.membres = this.data.membres.filter(m => m.id !== memberId);
+    const currentOrg = this.getCurrentOrg();
+    if (!currentOrg) return;
+    currentOrg.membres = currentOrg.membres.filter(m => m.id !== memberId);
     await this.saveData();
     this.render();
     this.setupEventListeners();

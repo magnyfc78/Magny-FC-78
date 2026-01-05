@@ -246,6 +246,139 @@
           "ordre": 2
         }
       ]
+    },
+    {
+      "id": "foot-a-5",
+      "titre": "ORGANIGRAMME FOOT A 5",
+      "ordre": 3,
+      "actif": true,
+      "membres": [
+        {
+          "id": "coordinateur-f5",
+          "nom": "Anthony",
+          "role": "Coordinateur technique foot à 5",
+          "photo": "/assets/images/comite/anthony-f5.jpg",
+          "niveau": 1,
+          "parentId": null,
+          "ordre": 1
+        },
+        {
+          "id": "crevettes-elodie",
+          "nom": "Elodie",
+          "role": "Crevettes",
+          "photo": "/assets/images/comite/elodie.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f5",
+          "ordre": 1
+        },
+        {
+          "id": "u67-delphine",
+          "nom": "Delphine",
+          "role": "U6/7",
+          "photo": "/assets/images/comite/delphine.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f5",
+          "ordre": 2
+        },
+        {
+          "id": "u67-alexandra",
+          "nom": "Alexandra",
+          "role": "U6/7",
+          "photo": "/assets/images/comite/alexandra.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f5",
+          "ordre": 3
+        },
+        {
+          "id": "u89-greg",
+          "nom": "Greg",
+          "role": "U8/9",
+          "photo": "/assets/images/comite/greg.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f5",
+          "ordre": 4
+        },
+        {
+          "id": "crevettes-maud",
+          "nom": "Maud",
+          "role": "Crevettes",
+          "photo": "/assets/images/comite/maud-crevettes.jpg",
+          "niveau": 3,
+          "parentId": "crevettes-elodie",
+          "ordre": 1
+        },
+        {
+          "id": "crevettes-marianne",
+          "nom": "Marianne",
+          "role": "Crevettes",
+          "photo": "/assets/images/comite/marianne-crevettes.jpg",
+          "niveau": 3,
+          "parentId": "crevettes-elodie",
+          "ordre": 2
+        }
+      ]
+    },
+    {
+      "id": "foot-a-8",
+      "titre": "ORGANIGRAMME FOOT A 8",
+      "ordre": 4,
+      "actif": true,
+      "membres": [
+        {
+          "id": "coordinateur-f8",
+          "nom": "Jalil",
+          "role": "Coordinateur technique foot à 8",
+          "photo": "/assets/images/comite/jalil-coord.jpg",
+          "niveau": 1,
+          "parentId": null,
+          "ordre": 1
+        },
+        {
+          "id": "u10-jalil",
+          "nom": "Jalil",
+          "role": "U10",
+          "photo": "/assets/images/comite/jalil-u10.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f8",
+          "ordre": 1
+        },
+        {
+          "id": "u11-jimmy",
+          "nom": "Jimmy",
+          "role": "U11",
+          "photo": "/assets/images/comite/jimmy.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f8",
+          "ordre": 2
+        },
+        {
+          "id": "u12-quentin",
+          "nom": "Quentin",
+          "role": "U12",
+          "photo": "/assets/images/comite/quentin-u12.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f8",
+          "ordre": 3
+        },
+        {
+          "id": "u13-anthony",
+          "nom": "Anthony",
+          "role": "U13",
+          "photo": "/assets/images/comite/anthony-u13.jpg",
+          "niveau": 2,
+          "parentId": "coordinateur-f8",
+          "ordre": 4
+        },
+        {
+          "id": "u10-marco",
+          "nom": "Marco",
+          "role": "U10",
+          "photo": "/assets/images/comite/marco.jpg",
+          "niveau": 3,
+          "parentId": "u10-jalil",
+          "ordre": 1
+        }
+      ]
     }
   ]
 }
