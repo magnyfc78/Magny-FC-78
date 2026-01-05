@@ -159,7 +159,7 @@ router.get('/actualites', async (req, res, next) => {
     const { categorie, limit = 10, page = 1 } = req.query;
     const offset = (page - 1) * limit;
     
-    let sql = 'SELECT id, titre, slug, extrait, image, categorie, vues, date_publication FROM actualites WHERE publie = 1';
+    let sql = 'SELECT id, titre, slug, extrait, image, categorie, vues, date_publication, lien_instagram FROM actualites WHERE publie = 1';
     const params = [];
     
     if (categorie && categorie !== 'Tous') {
@@ -225,7 +225,7 @@ router.get('/galerie', async (req, res, next) => {
     const { categorie } = req.query;
 
     let sql = `
-      SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement, a.annee,
+      SELECT a.id, a.titre, a.slug, a.description, a.image_couverture, a.date_evenement, a.annee, a.lien_instagram,
              gc.nom as categorie_nom, gc.slug as categorie_slug, gc.couleur as categorie_couleur,
              (SELECT COUNT(*) FROM galerie_photos WHERE album_id = a.id AND actif = 1) as nb_photos
       FROM galerie_albums a
