@@ -7,6 +7,7 @@ const db = require('../config/database');
 const { protect, restrictTo } = require('../middleware/auth');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { deleteFile } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -407,6 +408,18 @@ router.delete('/galerie/albums/:id', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// Récupérer les photos d'un album (admin)
+router.get('/galerie/albums/:id/photos', async (req, res, next) => {
+  try {
+    const [photos] = await db.pool.execute(`
+      SELECT * FROM galerie_photos
+      WHERE album_id = ?
+      ORDER BY ordre ASC, id ASC
+    `, [req.params.id]);
+    res.json({ success: true, data: { photos } });
+  } catch (error) { next(error); }
+});
+
 router.post('/galerie/photos', async (req, res, next) => {
   try {
     const { album_id, titre, description, fichier } = req.body;
@@ -420,6 +433,16 @@ router.post('/galerie/photos', async (req, res, next) => {
 
 router.delete('/galerie/photos/:id', async (req, res, next) => {
   try {
+    // Récupérer la photo pour avoir le chemin du fichier
+    const [[photo]] = await db.pool.execute('SELECT fichier, thumbnail FROM galerie_photos WHERE id = ?', [req.params.id]);
+
+    if (photo) {
+      // Supprimer les fichiers physiques
+      if (photo.fichier) deleteFile(photo.fichier);
+      if (photo.thumbnail && photo.thumbnail !== photo.fichier) deleteFile(photo.thumbnail);
+    }
+
+    // Supprimer l'entrée de la base de données
     await db.pool.execute('DELETE FROM galerie_photos WHERE id = ?', [req.params.id]);
     res.json({ success: true, message: 'Photo supprimée' });
   } catch (error) { next(error); }

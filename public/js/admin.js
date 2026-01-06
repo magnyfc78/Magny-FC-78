@@ -26,6 +26,8 @@ let organigrammesData = { config: {}, organigrammes: [] };
 let currentOrganigrammeId = null;
 let editingId = null;
 let editingType = null;
+let currentAlbumId = null;
+let currentAlbumPhotos = [];
 
 // =====================================================
 // INITIALISATION
@@ -118,6 +120,9 @@ function handleGlobalClick(e) {
     case 'close-modal':
       closeModal();
       break;
+    case 'close-photos-modal':
+      closePhotosModal();
+      break;
     case 'save-modal':
       saveModal();
       break;
@@ -129,6 +134,15 @@ function handleGlobalClick(e) {
       break;
     case 'export-org':
       exportOrganigramme();
+      break;
+    case 'manage-photos':
+      if (type === 'album') openPhotosModal(id);
+      break;
+    case 'upload-photos':
+      uploadPhotosToAlbum();
+      break;
+    case 'delete-photo':
+      deletePhoto(id);
       break;
   }
 }
@@ -514,6 +528,7 @@ async function loadGalerie() {
               <td>${a.nb_photos || 0}</td>
               <td><span class="badge badge-${a.actif ? 'success' : 'warning'}">${a.actif ? 'Oui' : 'Non'}</span></td>
               <td>
+                <button class="btn btn-sm btn-secondary" data-action="manage-photos" data-type="album" data-id="${a.id}" title="Gérer les photos">📷</button>
                 <button class="btn btn-sm" data-action="edit" data-type="album" data-id="${a.id}">✏️</button>
                 <button class="btn btn-sm btn-danger" data-action="delete" data-type="galerie/albums" data-id="${a.id}">🗑️</button>
               </td>
@@ -523,6 +538,190 @@ async function loadGalerie() {
       </table>
     ` : '<p>Aucun album</p>';
   } catch (e) { showAlert('Erreur chargement galerie', 'danger'); }
+}
+
+// =====================================================
+// GESTION DES PHOTOS D'ALBUM
+// =====================================================
+async function openPhotosModal(albumId) {
+  currentAlbumId = albumId;
+  const album = albums.find(a => a.id == albumId);
+
+  document.getElementById('photos-modal-title').textContent = `Photos - ${album?.titre || 'Album'}`;
+  document.getElementById('photos-modal').classList.add('active');
+
+  await loadAlbumPhotos(albumId);
+}
+
+function closePhotosModal() {
+  document.getElementById('photos-modal').classList.remove('active');
+  currentAlbumId = null;
+  currentAlbumPhotos = [];
+}
+
+async function loadAlbumPhotos(albumId) {
+  const modalBody = document.getElementById('photos-modal-body');
+  modalBody.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    // Utiliser la route admin pour récupérer les photos (fonctionne même si l'album est inactif)
+    const res = await api.get(`/admin/galerie/albums/${albumId}/photos`);
+    currentAlbumPhotos = res.data.photos || [];
+    renderPhotosModal();
+  } catch (e) {
+    console.error('Erreur chargement photos:', e);
+    currentAlbumPhotos = [];
+    renderPhotosModal();
+  }
+}
+
+function renderPhotosModal() {
+  const modalBody = document.getElementById('photos-modal-body');
+
+  modalBody.innerHTML = `
+    <!-- Zone d'upload -->
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="photos-input" multiple accept="image/*">
+      <div style="font-size: 2rem; margin-bottom: 10px;">📷</div>
+      <p style="margin: 0; color: var(--gray);">Cliquez ou glissez des photos ici pour les ajouter</p>
+      <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #9ca3af;">JPEG, PNG, GIF, WebP - Max 5 Mo par fichier</p>
+    </div>
+    <div class="upload-progress" id="upload-progress" style="display: none;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+        <span id="upload-status">Upload en cours...</span>
+        <span id="upload-count">0/0</span>
+      </div>
+      <div class="upload-progress-bar">
+        <div class="upload-progress-bar-fill" id="upload-progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Grille des photos -->
+    <div style="margin-top: 20px;">
+      <h4 style="margin-bottom: 15px; color: var(--primary);">
+        Photos de l'album (${currentAlbumPhotos.length})
+      </h4>
+      ${currentAlbumPhotos.length ? `
+        <div class="photos-grid">
+          ${currentAlbumPhotos.map(photo => `
+            <div class="photo-item">
+              <img src="${photo.thumbnail || photo.fichier}" alt="${photo.titre || ''}" loading="lazy">
+              <div class="photo-actions">
+                <button data-action="delete-photo" data-id="${photo.id}" title="Supprimer">🗑️</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <p style="text-align: center; color: var(--gray); padding: 30px;">
+          Aucune photo dans cet album.<br>
+          Ajoutez des photos en utilisant la zone ci-dessus.
+        </p>
+      `}
+    </div>
+  `;
+
+  // Configurer les événements d'upload
+  setupPhotoUpload();
+}
+
+function setupPhotoUpload() {
+  const uploadZone = document.getElementById('upload-zone');
+  const photosInput = document.getElementById('photos-input');
+
+  // Clic sur la zone
+  uploadZone.addEventListener('click', () => photosInput.click());
+
+  // Sélection de fichiers
+  photosInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      uploadPhotosToAlbum(e.target.files);
+    }
+  });
+
+  // Drag & Drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      uploadPhotosToAlbum(e.dataTransfer.files);
+    }
+  });
+}
+
+async function uploadPhotosToAlbum(files) {
+  if (!currentAlbumId || !files || files.length === 0) return;
+
+  const progressDiv = document.getElementById('upload-progress');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const uploadStatus = document.getElementById('upload-status');
+  const uploadCount = document.getElementById('upload-count');
+
+  progressDiv.style.display = 'block';
+
+  const fileArray = Array.from(files);
+  let uploaded = 0;
+  let errors = 0;
+
+  for (let i = 0; i < fileArray.length; i++) {
+    const file = fileArray[i];
+    uploadStatus.textContent = `Upload de ${file.name}...`;
+    uploadCount.textContent = `${i + 1}/${fileArray.length}`;
+    progressFill.style.width = `${((i) / fileArray.length) * 100}%`;
+
+    try {
+      const formData = new FormData();
+      formData.append('photos', file);
+
+      await api.upload(`/upload/galerie/${currentAlbumId}`, formData);
+      uploaded++;
+    } catch (e) {
+      console.error(`Erreur upload ${file.name}:`, e);
+      errors++;
+    }
+  }
+
+  progressFill.style.width = '100%';
+  uploadStatus.textContent = 'Terminé !';
+
+  setTimeout(() => {
+    progressDiv.style.display = 'none';
+    progressFill.style.width = '0%';
+  }, 1500);
+
+  if (errors > 0) {
+    showAlert(`${uploaded} photo(s) uploadée(s), ${errors} erreur(s)`, 'warning');
+  } else {
+    showAlert(`${uploaded} photo(s) uploadée(s) avec succès`, 'success');
+  }
+
+  // Recharger les photos et la liste des albums
+  await loadAlbumPhotos(currentAlbumId);
+  await loadGalerie();
+}
+
+async function deletePhoto(photoId) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) return;
+
+  try {
+    await api.delete(`/admin/galerie/photos/${photoId}`);
+    showAlert('Photo supprimée avec succès', 'success');
+
+    // Recharger les photos et la liste des albums
+    await loadAlbumPhotos(currentAlbumId);
+    await loadGalerie();
+  } catch (e) {
+    showAlert('Erreur lors de la suppression: ' + e.message, 'danger');
+  }
 }
 
 // =====================================================
