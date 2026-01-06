@@ -1598,3 +1598,68 @@ footer {
   color: var(--gris);
   margin-bottom: 10px;
 }
+
+/* =====================================================
+   LIGHTBOX - Affichage images en grand format
+   ===================================================== */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.lightbox.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.lightbox.active .lightbox-img {
+  transform: scale(1);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+
+.lightbox-close:hover {
+  color: var(--or);
+  transform: scale(1.1);
+}
+
+/* Curseur pointer sur les images cliquables */
+.actu-image img,
+.album-image img,
+.galerie-grid img,
+.organigramme-card img,
+.equipe-card img {
+  cursor: zoom-in;
+}

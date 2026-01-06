@@ -1106,6 +1106,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/club', views.club);
   router.addRoute('/contact', views.contact);
 
+  // =====================================================
+  // LIGHTBOX - Affichage des images en grand format
+  // =====================================================
+
+  // Créer le modal lightbox
+  const lightbox = document.createElement('div');
+  lightbox.id = 'lightbox';
+  lightbox.className = 'lightbox';
+  lightbox.innerHTML = `
+    <button class="lightbox-close">&times;</button>
+    <img class="lightbox-img" src="" alt="Image en grand">
+  `;
+  document.body.appendChild(lightbox);
+
+  const lightboxImg = lightbox.querySelector('.lightbox-img');
+  const lightboxClose = lightbox.querySelector('.lightbox-close');
+
+  // Fermer la lightbox
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // Ouvrir la lightbox au clic sur une image
+  document.addEventListener('click', (e) => {
+    const img = e.target.closest('img');
+    if (!img) return;
+
+    // Ignorer les logos, icônes et petites images
+    const isLogo = img.closest('.logo, .logo-icon, .footer-logo, .social-link');
+    const isIcon = img.closest('.instagram-link-bottom') || img.width < 50;
+    const isPartenaireSmall = img.closest('.partenaire-item');
+
+    if (isLogo || isIcon || isPartenaireSmall) return;
+
+    // Ouvrir la lightbox
+    lightboxImg.src = img.src;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+
   // Initialiser
   router.init();
 });
