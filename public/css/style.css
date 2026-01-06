@@ -515,35 +515,31 @@ nav a.active {
   transform: scale(1.05);
 }
 
-/* Icône Instagram sur les images */
-.instagram-link {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-  border-radius: 8px;
-  display: flex;
+/* Lien Instagram en bas des cartes */
+.instagram-link-bottom {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-radius: 20px;
   color: white;
   text-decoration: none;
-  opacity: 0.9;
+  font-size: 0.85rem;
+  font-weight: 500;
   transition: all 0.3s ease;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-.instagram-link:hover {
-  opacity: 1;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+.instagram-link-bottom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(188, 24, 136, 0.4);
 }
 
-.instagram-link svg {
-  width: 20px;
-  height: 20px;
+.instagram-link-bottom img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
 }
 
 .actu-body {
