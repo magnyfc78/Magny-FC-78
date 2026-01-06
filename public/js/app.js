@@ -923,10 +923,11 @@ function filterActualites(categorie) {
 // Render galerie albums
 function renderGalerieAlbums(albums) {
   return albums.map(album => {
-    const instagramIcon = album.lien_instagram ? `
-      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram" onclick="event.stopPropagation()">
-        <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
-      </a>
+    // Icône Instagram (non-cliquable, juste indicatif)
+    const instagramBadge = album.lien_instagram ? `
+      <span class="album-instagram-badge" title="Disponible sur Instagram">
+        <img src="/icons/instagram.svg" alt="Instagram">
+      </span>
     ` : '';
     return `
     <a href="/galerie/${album.slug}" data-link class="album-card" data-category="${album.categorie_slug || ''}">
@@ -934,6 +935,7 @@ function renderGalerieAlbums(albums) {
         <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
         <span class="album-count">${album.nb_photos || 0} photos</span>
         ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+        ${instagramBadge}
       </div>
       <div class="album-info">
         <h3>${album.titre}</h3>
@@ -942,7 +944,6 @@ function renderGalerieAlbums(albums) {
           ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
         </div>
         ${album.description ? `<p>${album.description}</p>` : ''}
-        ${instagramIcon}
       </div>
     </a>
   `}).join('') || '<p class="text-center">Aucun album disponible</p>';
