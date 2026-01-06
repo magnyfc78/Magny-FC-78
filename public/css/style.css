@@ -1110,13 +1110,13 @@ footer {
 
 .btn-outline {
   background: transparent;
-  border: 2px solid var(--blanc);
-  color: var(--blanc);
+  border: 2px solid var(--bleu-fonce);
+  color: var(--bleu-fonce);
 }
 
 .btn-outline:hover {
-  background: var(--blanc);
-  color: var(--bleu-fonce);
+  background: var(--bleu-fonce);
+  color: var(--blanc);
 }
 
 /* =====================================================
