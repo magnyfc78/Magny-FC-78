@@ -664,6 +664,15 @@ nav a.active {
   letter-spacing: 1px;
 }
 
+.match-category {
+  background: var(--turquoise);
+  color: var(--bleu-fonce);
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+}
+
 /* =====================================================
    PAGE HEADER
    ===================================================== */
