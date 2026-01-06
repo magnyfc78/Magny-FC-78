@@ -923,11 +923,6 @@ function filterActualites(categorie) {
 // Render galerie albums
 function renderGalerieAlbums(albums) {
   return albums.map(album => {
-    const instagramIcon = album.lien_instagram ? `
-      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram" onclick="event.stopPropagation()">
-        <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
-      </a>
-    ` : '';
     return `
     <a href="/galerie/${album.slug}" data-link class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
@@ -942,7 +937,6 @@ function renderGalerieAlbums(albums) {
           ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
         </div>
         ${album.description ? `<p>${album.description}</p>` : ''}
-        ${instagramIcon}
       </div>
     </a>
   `}).join('') || '<p class="text-center">Aucun album disponible</p>';
