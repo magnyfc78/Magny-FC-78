@@ -102,6 +102,7 @@ const views = {
                     <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                   </div>
                   <div class="match-meta">
+                    ${m.categorie ? `<span class="match-category">${m.categorie}</span>` : ''}
                     <span class="match-time">${m.heure}</span>
                     <span class="match-competition">${m.competition || 'Match'}</span>
                   </div>
@@ -126,6 +127,11 @@ const views = {
             ${actualites.map((a) => {
               // Utiliser l'image de la BDD (stockée dans /uploads/actualites/)
               const imageSrc = a.image || '/assets/images/logo.png';
+              const instagramIcon = a.lien_instagram ? `
+                <a href="${a.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram">
+                  <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
+                </a>
+              ` : '';
               return `
               <article class="actu-card">
                 <div class="actu-image">
@@ -138,6 +144,7 @@ const views = {
                   </div>
                   <h3 class="actu-title">${a.titre}</h3>
                   <p class="actu-excerpt">${a.extrait || ''}</p>
+                  ${instagramIcon}
                 </div>
               </article>
             `}).join('') || '<p class="text-center">Aucune actualité</p>'}
@@ -156,13 +163,14 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="partenaires-grid">
-            ${partenaires.length ? partenaires.slice(0, 6).map(p => `
+            ${partenaires.length ? partenaires.slice(0, 5).map(p => `
               <div class="partenaire-item">
                 <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" title="${p.nom}">
               </div>
             `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
           <div class="text-center mt-4">
+            <a href="/partenaires" class="btn btn-outline" data-link>Voir plus</a>
             <a href="/partenaires" class="btn btn-secondary" data-link>DEVENIR PARTENAIRE</a>
           </div>
         </div>
@@ -489,6 +497,7 @@ const views = {
                   <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                 </div>
                 <div class="match-meta">
+                  ${m.categorie ? `<span class="match-category">${m.categorie}</span>` : ''}
                   <span class="match-time">${m.heure}</span>
                   <span class="match-competition">${m.competition || 'Match'}</span>
                 </div>
@@ -502,21 +511,31 @@ const views = {
 
   // Page club (organigrammes multiples)
   async club() {
-    // Charger les données des organigrammes
-    let orgData = { config: {}, organigrammes: [] };
+    // Charger les données des organigrammes depuis l'API
+    let organigrammes = [];
     try {
-      const res = await fetch('/organigramme/data.json');
+      const res = await fetch('/api/organigrammes');
       if (res.ok) {
-        orgData = await res.json();
+        const result = await res.json();
+        if (result.success && result.data.organigrammes) {
+          organigrammes = result.data.organigrammes.map(org => ({
+            ...org,
+            actif: true,
+            membres: (org.membres || []).map(m => ({
+              ...m,
+              parentId: m.parent_id
+            }))
+          }));
+        }
       }
     } catch (e) {
       console.error('Erreur chargement organigramme:', e);
     }
 
-    const config = orgData.config || {};
-    const organigrammes = (orgData.organigrammes || [])
+    const config = { clubNom: 'MAGNY FC 78', defaultPhoto: '/assets/images/default-avatar.png' };
+    organigrammes = organigrammes
       .filter(o => o.actif !== false)
-      .sort((a, b) => a.ordre - b.ordre);
+      .sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
 
     // Fonction pour rendre un hexagone
     const renderHexagon = (member) => {
@@ -761,7 +780,7 @@ function renderEquipes(equipes) {
           <span class="badge badge-bleu">${e.division || '-'}</span>
         </div>
         <div class="equipe-info">
-          <p>👥 ${e.nb_joueurs || 0} joueurs</p>
+          ${e.nb_joueurs > 0 ? `<p>👥 ${e.nb_joueurs} joueurs</p>` : ''}
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
           ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
           ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
@@ -784,6 +803,11 @@ function renderActualites(actualites) {
   return actualites.map((a) => {
     // Utiliser l'image de la BDD (stockée dans /uploads/actualites/), sinon logo du club
     const imageSrc = a.image || '/assets/images/logo.png';
+    const instagramIcon = a.lien_instagram ? `
+      <a href="${a.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram">
+        <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
+      </a>
+    ` : '';
     return `
       <article class="actu-card" data-category="${a.categorie}">
         <div class="actu-image">
@@ -797,6 +821,7 @@ function renderActualites(actualites) {
           <h3 class="actu-title">${a.titre}</h3>
           <p class="actu-excerpt">${a.extrait || ''}</p>
           <span class="actu-views">👁 ${a.vues || 0} vues</span>
+          ${instagramIcon}
         </div>
       </article>
     `;
@@ -818,7 +843,13 @@ function filterActualites(categorie) {
 
 // Render galerie albums
 function renderGalerieAlbums(albums) {
-  return albums.map(album => `
+  return albums.map(album => {
+    const instagramIcon = album.lien_instagram ? `
+      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram">
+        <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
+      </a>
+    ` : '';
+    return `
     <div class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
         <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
@@ -832,9 +863,10 @@ function renderGalerieAlbums(albums) {
           ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
         </div>
         ${album.description ? `<p>${album.description}</p>` : ''}
+        ${instagramIcon}
       </div>
     </div>
-  `).join('') || '<p class="text-center">Aucun album disponible</p>';
+  `}).join('') || '<p class="text-center">Aucun album disponible</p>';
 }
 
 // Filter galerie
@@ -998,9 +1030,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="footer-col">
           <h4>Suivez-nous</h4>
           <div class="social-links">
-            ${socialFacebook ? `<a href="${socialFacebook}" target="_blank" class="social-link">📘</a>` : ''}
-            ${socialInstagram ? `<a href="${socialInstagram}" target="_blank" class="social-link">📷</a>` : ''}
-            ${socialTwitter ? `<a href="${socialTwitter}" target="_blank" class="social-link">🐦</a>` : ''}
+            ${socialFacebook ? `<a href="${socialFacebook}" target="_blank" class="social-link social-facebook" title="Facebook">
+              <img src="/icons/facebook.svg" alt="Facebook">
+            </a>` : ''}
+            ${socialInstagram ? `<a href="${socialInstagram}" target="_blank" class="social-link social-instagram" title="Instagram">
+              <img src="/icons/instagram.svg" alt="Instagram">
+            </a>` : ''}
+            ${socialTwitter ? `<a href="${socialTwitter}" target="_blank" class="social-link social-twitter" title="Twitter/X">
+              <img src="/icons/twitter.svg" alt="Twitter">
+            </a>` : ''}
           </div>
         </div>
       </div>
@@ -1069,6 +1107,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/calendrier', views.calendrier);
   router.addRoute('/club', views.club);
   router.addRoute('/contact', views.contact);
+
+  // =====================================================
+  // LIGHTBOX - Affichage des images en grand format
+  // =====================================================
+
+  // Créer le modal lightbox
+  const lightbox = document.createElement('div');
+  lightbox.id = 'lightbox';
+  lightbox.className = 'lightbox';
+  lightbox.innerHTML = `
+    <button class="lightbox-close">&times;</button>
+    <img class="lightbox-img" src="" alt="Image en grand">
+  `;
+  document.body.appendChild(lightbox);
+
+  const lightboxImg = lightbox.querySelector('.lightbox-img');
+  const lightboxClose = lightbox.querySelector('.lightbox-close');
+
+  // Fermer la lightbox
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // Ouvrir la lightbox au clic sur une image
+  document.addEventListener('click', (e) => {
+    const img = e.target.closest('img');
+    if (!img) return;
+
+    // Ignorer les logos, icônes et petites images
+    const isLogo = img.closest('.logo, .logo-icon, .footer-logo, .social-link');
+    const isIcon = img.closest('.instagram-link-bottom') || img.width < 50;
+    const isPartenaireSmall = img.closest('.partenaire-item');
+
+    if (isLogo || isIcon || isPartenaireSmall) return;
+
+    // Ouvrir la lightbox
+    lightboxImg.src = img.src;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
 
   // Initialiser
   router.init();

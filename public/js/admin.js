@@ -617,10 +617,33 @@ async function saveHistoireConfig(e) {
 // =====================================================
 async function loadOrganigramme() {
   try {
-    const res = await fetch('/organigramme/data.json');
-    organigrammesData = await res.json();
+    // Essayer de charger depuis l'API d'abord
+    let organigrammes = [];
+    try {
+      const res = await api.get('/admin/organigrammes');
+      if (res.success && res.data.organigrammes) {
+        // Charger les membres pour chaque organigramme
+        for (const org of res.data.organigrammes) {
+          const orgRes = await api.get(`/admin/organigrammes/${org.id}`);
+          if (orgRes.success) {
+            org.membres = (orgRes.data.organigramme.membres || []).map(m => ({
+              ...m,
+              parentId: m.parent_id // Normaliser le nom
+            }));
+          }
+        }
+        organigrammesData = {
+          config: {},
+          organigrammes: res.data.organigrammes
+        };
+        organigrammes = res.data.organigrammes;
+      }
+    } catch (apiError) {
+      console.error('Erreur API organigramme:', apiError);
+      showAlert('Erreur de chargement des organigrammes', 'danger');
+    }
 
-    const organigrammes = organigrammesData.organigrammes || [];
+    organigrammes = organigrammesData.organigrammes || [];
 
     // Si pas d'organigramme sélectionné, prendre le premier
     if (!currentOrganigrammeId && organigrammes.length > 0) {
@@ -699,8 +722,8 @@ async function loadOrganigramme() {
       ` : '<p>Sélectionnez ou créez un organigramme</p>'}
 
       <div style="margin-top:20px; padding:15px; background:#f3f4f6; border-radius:8px;">
-        <p style="margin:0 0 10px 0;"><strong>Note:</strong> Les modifications sont sauvegardées localement. Pour une persistance permanente, exportez le JSON et remplacez le fichier <code>/organigramme/data.json</code></p>
-        <button class="btn btn-sm btn-secondary" data-action="export-org">📥 Exporter JSON</button>
+        <p style="margin:0 0 10px 0;"><strong>Note:</strong> Les modifications sont automatiquement sauvegardées en base de données.</p>
+        <button class="btn btn-sm btn-secondary" data-action="export-org">📥 Exporter JSON (backup)</button>
       </div>
     `;
   } catch (e) {
@@ -1094,6 +1117,11 @@ function openModal(type, data = null) {
           ${data?.image ? `<div style="margin-top:5px;"><img src="${data.image}" style="max-height:60px;border-radius:4px;"> <small>${data.image}</small></div>` : ''}
         </div>
         <div class="form-group">
+          <label class="form-label">Lien Instagram</label>
+          <input type="url" class="form-control" id="f-lien_instagram" value="${data?.lien_instagram || ''}" placeholder="https://www.instagram.com/p/...">
+          <small class="text-muted">Lien vers le post Instagram associé (optionnel)</small>
+        </div>
+        <div class="form-group">
           <label class="form-label">Extrait</label>
           <textarea class="form-control" id="f-extrait" rows="2" placeholder="Résumé court de l'article (max 500 caractères)">${data?.extrait || ''}</textarea>
         </div>
@@ -1144,6 +1172,11 @@ function openModal(type, data = null) {
           <input type="file" class="form-control" id="f-image_couverture_file" accept="image/*">
           <input type="hidden" id="f-image_couverture" value="${data?.image_couverture || ''}">
           ${data?.image_couverture ? `<div style="margin-top:5px;"><img src="${data.image_couverture}" style="max-height:60px;border-radius:4px;"> <small>${data.image_couverture}</small></div>` : ''}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lien Instagram</label>
+          <input type="url" class="form-control" id="f-lien_instagram" value="${data?.lien_instagram || ''}" placeholder="https://www.instagram.com/p/...">
+          <small class="text-muted">Lien vers le post/album Instagram associé (optionnel)</small>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1450,7 +1483,8 @@ async function saveModal() {
         publie: getChecked('f-publie'),
         a_la_une: getChecked('f-a_la_une'),
         image: actuImagePath,
-        tags: tagsArray
+        tags: tagsArray,
+        lien_instagram: getValue('f-lien_instagram') || null
       };
       endpoint = '/admin/actualites';
       break;
@@ -1480,6 +1514,7 @@ async function saveModal() {
         date_evenement: getValue('f-date_evenement') || null,
         annee: parseInt(getValue('f-annee')) || new Date().getFullYear(),
         image_couverture: albumImagePath,
+        lien_instagram: getValue('f-lien_instagram') || null,
         actif: getChecked('f-actif'),
         ordre: parseInt(getValue('f-ordre')) || 0
       };
@@ -1554,7 +1589,7 @@ async function saveModal() {
         const formData = new FormData();
         formData.append('image', orgPhotoFile);
         try {
-          const uploadRes = await api.upload('/upload/single/comite', formData);
+          const uploadRes = await api.upload('/upload/single/organigramme', formData);
           if (uploadRes.success) {
             orgPhotoPath = uploadRes.data.path;
           }
@@ -1571,62 +1606,46 @@ async function saveModal() {
         role: getValue('f-role'),
         photo: orgPhotoPath,
         niveau: parseInt(getValue('f-niveau')) || 2,
-        parentId: getValue('f-parent') || null,
+        parent_id: getValue('f-parent') || null,
         ordre: parseInt(getValue('f-ordre')) || 1
       };
 
-      // Trouver l'organigramme courant
-      const currentOrgForSave = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
-      if (!currentOrgForSave) {
-        showAlert('Erreur: organigramme non trouvé', 'danger');
-        return;
-      }
-
-      // Mise à jour locale des données
-      if (editingId) {
-        const index = currentOrgForSave.membres.findIndex(m => m.id === editingId);
-        if (index !== -1) {
-          currentOrgForSave.membres[index] = data;
+      try {
+        if (editingId) {
+          await api.put(`/admin/organigrammes/${currentOrganigrammeId}/membres/${editingId}`, data);
+        } else {
+          await api.post(`/admin/organigrammes/${currentOrganigrammeId}/membres`, data);
         }
-      } else {
-        currentOrgForSave.membres.push(data);
+        showAlert('Membre enregistré avec succès', 'success');
+        closeModal();
+        loadOrganigramme();
+      } catch (apiError) {
+        showAlert('Erreur: ' + apiError.message, 'danger');
       }
-
-      // Sauvegarder en localStorage
-      await saveOrganigramme();
-      showAlert('Membre enregistré. N\'oubliez pas d\'exporter le JSON pour une sauvegarde permanente.', 'success');
-      closeModal();
-      loadOrganigramme();
       return;
 
     case 'organigramme-group':
-      const orgGroupId = editingId || 'org-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      const orgGroupId = editingId || getValue('f-titre').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       data = {
         id: orgGroupId,
         titre: getValue('f-titre'),
         ordre: parseInt(getValue('f-ordre')) || 1,
-        actif: getChecked('f-actif'),
-        membres: []
+        actif: getChecked('f-actif')
       };
 
-      if (editingId) {
-        // Mise à jour - conserver les membres existants
-        const existingOrg = organigrammesData.organigrammes.find(o => o.id === editingId);
-        if (existingOrg) {
-          data.membres = existingOrg.membres;
-          const index = organigrammesData.organigrammes.findIndex(o => o.id === editingId);
-          organigrammesData.organigrammes[index] = data;
+      try {
+        if (editingId) {
+          await api.put(`/admin/organigrammes/${editingId}`, data);
+        } else {
+          await api.post('/admin/organigrammes', data);
+          currentOrganigrammeId = orgGroupId;
         }
-      } else {
-        // Nouvel organigramme
-        organigrammesData.organigrammes.push(data);
-        currentOrganigrammeId = orgGroupId;
+        showAlert('Organigramme enregistré avec succès', 'success');
+        closeModal();
+        loadOrganigramme();
+      } catch (apiError) {
+        showAlert('Erreur: ' + apiError.message, 'danger');
       }
-
-      await saveOrganigramme();
-      showAlert('Organigramme enregistré. N\'oubliez pas d\'exporter le JSON.', 'success');
-      closeModal();
-      loadOrganigramme();
       return;
   }
 
@@ -1652,19 +1671,13 @@ async function deleteItem(endpoint, id) {
 
   // Cas spécial pour la suppression d'un membre d'organigramme
   if (endpoint === 'organigramme') {
-    const currentOrg = organigrammesData.organigrammes.find(o => o.id === currentOrganigrammeId);
-    if (!currentOrg) return;
-
-    // Vérifier s'il a des subordonnés
-    const hasSubordinates = currentOrg.membres.some(m => m.parentId === id);
-    if (hasSubordinates) {
-      showAlert('Impossible de supprimer: ce membre a des subordonnés', 'danger');
-      return;
+    try {
+      await api.delete(`/admin/organigrammes/${currentOrganigrammeId}/membres/${id}`);
+      showAlert('Membre supprimé avec succès', 'success');
+      loadOrganigramme();
+    } catch (e) {
+      showAlert('Erreur: ' + e.message, 'danger');
     }
-    currentOrg.membres = currentOrg.membres.filter(m => m.id !== id);
-    await saveOrganigramme();
-    showAlert('Membre supprimé. Exportez le JSON pour sauvegarder.', 'success');
-    loadOrganigramme();
     return;
   }
 
@@ -1676,16 +1689,18 @@ async function deleteItem(endpoint, id) {
         return;
       }
     }
-    organigrammesData.organigrammes = organigrammesData.organigrammes.filter(o => o.id !== id);
 
-    // Sélectionner un autre organigramme si celui supprimé était le courant
-    if (currentOrganigrammeId === id) {
-      currentOrganigrammeId = organigrammesData.organigrammes[0]?.id || null;
+    try {
+      await api.delete(`/admin/organigrammes/${id}`);
+      // Sélectionner un autre organigramme si celui supprimé était le courant
+      if (currentOrganigrammeId === id) {
+        currentOrganigrammeId = null;
+      }
+      showAlert('Organigramme supprimé avec succès', 'success');
+      loadOrganigramme();
+    } catch (e) {
+      showAlert('Erreur: ' + e.message, 'danger');
     }
-
-    await saveOrganigramme();
-    showAlert('Organigramme supprimé. Exportez le JSON pour sauvegarder.', 'success');
-    loadOrganigramme();
     return;
   }
 

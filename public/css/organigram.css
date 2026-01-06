@@ -249,6 +249,52 @@
   height: 2px;
 }
 
+/* Connecteurs avec coins arrondis */
+.org-connector-vertical {
+  border-radius: 2px;
+}
+
+.org-connector-horizontal {
+  border-radius: 2px;
+}
+
+.org-connector-up {
+  border-radius: 2px;
+}
+
+.org-connector-down {
+  border-radius: 2px;
+}
+
+/* Connecteur en L arrondi (haut-gauche) */
+.org-connector-corner-tl {
+  border-left: 2px solid #1e3a5f;
+  border-top: 2px solid #1e3a5f;
+  border-top-left-radius: 10px;
+}
+
+/* Connecteur en L arrondi (haut-droite) */
+.org-connector-corner-tr {
+  border-right: 2px solid #1e3a5f;
+  border-top: 2px solid #1e3a5f;
+  border-top-right-radius: 10px;
+}
+
+/* Connecteur en T arrondi */
+.org-connector-t {
+  position: relative;
+}
+
+.org-connector-t::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #1e3a5f;
+  border-radius: 0 0 10px 10px;
+  border-top: none;
+}
+
 /* Wrapper pour les groupes avec subordonnés */
 .org-group {
   display: flex;

@@ -26,7 +26,8 @@ const typeToDirName = {
   partenaire: 'partenaires',
   avatar: 'avatars',
   config: 'config',
-  comite: 'avatars'
+  comite: 'avatars',
+  organigramme: 'organigramme'
 };
 
 router.post('/single/:type', uploadSingle('image'), async (req, res, next) => {
