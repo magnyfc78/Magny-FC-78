@@ -1226,14 +1226,15 @@ footer {
 
 .album-instagram-badge {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  bottom: 15px;
+  right: 70px;
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
   padding: 8px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
 }
 
 .album-instagram-badge img {
