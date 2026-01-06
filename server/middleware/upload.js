@@ -38,6 +38,11 @@ const storage = multer.diskStorage({
       type = 'equipe';
     }
 
+    // Si route /galerie/:albumId, utiliser 'galerie'
+    if (req.params.albumId || req.originalUrl.includes('/galerie/')) {
+      type = 'galerie';
+    }
+
     const destinations = {
       equipe: 'public/uploads/equipes',
       actualite: 'public/uploads/actualites',
@@ -114,7 +119,9 @@ const processImage = async (req, res, next) => {
         .toFile(filePath.replace(ext, '-optimized.jpg'));
 
       // Créer une miniature pour la galerie
-      if (req.params.type === 'galerie' || req.body.type === 'galerie') {
+      const isGalerie = req.params.type === 'galerie' || req.body.type === 'galerie' ||
+                        req.params.albumId || req.originalUrl.includes('/galerie/');
+      if (isGalerie) {
         const thumbPath = filePath.replace('/galerie/', '/galerie/thumbnails/');
         await sharp(filePath)
           .resize(400, 400, { fit: 'cover' })

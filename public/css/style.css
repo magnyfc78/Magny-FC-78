@@ -1170,6 +1170,10 @@ footer {
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
+  border-radius: 10px;
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .album-card:hover {
@@ -1255,13 +1259,6 @@ footer {
   background: var(--cat-color, var(--bleu-fonce));
   border-color: var(--cat-color, var(--bleu-fonce));
   color: var(--blanc);
-}
-
-/* Album card en lien */
-a.album-card {
-  text-decoration: none;
-  color: inherit;
-  display: block;
 }
 
 /* =====================================================
