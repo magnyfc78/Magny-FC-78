@@ -162,13 +162,14 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div class="partenaires-grid">
-            ${partenaires.length ? partenaires.slice(0, 6).map(p => `
+            ${partenaires.length ? partenaires.slice(0, 5).map(p => `
               <div class="partenaire-item">
                 <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy" title="${p.nom}">
               </div>
             `).join('') : '<p class="text-center" style="grid-column: 1/-1;">Aucun partenaire</p>'}
           </div>
           <div class="text-center mt-4">
+            ${partenaires.length > 5 ? `<a href="/partenaires" class="btn btn-outline" data-link>Voir plus</a>` : ''}
             <a href="/partenaires" class="btn btn-secondary" data-link>DEVENIR PARTENAIRE</a>
           </div>
         </div>
