@@ -90,7 +90,7 @@ router.post('/multiple/:type', uploadMultiple('images', 20), async (req, res, ne
 router.post('/galerie/:albumId', uploadMultiple('photos', 50), async (req, res, next) => {
   try {
     const { albumId } = req.params;
-    
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, error: 'Aucune photo uploadée' });
     }
@@ -112,7 +112,9 @@ router.post('/galerie/:albumId', uploadMultiple('photos', 50), async (req, res, 
     let ordre = maxOrdre + 1;
 
     for (const file of req.files) {
-      const fichier = `/uploads/galerie/${file.filename}`;
+      // Extraire le chemin relatif depuis le chemin réel du fichier
+      const relativePath = file.path.replace(/.*public/, '').replace(/\\/g, '/');
+      const fichier = relativePath;
       const thumbnail = file.thumbnail || fichier;
 
       const [result] = await db.pool.execute(
