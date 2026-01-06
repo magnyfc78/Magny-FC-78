@@ -429,6 +429,85 @@ const views = {
     `;
   },
 
+  // Page album (détail avec photos)
+  async galerieAlbum(params) {
+    const slug = Array.isArray(params) ? params[0] : params;
+    let album = null;
+    try {
+      const res = await fetch(`/api/galerie/${slug}`);
+      const data = await res.json();
+      if (data.success) {
+        album = data.data.album;
+      }
+    } catch (e) {
+      console.error('Erreur chargement album:', e);
+    }
+
+    if (!album) {
+      return `
+        <section class="page-header">
+          <h1>Album introuvable</h1>
+          <p>Cet album n'existe pas ou n'est plus disponible</p>
+        </section>
+        <section class="section">
+          <div class="container text-center">
+            <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
+          </div>
+        </section>
+      `;
+    }
+
+    const photos = album.photos || [];
+    const instagramLink = album.lien_instagram ? `
+      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="gap: 8px;">
+        <img src="/icons/instagram.svg" alt="Instagram" style="width: 20px; height: 20px;"> Voir sur Instagram
+      </a>
+    ` : '';
+
+    return `
+      <section class="page-header">
+        <h1>${album.titre}</h1>
+        <p>${album.description || ''}</p>
+        ${album.categorie_nom ? `<span class="album-category-badge" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="album-header-info">
+            <div class="album-meta-info">
+              ${album.date_evenement ? `<span>📅 ${new Date(album.date_evenement).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>` : ''}
+              <span>📷 ${photos.length} photo${photos.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="album-actions">
+              ${instagramLink}
+            </div>
+          </div>
+
+          ${photos.length > 0 ? `
+            <div class="album-photos-grid">
+              ${photos.map(photo => `
+                <div class="album-photo-item galerie-item">
+                  <img src="${photo.thumbnail || photo.fichier}"
+                       data-full="${photo.fichier}"
+                       alt="${photo.titre || album.titre}"
+                       loading="lazy">
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="album-empty">
+              <p>Aucune photo dans cet album pour le moment.</p>
+            </div>
+          `}
+
+          <div class="text-center" style="margin-top: 40px;">
+            <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
   // Page partenaires
   async partenaires() {
     // Charger les partenaires depuis l'API
@@ -845,12 +924,12 @@ function filterActualites(categorie) {
 function renderGalerieAlbums(albums) {
   return albums.map(album => {
     const instagramIcon = album.lien_instagram ? `
-      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram">
+      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram" onclick="event.stopPropagation()">
         <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
       </a>
     ` : '';
     return `
-    <div class="album-card" data-category="${album.categorie_slug || ''}">
+    <a href="/galerie/${album.slug}" data-link class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
         <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
         <span class="album-count">${album.nb_photos || 0} photos</span>
@@ -865,7 +944,7 @@ function renderGalerieAlbums(albums) {
         ${album.description ? `<p>${album.description}</p>` : ''}
         ${instagramIcon}
       </div>
-    </div>
+    </a>
   `}).join('') || '<p class="text-center">Aucun album disponible</p>';
 }
 
@@ -1103,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/actualites', views.actualites);
   router.addRoute('/galerie', views.galerie);
   router.addRoute('/galerie/histoire', views.galerieHistoire);
+  router.addRoute('/galerie/:slug', views.galerieAlbum);
   router.addRoute('/partenaires', views.partenaires);
   router.addRoute('/calendrier', views.calendrier);
   router.addRoute('/club', views.club);
