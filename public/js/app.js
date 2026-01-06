@@ -778,7 +778,7 @@ function renderEquipes(equipes) {
           <span class="badge badge-bleu">${e.division || '-'}</span>
         </div>
         <div class="equipe-info">
-          <p>👥 ${e.nb_joueurs || 0} joueurs</p>
+          ${e.nb_joueurs > 0 ? `<p>👥 ${e.nb_joueurs} joueurs</p>` : ''}
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
           ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
           ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
