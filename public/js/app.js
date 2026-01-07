@@ -1191,31 +1191,85 @@ document.addEventListener('DOMContentLoaded', async () => {
   // LIGHTBOX - Affichage des images en grand format
   // =====================================================
 
-  // Créer le modal lightbox
+  // Variables pour la navigation
+  let lightboxImages = [];
+  let lightboxCurrentIndex = 0;
+
+  // Créer le modal lightbox avec navigation
   const lightbox = document.createElement('div');
   lightbox.id = 'lightbox';
   lightbox.className = 'lightbox';
   lightbox.innerHTML = `
     <button class="lightbox-close">&times;</button>
+    <button class="lightbox-nav lightbox-prev">&#10094;</button>
     <img class="lightbox-img" src="" alt="Image en grand">
+    <button class="lightbox-nav lightbox-next">&#10095;</button>
+    <div class="lightbox-counter"></div>
   `;
   document.body.appendChild(lightbox);
 
   const lightboxImg = lightbox.querySelector('.lightbox-img');
   const lightboxClose = lightbox.querySelector('.lightbox-close');
+  const lightboxPrev = lightbox.querySelector('.lightbox-prev');
+  const lightboxNext = lightbox.querySelector('.lightbox-next');
+  const lightboxCounter = lightbox.querySelector('.lightbox-counter');
+
+  // Afficher l'image courante
+  function showLightboxImage(index) {
+    if (lightboxImages.length === 0) return;
+
+    // Boucler sur les images
+    if (index < 0) index = lightboxImages.length - 1;
+    if (index >= lightboxImages.length) index = 0;
+
+    lightboxCurrentIndex = index;
+    lightboxImg.src = lightboxImages[index];
+
+    // Mettre à jour le compteur
+    lightboxCounter.textContent = `${index + 1} / ${lightboxImages.length}`;
+
+    // Masquer les flèches s'il n'y a qu'une image
+    const showNav = lightboxImages.length > 1;
+    lightboxPrev.style.display = showNav ? 'flex' : 'none';
+    lightboxNext.style.display = showNav ? 'flex' : 'none';
+    lightboxCounter.style.display = showNav ? 'block' : 'none';
+  }
+
+  // Navigation
+  function lightboxPrevImage() {
+    showLightboxImage(lightboxCurrentIndex - 1);
+  }
+
+  function lightboxNextImage() {
+    showLightboxImage(lightboxCurrentIndex + 1);
+  }
 
   // Fermer la lightbox
   function closeLightbox() {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
+    lightboxImages = [];
+    lightboxCurrentIndex = 0;
   }
 
+  // Event listeners
   lightboxClose.addEventListener('click', closeLightbox);
+  lightboxPrev.addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxPrevImage();
+  });
+  lightboxNext.addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxNextImage();
+  });
   lightbox.addEventListener('click', (e) => {
     if (e.target === lightbox) closeLightbox();
   });
   document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxPrevImage();
+    if (e.key === 'ArrowRight') lightboxNextImage();
   });
 
   // Ouvrir la lightbox au clic sur une image
@@ -1230,8 +1284,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (isLogo || isIcon || isPartenaireSmall) return;
 
+    // Trouver toutes les images de la galerie/album
+    const container = img.closest('.album-photos-grid, .galerie-grid, .actualites-grid');
+    if (container) {
+      // Mode galerie: collecter toutes les images
+      const images = container.querySelectorAll('img');
+      lightboxImages = Array.from(images).map(i => i.dataset.full || i.src);
+      lightboxCurrentIndex = Array.from(images).indexOf(img);
+    } else {
+      // Mode image unique
+      lightboxImages = [img.dataset.full || img.src];
+      lightboxCurrentIndex = 0;
+    }
+
     // Ouvrir la lightbox
-    lightboxImg.src = img.src;
+    showLightboxImage(lightboxCurrentIndex);
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
   });

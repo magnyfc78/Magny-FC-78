@@ -1781,10 +1781,88 @@ footer {
   transform: scale(1.1);
 }
 
+/* Boutons de navigation */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  font-size: 2.5rem;
+  width: 60px;
+  height: 80px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  z-index: 10001;
+}
+
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: var(--or);
+}
+
+.lightbox-prev {
+  left: 20px;
+}
+
+.lightbox-next {
+  right: 20px;
+}
+
+/* Compteur d'images */
+.lightbox-counter {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 20px;
+  border-radius: 20px;
+  z-index: 10001;
+}
+
+/* Responsive lightbox navigation */
+@media (max-width: 768px) {
+  .lightbox-nav {
+    width: 50px;
+    height: 60px;
+    font-size: 2rem;
+  }
+
+  .lightbox-prev {
+    left: 10px;
+  }
+
+  .lightbox-next {
+    right: 10px;
+  }
+
+  .lightbox-counter {
+    bottom: 20px;
+    font-size: 0.9rem;
+    padding: 6px 15px;
+  }
+
+  .lightbox-close {
+    top: 15px;
+    right: 15px;
+    font-size: 2.5rem;
+  }
+}
+
 /* Curseur pointer sur les images cliquables */
 .actu-image img,
 .album-image img,
 .galerie-grid img,
+.album-photos-grid img,
+.album-photo-item img,
 .organigramme-card img,
 .equipe-card img {
   cursor: zoom-in;
