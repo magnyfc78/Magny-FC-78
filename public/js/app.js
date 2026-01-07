@@ -42,22 +42,13 @@ const views = {
     // Style inline pour l'image de fond dynamique
     const heroStyle = `background: linear-gradient(to bottom, rgba(13, 24, 41, 0.7) 0%, rgba(13, 24, 41, 0.5) 50%, rgba(13, 24, 41, 0.8) 100%), url('${heroImage}') center/cover no-repeat;`;
 
-    // Statistiques dynamiques
-    let stats = [];
-    try {
-      stats = typeof config.stats === 'string' ? JSON.parse(config.stats) : (config.stats || []);
-    } catch (e) {
-      stats = [];
-    }
-    // Valeurs par défaut si pas de stats configurées
-    if (!stats.length) {
-      stats = [
-        { valeur: '300+', label: 'Licenciés' },
-        { valeur: '17', label: 'Équipes' },
-        { valeur: '24', label: 'Années' },
-        { valeur: '1er', label: 'Club de la ville' }
-      ];
-    }
+    // Statistiques dynamiques (champs individuels en BD)
+    const stats = [
+      { valeur: config.stat_1_valeur || '300+', label: config.stat_1_label || 'Licenciés' },
+      { valeur: config.stat_2_valeur || '17', label: config.stat_2_label || 'Équipes' },
+      { valeur: config.stat_3_valeur || '24', label: config.stat_3_label || 'Années' },
+      { valeur: config.stat_4_valeur || '1er', label: config.stat_4_label || 'Club de la ville' }
+    ].filter(s => s.valeur || s.label);
 
     return `
       <!-- Hero -->

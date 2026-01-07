@@ -314,23 +314,15 @@ async function loadConfig(groupe = 'general') {
 
 // Charger et afficher l'éditeur de statistiques
 function loadStatsConfig(items) {
-  const statsItem = items.find(c => c.cle === 'stats');
-  let stats = [];
-  try {
-    stats = JSON.parse(statsItem?.valeur || '[]');
-  } catch (e) {
-    stats = [
-      { valeur: '300+', label: 'Licenciés' },
-      { valeur: '17', label: 'Équipes' },
-      { valeur: '24', label: 'Années' },
-      { valeur: '1er', label: 'Club de la ville' }
-    ];
-  }
+  // Récupérer les valeurs individuelles depuis la config
+  const getVal = (cle) => items.find(c => c.cle === cle)?.valeur || '';
 
-  // S'assurer qu'il y a 4 statistiques
-  while (stats.length < 4) {
-    stats.push({ valeur: '', label: '' });
-  }
+  const stats = [
+    { valeur: getVal('stat_1_valeur'), label: getVal('stat_1_label') },
+    { valeur: getVal('stat_2_valeur'), label: getVal('stat_2_label') },
+    { valeur: getVal('stat_3_valeur'), label: getVal('stat_3_label') },
+    { valeur: getVal('stat_4_valeur'), label: getVal('stat_4_label') }
+  ];
 
   document.getElementById('config-form').innerHTML = `
     <form id="stats-form">
@@ -341,11 +333,11 @@ function loadStatsConfig(items) {
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Valeur (ex: 300+, 17, 1er)</label>
-              <input type="text" class="form-control" name="stat_${i}_valeur" value="${s.valeur || ''}" placeholder="300+">
+              <input type="text" class="form-control" name="stat_${i + 1}_valeur" value="${s.valeur || ''}" placeholder="300+">
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Label (ex: Licenciés, Équipes)</label>
-              <input type="text" class="form-control" name="stat_${i}_label" value="${s.label || ''}" placeholder="Licenciés">
+              <input type="text" class="form-control" name="stat_${i + 1}_label" value="${s.label || ''}" placeholder="Licenciés">
             </div>
           </div>
         </div>
@@ -357,22 +349,19 @@ function loadStatsConfig(items) {
   document.getElementById('stats-form').addEventListener('submit', saveStatsConfig);
 }
 
-// Sauvegarder les statistiques
+// Sauvegarder les statistiques (champs individuels en BD)
 async function saveStatsConfig(e) {
   e.preventDefault();
   const formData = new FormData(e.target);
 
-  const stats = [];
-  for (let i = 0; i < 4; i++) {
-    const valeur = formData.get(`stat_${i}_valeur`);
-    const label = formData.get(`stat_${i}_label`);
-    if (valeur || label) {
-      stats.push({ valeur: valeur || '', label: label || '' });
-    }
+  const data = {};
+  for (let i = 1; i <= 4; i++) {
+    data[`stat_${i}_valeur`] = formData.get(`stat_${i}_valeur`) || '';
+    data[`stat_${i}_label`] = formData.get(`stat_${i}_label`) || '';
   }
 
   try {
-    await api.put('/admin/config', { stats: JSON.stringify(stats) });
+    await api.put('/admin/config', data);
     showAlert('Statistiques enregistrées', 'success');
   } catch (e) {
     showAlert('Erreur sauvegarde: ' + e.message, 'danger');
