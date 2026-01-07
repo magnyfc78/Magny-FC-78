@@ -983,6 +983,7 @@ footer {
   inset: 0;
   background: rgba(26, 39, 68, 0);
   transition: background 0.3s ease;
+  pointer-events: none;
 }
 
 .galerie-item:hover::after {
