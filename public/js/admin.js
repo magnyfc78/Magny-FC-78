@@ -262,6 +262,12 @@ async function loadConfig(groupe = 'general') {
     const res = await api.get('/admin/config');
     const items = res.data.raw.filter(c => c.groupe === groupe);
 
+    // Gestion spéciale pour le groupe stats
+    if (groupe === 'stats') {
+      loadStatsConfig(items);
+      return;
+    }
+
     const renderField = (c) => {
       if (c.type === 'textarea') {
         return `<textarea class="form-control" name="${c.cle}">${c.valeur || ''}</textarea>`;
@@ -304,6 +310,73 @@ async function loadConfig(groupe = 'general') {
 
     document.getElementById('config-form-inner').addEventListener('submit', saveConfig);
   } catch (e) { showAlert('Erreur chargement config', 'danger'); }
+}
+
+// Charger et afficher l'éditeur de statistiques
+function loadStatsConfig(items) {
+  const statsItem = items.find(c => c.cle === 'stats');
+  let stats = [];
+  try {
+    stats = JSON.parse(statsItem?.valeur || '[]');
+  } catch (e) {
+    stats = [
+      { valeur: '300+', label: 'Licenciés' },
+      { valeur: '17', label: 'Équipes' },
+      { valeur: '24', label: 'Années' },
+      { valeur: '1er', label: 'Club de la ville' }
+    ];
+  }
+
+  // S'assurer qu'il y a 4 statistiques
+  while (stats.length < 4) {
+    stats.push({ valeur: '', label: '' });
+  }
+
+  document.getElementById('config-form').innerHTML = `
+    <form id="stats-form">
+      <p style="color:#6b7280;margin-bottom:20px;">Ces statistiques s'affichent sur la page d'accueil du site.</p>
+      ${stats.map((s, i) => `
+        <div style="background:#f9fafb;padding:15px;border-radius:8px;margin-bottom:15px;">
+          <h4 style="margin-bottom:10px;color:#1a4d92;">Statistique ${i + 1}</h4>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Valeur (ex: 300+, 17, 1er)</label>
+              <input type="text" class="form-control" name="stat_${i}_valeur" value="${s.valeur || ''}" placeholder="300+">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Label (ex: Licenciés, Équipes)</label>
+              <input type="text" class="form-control" name="stat_${i}_label" value="${s.label || ''}" placeholder="Licenciés">
+            </div>
+          </div>
+        </div>
+      `).join('')}
+      <button type="submit" class="btn btn-primary">Enregistrer les statistiques</button>
+    </form>
+  `;
+
+  document.getElementById('stats-form').addEventListener('submit', saveStatsConfig);
+}
+
+// Sauvegarder les statistiques
+async function saveStatsConfig(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  const stats = [];
+  for (let i = 0; i < 4; i++) {
+    const valeur = formData.get(`stat_${i}_valeur`);
+    const label = formData.get(`stat_${i}_label`);
+    if (valeur || label) {
+      stats.push({ valeur: valeur || '', label: label || '' });
+    }
+  }
+
+  try {
+    await api.put('/admin/config', { stats: JSON.stringify(stats) });
+    showAlert('Statistiques enregistrées', 'success');
+  } catch (e) {
+    showAlert('Erreur sauvegarde: ' + e.message, 'danger');
+  }
 }
 
 // Gérer l'upload d'image pour les champs de configuration

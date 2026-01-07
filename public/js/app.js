@@ -42,6 +42,23 @@ const views = {
     // Style inline pour l'image de fond dynamique
     const heroStyle = `background: linear-gradient(to bottom, rgba(13, 24, 41, 0.7) 0%, rgba(13, 24, 41, 0.5) 50%, rgba(13, 24, 41, 0.8) 100%), url('${heroImage}') center/cover no-repeat;`;
 
+    // Statistiques dynamiques
+    let stats = [];
+    try {
+      stats = typeof config.stats === 'string' ? JSON.parse(config.stats) : (config.stats || []);
+    } catch (e) {
+      stats = [];
+    }
+    // Valeurs par défaut si pas de stats configurées
+    if (!stats.length) {
+      stats = [
+        { valeur: '300+', label: 'Licenciés' },
+        { valeur: '17', label: 'Équipes' },
+        { valeur: '24', label: 'Années' },
+        { valeur: '1er', label: 'Club de la ville' }
+      ];
+    }
+
     return `
       <!-- Hero -->
       <section class="hero" style="${heroStyle}">
@@ -61,22 +78,12 @@ const views = {
       <section class="stats-section">
         <div class="container">
           <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-value">300+</div>
-              <div class="stat-label">Licenciés</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">17</div>
-              <div class="stat-label">Équipes</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">24</div>
-              <div class="stat-label">Années</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">1er</div>
-              <div class="stat-label">Club de la ville</div>
-            </div>
+            ${stats.map(s => `
+              <div class="stat-item">
+                <div class="stat-value">${s.valeur}</div>
+                <div class="stat-label">${s.label}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
       </section>
