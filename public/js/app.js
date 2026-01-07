@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isLogo = img.closest('.logo, .logo-icon, .footer-logo, .social-link');
     const isIcon = img.closest('.instagram-link-bottom') || img.width < 50;
     const isPartenaireSmall = img.closest('.partenaire-item');
-    const isOrganigramme = img.closest('.organigramme-card, .organigramme-grid');
+    const isOrganigramme = img.closest('.organigramme-section, .organigramme-container, .hexagon, .org-member');
 
     if (isLogo || isIcon || isPartenaireSmall || isOrganigramme) return;
 
