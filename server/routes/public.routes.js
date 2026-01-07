@@ -158,27 +158,28 @@ router.get('/actualites', async (req, res, next) => {
   try {
     const { categorie, limit = 10, page = 1 } = req.query;
     const offset = (page - 1) * limit;
-    
-    let sql = 'SELECT id, titre, slug, extrait, image, categorie, vues, date_publication, lien_instagram FROM actualites WHERE publie = 1';
+
+    // Ne pas afficher les actualités avec une date de publication future
+    let sql = 'SELECT id, titre, slug, extrait, image, categorie, vues, date_publication, lien_instagram FROM actualites WHERE publie = 1 AND date_publication <= NOW()';
     const params = [];
-    
+
     if (categorie && categorie !== 'Tous') {
       sql += ' AND categorie = ?';
       params.push(categorie);
     }
-    
+
     sql += ' ORDER BY date_publication DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit) || 10, parseInt(offset) || 0);
 
     const actualites = await db.query(sql, params);
-    
+
     const formatted = actualites.map(a => ({
       ...a,
       date_formatee: new Date(a.date_publication).toLocaleDateString('fr-FR', {
         day: 'numeric', month: 'short', year: 'numeric'
       })
     }));
-    
+
     res.json({ success: true, data: { actualites: formatted } });
   } catch (error) { next(error); }
 });
@@ -186,10 +187,10 @@ router.get('/actualites', async (req, res, next) => {
 router.get('/actualites/:slug', async (req, res, next) => {
   try {
     const [actus] = await db.pool.execute(
-      'SELECT * FROM actualites WHERE slug = ? AND publie = 1',
+      'SELECT * FROM actualites WHERE slug = ? AND publie = 1 AND date_publication <= NOW()',
       [req.params.slug]
     );
-    
+
     if (!actus.length) {
       return res.status(404).json({ success: false, error: 'Article non trouvé' });
     }
