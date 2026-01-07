@@ -1895,7 +1895,6 @@ a.partenaire-clickable:hover::after {
 .galerie-grid img,
 .album-photos-grid img,
 .album-photo-item img,
-.organigramme-card img,
 .equipe-card img {
   cursor: zoom-in;
 }

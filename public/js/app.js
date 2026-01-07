@@ -1273,8 +1273,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isLogo = img.closest('.logo, .logo-icon, .footer-logo, .social-link');
     const isIcon = img.closest('.instagram-link-bottom') || img.width < 50;
     const isPartenaireSmall = img.closest('.partenaire-item');
+    const isOrganigramme = img.closest('.organigramme-card, .organigramme-grid');
 
-    if (isLogo || isIcon || isPartenaireSmall) return;
+    if (isLogo || isIcon || isPartenaireSmall || isOrganigramme) return;
 
     // Trouver toutes les images de la galerie/album
     const container = img.closest('.album-photos-grid, .galerie-grid, .actualites-grid');
