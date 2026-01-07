@@ -520,7 +520,6 @@ const views = {
       console.error('Erreur chargement partenaires:', e);
     }
 
-    const categories = ['Tous', 'principal', 'officiel', 'partenaire', 'fournisseur'];
     window.partenairesData = partenaires;
 
     return `
@@ -531,11 +530,6 @@ const views = {
 
       <section class="section">
         <div class="container">
-          <div class="filters" id="partenaires-filters">
-            ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="partenaires" data-category="${c}">${c === 'Tous' ? 'Tous' : c.charAt(0).toUpperCase() + c.slice(1)}</button>
-            `).join('')}
-          </div>
           <div class="partenaires-grid" id="partenaires-grid">
             ${renderPartenaires(partenaires)}
           </div>
@@ -962,25 +956,23 @@ function filterGalerie(categorie) {
 
 // Render partenaires
 function renderPartenaires(partenaires) {
-  const badgeColors = {
-    'principal': 'badge-or',
-    'officiel': 'badge-argent',
-    'partenaire': 'badge-bronze',
-    'fournisseur': 'badge-info'
-  };
-  return partenaires.map(p => `
-    <div class="partenaire-item" data-category="${p.type}">
+  return partenaires.map(p => {
+    const content = `
       <div class="partenaire-logo">
         <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy">
       </div>
       <div class="partenaire-info">
         <h3>${p.nom}</h3>
         ${p.description ? `<p>${p.description}</p>` : ''}
-        <span class="badge ${badgeColors[p.type] || 'badge-or'}">${p.type}</span>
-        ${p.site_web ? `<a href="${p.site_web}" target="_blank" class="partenaire-link">Visiter le site</a>` : ''}
       </div>
-    </div>
-  `).join('') || '<p class="text-center">Aucun partenaire</p>';
+    `;
+
+    // Si le partenaire a un site web, rendre la carte cliquable
+    if (p.site_web) {
+      return `<a href="${p.site_web}" target="_blank" rel="noopener noreferrer" class="partenaire-item partenaire-clickable">${content}</a>`;
+    }
+    return `<div class="partenaire-item">${content}</div>`;
+  }).join('') || '<p class="text-center">Aucun partenaire</p>';
 }
 
 // Filter partenaires
