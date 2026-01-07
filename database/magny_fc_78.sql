@@ -70,8 +70,15 @@ INSERT INTO site_config (cle, valeur, type, groupe, label) VALUES
 ('hero_image', '/assets/images/hero-bg.jpg', 'image', 'hero', 'Image de fond'),
 ('hero_bouton_texte', 'REJOINDRE LE CLUB', 'text', 'hero', 'Texte du bouton'),
 ('hero_bouton_lien', '/contact', 'text', 'hero', 'Lien du bouton'),
--- Stats
-('stats', '[{"valeur":"300+","label":"Licenciés"},{"valeur":"17","label":"Équipes"},{"valeur":"24","label":"Années"},{"valeur":"1er","label":"Club de la ville"}]', 'json', 'stats', 'Statistiques');
+-- Stats homepage
+('stat_1_valeur', '300+', 'text', 'stats', 'Statistique 1 - Valeur'),
+('stat_1_label', 'Licenciés', 'text', 'stats', 'Statistique 1 - Label'),
+('stat_2_valeur', '17', 'text', 'stats', 'Statistique 2 - Valeur'),
+('stat_2_label', 'Équipes', 'text', 'stats', 'Statistique 2 - Label'),
+('stat_3_valeur', '24', 'text', 'stats', 'Statistique 3 - Valeur'),
+('stat_3_label', 'Années', 'text', 'stats', 'Statistique 3 - Label'),
+('stat_4_valeur', '1er', 'text', 'stats', 'Statistique 4 - Valeur'),
+('stat_4_label', 'Club de la ville', 'text', 'stats', 'Statistique 4 - Label');
 
 -- =====================================================
 -- MENU DE NAVIGATION
