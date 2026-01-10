@@ -8,6 +8,7 @@ const { protect, restrictTo } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validator');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { sendContactNotification } = require('../utils/email');
 
 const router = express.Router();
 
@@ -26,7 +27,16 @@ router.post('/', validate(schemas.contact), async (req, res, next) => {
 
     logger.info(`Nouveau message de contact reçu de: ${email}`);
 
-    // TODO: Envoyer un email de notification
+    // Envoyer un email de notification (non bloquant)
+    sendContactNotification({ nom, email, sujet, message })
+      .then(result => {
+        if (result.success) {
+          logger.info(`Email de notification envoyé pour le contact de: ${email}`);
+        }
+      })
+      .catch(err => {
+        logger.error(`Erreur envoi notification email: ${err.message}`);
+      });
 
     res.status(201).json({
       success: true,
