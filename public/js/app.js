@@ -727,7 +727,7 @@ const views = {
 
             <div class="contact-form">
               <h2>ENVOYER UN MESSAGE</h2>
-              <form id="contact-form">
+              <form id="contact-form" onsubmit="handleContact(event)">
                 <div class="form-group">
                   <label for="nom">Nom complet</label>
                   <input type="text" id="nom" name="nom" class="form-control" required>
