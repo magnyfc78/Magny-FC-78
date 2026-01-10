@@ -100,7 +100,7 @@ const views = {
                     <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                   </div>
                   <div class="match-meta">
-                    ${m.categorie ? `<span class="match-category">${m.categorie}</span>` : ''}
+                    ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
                     <span class="match-time">${m.heure}</span>
                     <span class="match-competition">${m.competition || 'Match'}</span>
                   </div>
