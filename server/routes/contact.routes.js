@@ -17,8 +17,15 @@ const router = express.Router();
 // =====================================================
 router.post('/', validate(schemas.contact), async (req, res, next) => {
   try {
-    const { nom, email, message } = req.body;
+    const nom = req.body.nom || '';
+    const email = req.body.email || '';
     const sujet = req.body.sujet || 'Autre';
+    const message = req.body.message || '';
+
+    // Vérification des champs requis
+    if (!nom || !email || !message) {
+      throw new AppError('Tous les champs sont requis (nom, email, message).', 400);
+    }
 
     // Insérer le message
     const result = await db.query(`
