@@ -17,7 +17,8 @@ const router = express.Router();
 // =====================================================
 router.post('/', validate(schemas.contact), async (req, res, next) => {
   try {
-    const { nom, email, sujet, message } = req.body;
+    const { nom, email, message } = req.body;
+    const sujet = req.body.sujet || 'Autre';
 
     // Insérer le message
     const result = await db.query(`
