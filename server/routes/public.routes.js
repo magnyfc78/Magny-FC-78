@@ -419,10 +419,13 @@ router.post('/contact', async (req, res, next) => {
       .then(result => {
         if (result.success) {
           logger.info(`Email de notification envoyé pour le contact de: ${email}`);
+        } else {
+          logger.error(`Échec envoi email: ${result.error}`);
         }
       })
       .catch(err => {
-        logger.error(`Erreur envoi notification email: ${err.message}`);
+        logger.error(`Erreur envoi notification email: ${err}`);
+        logger.error(err);
       });
 
     res.status(201).json({ success: true, message: 'Message envoyé avec succès' });
