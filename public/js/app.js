@@ -42,6 +42,14 @@ const views = {
     // Style inline pour l'image de fond dynamique
     const heroStyle = `background: linear-gradient(to bottom, rgba(13, 24, 41, 0.7) 0%, rgba(13, 24, 41, 0.5) 50%, rgba(13, 24, 41, 0.8) 100%), url('${heroImage}') center/cover no-repeat;`;
 
+    // Statistiques dynamiques (champs individuels en BD)
+    const stats = [
+      { valeur: config.stat_1_valeur || '300+', label: config.stat_1_label || 'Licenciés' },
+      { valeur: config.stat_2_valeur || '17', label: config.stat_2_label || 'Équipes' },
+      { valeur: config.stat_3_valeur || '24', label: config.stat_3_label || 'Années' },
+      { valeur: config.stat_4_valeur || '1er', label: config.stat_4_label || 'Club de la ville' }
+    ].filter(s => s.valeur || s.label);
+
     return `
       <!-- Hero -->
       <section class="hero" style="${heroStyle}">
@@ -61,22 +69,12 @@ const views = {
       <section class="stats-section">
         <div class="container">
           <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-value">300+</div>
-              <div class="stat-label">Licenciés</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">17</div>
-              <div class="stat-label">Équipes</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">24</div>
-              <div class="stat-label">Années</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">1er</div>
-              <div class="stat-label">Club de la ville</div>
-            </div>
+            ${stats.map(s => `
+              <div class="stat-item">
+                <div class="stat-value">${s.valeur}</div>
+                <div class="stat-label">${s.label}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
       </section>
@@ -102,7 +100,7 @@ const views = {
                     <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                   </div>
                   <div class="match-meta">
-                    ${m.categorie ? `<span class="match-category">${m.categorie}</span>` : ''}
+                    ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
                     <span class="match-time">${m.heure}</span>
                     <span class="match-competition">${m.competition || 'Match'}</span>
                   </div>
@@ -429,6 +427,85 @@ const views = {
     `;
   },
 
+  // Page album (détail avec photos)
+  async galerieAlbum(params) {
+    const slug = Array.isArray(params) ? params[0] : params;
+    let album = null;
+    try {
+      const res = await fetch(`/api/galerie/${slug}`);
+      const data = await res.json();
+      if (data.success) {
+        album = data.data.album;
+      }
+    } catch (e) {
+      console.error('Erreur chargement album:', e);
+    }
+
+    if (!album) {
+      return `
+        <section class="page-header">
+          <h1>Album introuvable</h1>
+          <p>Cet album n'existe pas ou n'est plus disponible</p>
+        </section>
+        <section class="section">
+          <div class="container text-center">
+            <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
+          </div>
+        </section>
+      `;
+    }
+
+    const photos = album.photos || [];
+    const instagramLink = album.lien_instagram ? `
+      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="gap: 8px;">
+        <img src="/icons/instagram.svg" alt="Instagram" style="width: 20px; height: 20px;"> Voir sur Instagram
+      </a>
+    ` : '';
+
+    return `
+      <section class="page-header">
+        <h1>${album.titre}</h1>
+        <p>${album.description || ''}</p>
+        ${album.categorie_nom ? `<span class="album-category-badge" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="album-header-info">
+            <div class="album-meta-info">
+              ${album.date_evenement ? `<span>📅 ${new Date(album.date_evenement).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>` : ''}
+              <span>📷 ${photos.length} photo${photos.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="album-actions">
+              ${instagramLink}
+            </div>
+          </div>
+
+          ${photos.length > 0 ? `
+            <div class="album-photos-grid">
+              ${photos.map(photo => `
+                <div class="album-photo-item galerie-item">
+                  <img src="${photo.thumbnail || photo.fichier}"
+                       data-full="${photo.fichier}"
+                       alt="${photo.titre || album.titre}"
+                       loading="lazy">
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="album-empty">
+              <p>Aucune photo dans cet album pour le moment.</p>
+            </div>
+          `}
+
+          <div class="text-center" style="margin-top: 40px;">
+            <a href="/galerie" class="btn btn-primary" data-link>← Retour à la galerie</a>
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
   // Page partenaires
   async partenaires() {
     // Charger les partenaires depuis l'API
@@ -443,7 +520,6 @@ const views = {
       console.error('Erreur chargement partenaires:', e);
     }
 
-    const categories = ['Tous', 'principal', 'officiel', 'partenaire', 'fournisseur'];
     window.partenairesData = partenaires;
 
     return `
@@ -454,11 +530,6 @@ const views = {
 
       <section class="section">
         <div class="container">
-          <div class="filters" id="partenaires-filters">
-            ${categories.map(c => `
-              <button class="filter-btn ${c === 'Tous' ? 'active' : ''}" data-filter="partenaires" data-category="${c}">${c === 'Tous' ? 'Tous' : c.charAt(0).toUpperCase() + c.slice(1)}</button>
-            `).join('')}
-          </div>
           <div class="partenaires-grid" id="partenaires-grid">
             ${renderPartenaires(partenaires)}
           </div>
@@ -844,17 +915,19 @@ function filterActualites(categorie) {
 // Render galerie albums
 function renderGalerieAlbums(albums) {
   return albums.map(album => {
-    const instagramIcon = album.lien_instagram ? `
-      <a href="${album.lien_instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link-bottom" title="Voir sur Instagram">
-        <img src="/icons/instagram.svg" alt="Instagram"> Voir sur Instagram
-      </a>
+    // Icône Instagram (non-cliquable, juste indicatif)
+    const instagramBadge = album.lien_instagram ? `
+      <span class="album-instagram-badge" title="Disponible sur Instagram">
+        <img src="/icons/instagram.svg" alt="Instagram">
+      </span>
     ` : '';
     return `
-    <div class="album-card" data-category="${album.categorie_slug || ''}">
+    <a href="/galerie/${album.slug}" data-link class="album-card" data-category="${album.categorie_slug || ''}">
       <div class="album-image">
         <img src="${album.image_couverture || '/assets/images/logo.png'}" alt="${album.titre}" loading="lazy">
         <span class="album-count">${album.nb_photos || 0} photos</span>
         ${album.categorie_nom ? `<span class="album-category" style="background:${album.categorie_couleur || '#1a4d92'}">${album.categorie_nom}</span>` : ''}
+        ${instagramBadge}
       </div>
       <div class="album-info">
         <h3>${album.titre}</h3>
@@ -863,9 +936,8 @@ function renderGalerieAlbums(albums) {
           ${album.annee ? `<span class="album-year">${album.annee}</span>` : ''}
         </div>
         ${album.description ? `<p>${album.description}</p>` : ''}
-        ${instagramIcon}
       </div>
-    </div>
+    </a>
   `}).join('') || '<p class="text-center">Aucun album disponible</p>';
 }
 
@@ -884,25 +956,23 @@ function filterGalerie(categorie) {
 
 // Render partenaires
 function renderPartenaires(partenaires) {
-  const badgeColors = {
-    'principal': 'badge-or',
-    'officiel': 'badge-argent',
-    'partenaire': 'badge-bronze',
-    'fournisseur': 'badge-info'
-  };
-  return partenaires.map(p => `
-    <div class="partenaire-item" data-category="${p.type}">
+  return partenaires.map(p => {
+    const content = `
       <div class="partenaire-logo">
         <img src="${p.logo || '/assets/images/logo.png'}" alt="${p.nom}" loading="lazy">
       </div>
       <div class="partenaire-info">
         <h3>${p.nom}</h3>
         ${p.description ? `<p>${p.description}</p>` : ''}
-        <span class="badge ${badgeColors[p.type] || 'badge-or'}">${p.type}</span>
-        ${p.site_web ? `<a href="${p.site_web}" target="_blank" class="partenaire-link">Visiter le site</a>` : ''}
       </div>
-    </div>
-  `).join('') || '<p class="text-center">Aucun partenaire</p>';
+    `;
+
+    // Si le partenaire a un site web, rendre la carte cliquable
+    if (p.site_web) {
+      return `<a href="${p.site_web}" target="_blank" rel="noopener noreferrer" class="partenaire-item partenaire-clickable">${content}</a>`;
+    }
+    return `<div class="partenaire-item">${content}</div>`;
+  }).join('') || '<p class="text-center">Aucun partenaire</p>';
 }
 
 // Filter partenaires
@@ -1103,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   router.addRoute('/actualites', views.actualites);
   router.addRoute('/galerie', views.galerie);
   router.addRoute('/galerie/histoire', views.galerieHistoire);
+  router.addRoute('/galerie/:slug', views.galerieAlbum);
   router.addRoute('/partenaires', views.partenaires);
   router.addRoute('/calendrier', views.calendrier);
   router.addRoute('/club', views.club);
@@ -1112,31 +1183,85 @@ document.addEventListener('DOMContentLoaded', async () => {
   // LIGHTBOX - Affichage des images en grand format
   // =====================================================
 
-  // Créer le modal lightbox
+  // Variables pour la navigation
+  let lightboxImages = [];
+  let lightboxCurrentIndex = 0;
+
+  // Créer le modal lightbox avec navigation
   const lightbox = document.createElement('div');
   lightbox.id = 'lightbox';
   lightbox.className = 'lightbox';
   lightbox.innerHTML = `
     <button class="lightbox-close">&times;</button>
+    <button class="lightbox-nav lightbox-prev">&#10094;</button>
     <img class="lightbox-img" src="" alt="Image en grand">
+    <button class="lightbox-nav lightbox-next">&#10095;</button>
+    <div class="lightbox-counter"></div>
   `;
   document.body.appendChild(lightbox);
 
   const lightboxImg = lightbox.querySelector('.lightbox-img');
   const lightboxClose = lightbox.querySelector('.lightbox-close');
+  const lightboxPrev = lightbox.querySelector('.lightbox-prev');
+  const lightboxNext = lightbox.querySelector('.lightbox-next');
+  const lightboxCounter = lightbox.querySelector('.lightbox-counter');
+
+  // Afficher l'image courante
+  function showLightboxImage(index) {
+    if (lightboxImages.length === 0) return;
+
+    // Boucler sur les images
+    if (index < 0) index = lightboxImages.length - 1;
+    if (index >= lightboxImages.length) index = 0;
+
+    lightboxCurrentIndex = index;
+    lightboxImg.src = lightboxImages[index];
+
+    // Mettre à jour le compteur
+    lightboxCounter.textContent = `${index + 1} / ${lightboxImages.length}`;
+
+    // Masquer les flèches s'il n'y a qu'une image
+    const showNav = lightboxImages.length > 1;
+    lightboxPrev.style.display = showNav ? 'flex' : 'none';
+    lightboxNext.style.display = showNav ? 'flex' : 'none';
+    lightboxCounter.style.display = showNav ? 'block' : 'none';
+  }
+
+  // Navigation
+  function lightboxPrevImage() {
+    showLightboxImage(lightboxCurrentIndex - 1);
+  }
+
+  function lightboxNextImage() {
+    showLightboxImage(lightboxCurrentIndex + 1);
+  }
 
   // Fermer la lightbox
   function closeLightbox() {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
+    lightboxImages = [];
+    lightboxCurrentIndex = 0;
   }
 
+  // Event listeners
   lightboxClose.addEventListener('click', closeLightbox);
+  lightboxPrev.addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxPrevImage();
+  });
+  lightboxNext.addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxNextImage();
+  });
   lightbox.addEventListener('click', (e) => {
     if (e.target === lightbox) closeLightbox();
   });
   document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxPrevImage();
+    if (e.key === 'ArrowRight') lightboxNextImage();
   });
 
   // Ouvrir la lightbox au clic sur une image
@@ -1148,11 +1273,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isLogo = img.closest('.logo, .logo-icon, .footer-logo, .social-link');
     const isIcon = img.closest('.instagram-link-bottom') || img.width < 50;
     const isPartenaireSmall = img.closest('.partenaire-item');
+    const isOrganigramme = img.closest('.organigramme-section, .organigramme-container, .hexagon, .org-member');
 
-    if (isLogo || isIcon || isPartenaireSmall) return;
+    if (isLogo || isIcon || isPartenaireSmall || isOrganigramme) return;
+
+    // Trouver toutes les images de la galerie/album
+    const container = img.closest('.album-photos-grid, .galerie-grid, .actualites-grid');
+    if (container) {
+      // Mode galerie: collecter toutes les images
+      const images = container.querySelectorAll('img');
+      lightboxImages = Array.from(images).map(i => i.dataset.full || i.src);
+      lightboxCurrentIndex = Array.from(images).indexOf(img);
+    } else {
+      // Mode image unique
+      lightboxImages = [img.dataset.full || img.src];
+      lightboxCurrentIndex = 0;
+    }
 
     // Ouvrir la lightbox
-    lightboxImg.src = img.src;
+    showLightboxImage(lightboxCurrentIndex);
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
   });

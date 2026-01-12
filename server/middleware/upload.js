@@ -38,6 +38,11 @@ const storage = multer.diskStorage({
       type = 'equipe';
     }
 
+    // Si route /galerie/:albumId, utiliser 'galerie'
+    if (req.params.albumId || req.originalUrl.includes('/galerie/')) {
+      type = 'galerie';
+    }
+
     const destinations = {
       equipe: 'public/uploads/equipes',
       actualite: 'public/uploads/actualites',
@@ -100,13 +105,14 @@ const processImage = async (req, res, next) => {
   if (!req.file && !req.files) return next();
 
   const files = req.files || [req.file];
-  
+
   try {
     for (const file of files) {
       const filePath = file.path;
       const ext = path.extname(file.filename);
       const baseName = path.basename(file.filename, ext);
-      
+      const fileDir = path.dirname(filePath);
+
       // Redimensionner l'image principale (max 1920px)
       await sharp(filePath)
         .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
@@ -114,20 +120,30 @@ const processImage = async (req, res, next) => {
         .toFile(filePath.replace(ext, '-optimized.jpg'));
 
       // Créer une miniature pour la galerie
-      if (req.params.type === 'galerie' || req.body.type === 'galerie') {
-        const thumbPath = filePath.replace('/galerie/', '/galerie/thumbnails/');
+      const isGalerie = req.params.type === 'galerie' || req.body.type === 'galerie' ||
+                        req.params.albumId || req.originalUrl.includes('/galerie/');
+      if (isGalerie) {
+        // Créer le dossier thumbnails s'il n'existe pas
+        const thumbDir = path.join(fileDir, 'thumbnails');
+        if (!fs.existsSync(thumbDir)) {
+          fs.mkdirSync(thumbDir, { recursive: true });
+        }
+
+        const thumbFilePath = path.join(thumbDir, `${baseName}-thumb.jpg`);
         await sharp(filePath)
           .resize(400, 400, { fit: 'cover' })
           .jpeg({ quality: 80 })
-          .toFile(thumbPath.replace(ext, '-thumb.jpg'));
-        
-        file.thumbnail = `/uploads/galerie/thumbnails/${baseName}-thumb.jpg`;
+          .toFile(thumbFilePath);
+
+        // Calculer le chemin relatif du thumbnail
+        const thumbRelativePath = thumbFilePath.replace(/.*public/, '').replace(/\\/g, '/');
+        file.thumbnail = thumbRelativePath;
       }
 
       // Supprimer l'original et renommer l'optimisé
       fs.unlinkSync(filePath);
       fs.renameSync(filePath.replace(ext, '-optimized.jpg'), filePath.replace(ext, '.jpg'));
-      
+
       file.filename = baseName + '.jpg';
       file.path = filePath.replace(ext, '.jpg');
     }
