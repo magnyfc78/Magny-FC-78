@@ -16,8 +16,15 @@ let transporter = null;
 function initTransporter() {
   if (!config.email.user || !config.email.password) {
     logger.warn('Configuration SMTP incomplète - les emails ne seront pas envoyés');
+    logger.warn(`SMTP_USER: ${config.email.user ? 'défini' : 'NON DÉFINI'}`);
+    logger.warn(`SMTP_PASSWORD: ${config.email.password ? 'défini' : 'NON DÉFINI'}`);
     return null;
   }
+
+  logger.info(`Initialisation SMTP: ${config.email.host}:${config.email.port} (secure: ${config.email.secure})`);
+  logger.info(`SMTP User: ${config.email.user}`);
+  logger.info(`SMTP From: ${config.email.from}`);
+  logger.info(`Contact Email: ${config.email.contactEmail}`);
 
   transporter = nodemailer.createTransport({
     host: config.email.host,
@@ -26,6 +33,9 @@ function initTransporter() {
     auth: {
       user: config.email.user,
       pass: config.email.password
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   });
 
@@ -33,6 +43,7 @@ function initTransporter() {
   transporter.verify((error) => {
     if (error) {
       logger.error('Erreur de connexion SMTP:', error.message);
+      logger.error('Détails:', error);
     } else {
       logger.info('Serveur SMTP prêt pour l\'envoi d\'emails');
     }
