@@ -810,10 +810,10 @@ const views = {
                 <div class="form-group">
                   <label for="sujet">Sujet</label>
                   <select id="sujet" name="sujet" class="form-control">
-                    <option>Inscription</option>
-                    <option>Information</option>
-                    <option>Partenariat</option>
-                    <option>Autre</option>
+                    <option value="Inscription">Inscription</option>
+                    <option value="Information">Information</option>
+                    <option value="Partenariat">Partenariat</option>
+                    <option value="Autre">Autre</option>
                   </select>
                 </div>
                 <div class="form-group">

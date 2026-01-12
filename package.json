@@ -2,7 +2,7 @@
   "name": "magny-fc-78",
   "version": "1.0.0",
   "description": "Site officiel du Magny Football Club 78",
-    "main": "server/server.js",
+  "main": "server/server.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node server/server.js",
     "dev": "cross-env NODE_ENV=development nodemon server/server.js",
@@ -32,6 +32,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "mysql2": "^3.6.5",
+    "nodemailer": "^7.0.12",
     "redis": "^4.6.12",
     "sharp": "^0.34.5",
     "uuid": "^9.0.1",

@@ -1088,7 +1088,8 @@ async function loadContacts() {
 }
 
 async function viewContact(id) {
-  const m = contacts.find(c => c.id === id);
+  const contactId = parseInt(id, 10);
+  const m = contacts.find(c => c.id === contactId);
   if (!m) return;
 
   document.getElementById('modal-title').textContent = 'Message de ' + m.nom;

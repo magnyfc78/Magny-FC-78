@@ -8,6 +8,7 @@ const { protect, restrictTo } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validator');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { sendContactNotification } = require('../utils/email');
 
 const router = express.Router();
 
@@ -16,7 +17,15 @@ const router = express.Router();
 // =====================================================
 router.post('/', validate(schemas.contact), async (req, res, next) => {
   try {
-    const { nom, email, sujet, message } = req.body;
+    const nom = req.body.nom || '';
+    const email = req.body.email || '';
+    const sujet = req.body.sujet || 'Autre';
+    const message = req.body.message || '';
+
+    // Vérification des champs requis
+    if (!nom || !email || !message) {
+      throw new AppError('Tous les champs sont requis (nom, email, message).', 400);
+    }
 
     // Insérer le message
     const result = await db.query(`
@@ -26,7 +35,16 @@ router.post('/', validate(schemas.contact), async (req, res, next) => {
 
     logger.info(`Nouveau message de contact reçu de: ${email}`);
 
-    // TODO: Envoyer un email de notification
+    // Envoyer un email de notification (non bloquant)
+    sendContactNotification({ nom, email, sujet, message })
+      .then(result => {
+        if (result.success) {
+          logger.info(`Email de notification envoyé pour le contact de: ${email}`);
+        }
+      })
+      .catch(err => {
+        logger.error(`Erreur envoi notification email: ${err.message}`);
+      });
 
     res.status(201).json({
       success: true,
