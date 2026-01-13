@@ -687,13 +687,29 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
+  .organigramme-container {
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+
+  .org-level {
+    min-width: max-content;
+    padding: 0 20px;
+  }
+
   .org-level-2 {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 20px;
   }
 
   .level-2-container {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .level-3-container {
+    flex-wrap: nowrap;
+    min-width: max-content;
   }
 }
 
@@ -702,15 +718,22 @@
     font-size: 2rem;
   }
 
+  /* Garder le scroll horizontal */
+  .organigramme-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .org-level {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    flex-direction: row;
+    min-width: max-content;
+    gap: 15px;
   }
 
   .level-2-container {
-    flex-direction: column;
+    flex-direction: row;
     padding-top: 30px;
+    min-width: max-content;
   }
 
   .level-2-container::before {
@@ -718,43 +741,55 @@
   }
 
   .org-member-wrapper::before {
-    display: none;
+    display: block;
   }
 
   .level-3-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    flex-direction: row;
+    min-width: max-content;
+    gap: 15px;
   }
 
   .hexagon-container {
-    width: 110px;
-    height: 127px;
-  }
-
-  .hexagon {
     width: 100px;
     height: 115px;
   }
 
-  .hexagon-inner {
+  .hexagon {
     width: 90px;
     height: 104px;
   }
 
-  .org-level-1 .hexagon-container {
-    width: 130px;
-    height: 150px;
+  .hexagon-inner {
+    width: 80px;
+    height: 92px;
   }
 
-  .org-level-1 .hexagon {
+  .org-level-1 .hexagon-container {
     width: 120px;
     height: 138px;
   }
 
+  .org-level-1 .hexagon {
+    width: 110px;
+    height: 127px;
+  }
+
   .org-level-1 .hexagon-inner {
-    width: 108px;
-    height: 124px;
+    width: 98px;
+    height: 113px;
+  }
+
+  .member-info {
+    max-width: 120px;
+  }
+
+  .member-role {
+    font-size: 0.7rem;
+  }
+
+  .member-name {
+    font-size: 0.85rem;
   }
 }
 
@@ -773,19 +808,64 @@
   }
 
   .organigramme-container {
-    padding: 40px 15px 80px;
+    padding: 40px 10px 80px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Garder le scroll horizontal même sur mobile */
+  .org-level {
+    flex-direction: row;
+    min-width: max-content;
+    gap: 10px;
+  }
+
+  .level-2-container,
+  .level-3-container {
+    flex-direction: row;
+    min-width: max-content;
+  }
+
+  .hexagon-container {
+    width: 85px;
+    height: 98px;
+  }
+
+  .hexagon {
+    width: 75px;
+    height: 87px;
+  }
+
+  .hexagon-inner {
+    width: 67px;
+    height: 77px;
+  }
+
+  .org-level-1 .hexagon-container {
+    width: 100px;
+    height: 115px;
+  }
+
+  .org-level-1 .hexagon {
+    width: 90px;
+    height: 104px;
+  }
+
+  .org-level-1 .hexagon-inner {
+    width: 80px;
+    height: 92px;
   }
 
   .member-info {
-    max-width: 150px;
+    max-width: 100px;
   }
 
   .member-role {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
   }
 
   .member-name {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
   }
 
   .admin-toggle {
