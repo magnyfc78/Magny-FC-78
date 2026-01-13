@@ -707,16 +707,16 @@
 
   .org-level-2 {
     flex-wrap: nowrap !important;
-    gap: 20px;
+    gap: 20px !important;
     min-width: max-content !important;
   }
 
-  .level-2-container {
+  .org-level-3 {
     flex-wrap: nowrap !important;
     min-width: max-content !important;
   }
 
-  .level-3-container {
+  .org-subordinates {
     flex-wrap: nowrap !important;
     min-width: max-content !important;
   }
@@ -757,27 +757,20 @@
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     min-width: max-content !important;
+    gap: 15px !important;
   }
 
-  .level-2-container {
+  .org-level-3 {
     flex-direction: row !important;
-    padding-top: 30px;
-    min-width: max-content !important;
     flex-wrap: nowrap !important;
+    min-width: max-content !important;
+    gap: 15px !important;
   }
 
-  .level-2-container::before {
-    height: 30px;
-  }
-
-  .org-member-wrapper::before {
-    display: block;
-  }
-
-  .level-3-container {
+  .org-subordinates {
     flex-direction: row !important;
     min-width: max-content !important;
-    gap: 15px;
+    gap: 15px !important;
     flex-wrap: nowrap !important;
   }
 
@@ -843,23 +836,42 @@
     font-size: 1.1rem;
   }
 
+  .organigramme-page {
+    overflow-x: auto !important;
+  }
+
   .organigramme-container {
     padding: 40px 10px 80px;
-    overflow-x: auto;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
+    min-width: max-content !important;
   }
 
   /* Garder le scroll horizontal même sur mobile */
   .org-level {
-    flex-direction: row;
-    min-width: max-content;
-    gap: 10px;
+    flex-direction: row !important;
+    min-width: max-content !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
   }
 
-  .level-2-container,
-  .level-3-container {
-    flex-direction: row;
-    min-width: max-content;
+  .org-level-2,
+  .org-level-3 {
+    flex-direction: row !important;
+    min-width: max-content !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .org-subordinates {
+    flex-direction: row !important;
+    min-width: max-content !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+  }
+
+  .org-group,
+  .org-member {
+    flex-shrink: 0 !important;
   }
 
   .hexagon-container {
