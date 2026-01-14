@@ -821,7 +821,6 @@ function renderActualites(actualites) {
           </div>
           <h3 class="actu-title">${a.titre}</h3>
           <p class="actu-excerpt">${a.extrait || ''}</p>
-          <span class="actu-views">👁 ${a.vues || 0} vues</span>
           ${instagramIcon}
         </div>
       </article>
