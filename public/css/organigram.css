@@ -6,8 +6,7 @@
   background: linear-gradient(135deg, #e8ecf0 0%, #d5dce3 100%);
   min-height: 100vh;
   position: relative;
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: hidden;
 }
 
 /* Header de page spécifique */
@@ -73,6 +72,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 30px;
   margin-bottom: 20px;
   position: relative;
@@ -84,10 +84,12 @@
 
 .org-level-2 {
   margin-bottom: 40px;
+  flex-wrap: wrap;
 }
 
 .org-level-3 {
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 /* Conteneur de membre */
@@ -395,6 +397,14 @@
   transform: translateX(-50%);
 }
 
+/* Subordonnés - wrap sur plusieurs lignes */
+.org-subordinates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
 /* Actions d'édition (mode admin) */
 .org-actions {
   position: absolute;
@@ -686,48 +696,20 @@
   transform: translateX(18px);
 }
 
-/* Responsive */
+/* Responsive - Wrap sur plusieurs lignes */
 @media (max-width: 1200px) {
-  .organigramme-page {
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-  }
-
-  .organigramme-container {
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    padding-bottom: 20px;
-    min-width: max-content !important;
-  }
-
   .org-level {
-    min-width: max-content !important;
-    padding: 0 20px;
-    flex-wrap: nowrap !important;
+    gap: 25px;
   }
 
   .org-level-2 {
-    flex-wrap: nowrap !important;
-    gap: 20px !important;
-    min-width: max-content !important;
-  }
-
-  .org-level-3 {
-    flex-wrap: nowrap !important;
-    min-width: max-content !important;
+    flex-wrap: wrap;
+    gap: 25px;
   }
 
   .org-subordinates {
-    flex-wrap: nowrap !important;
-    min-width: max-content !important;
-  }
-
-  .org-group {
-    flex-shrink: 0 !important;
-  }
-
-  .org-member {
-    flex-shrink: 0 !important;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 }
 
@@ -736,90 +718,62 @@
     font-size: 2rem;
   }
 
-  /* Garder le scroll horizontal */
-  .organigramme-page {
-    overflow-x: auto !important;
-  }
-
-  .organigramme-container {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    min-width: max-content !important;
-  }
-
   .org-level {
-    flex-direction: row !important;
-    min-width: max-content !important;
-    gap: 15px;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap;
+    gap: 20px;
   }
 
-  .org-level-2 {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    min-width: max-content !important;
-    gap: 15px !important;
-  }
-
+  .org-level-2,
   .org-level-3 {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    min-width: max-content !important;
-    gap: 15px !important;
+    flex-wrap: wrap;
+    gap: 20px;
   }
 
   .org-subordinates {
-    flex-direction: row !important;
-    min-width: max-content !important;
-    gap: 15px !important;
-    flex-wrap: nowrap !important;
-  }
-
-  .org-group,
-  .org-member {
-    flex-shrink: 0 !important;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 
   .hexagon-container {
-    width: 100px;
-    height: 115px;
-  }
-
-  .hexagon {
-    width: 90px;
-    height: 104px;
-  }
-
-  .hexagon-inner {
-    width: 80px;
-    height: 92px;
-  }
-
-  .org-level-1 .hexagon-container {
-    width: 120px;
-    height: 138px;
-  }
-
-  .org-level-1 .hexagon {
     width: 110px;
     height: 127px;
   }
 
+  .hexagon {
+    width: 100px;
+    height: 115px;
+  }
+
+  .hexagon-inner {
+    width: 90px;
+    height: 104px;
+  }
+
+  .org-level-1 .hexagon-container {
+    width: 130px;
+    height: 150px;
+  }
+
+  .org-level-1 .hexagon {
+    width: 120px;
+    height: 138px;
+  }
+
   .org-level-1 .hexagon-inner {
-    width: 98px;
-    height: 113px;
+    width: 108px;
+    height: 124px;
   }
 
   .member-info {
-    max-width: 120px;
+    max-width: 140px;
   }
 
   .member-role {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .member-name {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -837,76 +791,58 @@
     font-size: 1.1rem;
   }
 
-  .organigramme-page {
-    overflow-x: auto !important;
-  }
-
   .organigramme-container {
-    padding: 40px 10px 80px;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    min-width: max-content !important;
+    padding: 40px 15px 80px;
   }
 
-  /* Garder le scroll horizontal même sur mobile */
   .org-level {
-    flex-direction: row !important;
-    min-width: max-content !important;
-    gap: 10px !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 
   .org-level-2,
   .org-level-3 {
-    flex-direction: row !important;
-    min-width: max-content !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 
   .org-subordinates {
-    flex-direction: row !important;
-    min-width: max-content !important;
-    flex-wrap: nowrap !important;
-    gap: 10px !important;
-  }
-
-  .org-group,
-  .org-member {
-    flex-shrink: 0 !important;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .hexagon-container {
-    width: 85px;
-    height: 98px;
-  }
-
-  .hexagon {
-    width: 75px;
-    height: 87px;
-  }
-
-  .hexagon-inner {
-    width: 67px;
-    height: 77px;
-  }
-
-  .org-level-1 .hexagon-container {
-    width: 100px;
-    height: 115px;
-  }
-
-  .org-level-1 .hexagon {
     width: 90px;
     height: 104px;
   }
 
-  .org-level-1 .hexagon-inner {
+  .hexagon {
     width: 80px;
     height: 92px;
   }
 
+  .hexagon-inner {
+    width: 72px;
+    height: 83px;
+  }
+
+  .org-level-1 .hexagon-container {
+    width: 110px;
+    height: 127px;
+  }
+
+  .org-level-1 .hexagon {
+    width: 100px;
+    height: 115px;
+  }
+
+  .org-level-1 .hexagon-inner {
+    width: 90px;
+    height: 104px;
+  }
+
   .member-info {
-    max-width: 100px;
+    max-width: 110px;
   }
 
   .member-role {
@@ -914,7 +850,7 @@
   }
 
   .member-name {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .admin-toggle {
