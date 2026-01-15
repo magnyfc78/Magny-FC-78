@@ -137,6 +137,7 @@ nav a.active {
   padding: 12px 30px !important;
   font-weight: 700 !important;
   letter-spacing: 1px;
+  border-radius: 50px;
 }
 
 .btn-connexion:hover {
