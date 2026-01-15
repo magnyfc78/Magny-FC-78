@@ -12,7 +12,8 @@
 !.env.example
 
 # Logs
-logs/
+logs/*
+!logs/.gitkeep
 *.log
 npm-debug.log*
 

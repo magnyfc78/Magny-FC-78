@@ -8,11 +8,15 @@
     "dev": "cross-env NODE_ENV=development nodemon server/server.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint server/",
-    "generate-secret": "node scripts/generate-secret.js"
+    "generate-secret": "node scripts/generate-secret.js",
+    "scrape:fff": "node server/scripts/scrape-fff.js",
+    "scrape:fff:dry": "node server/scripts/scrape-fff.js --dry-run"
   },
   "dependencies": {
+    "axios": "^1.6.5",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
+    "cheerio": "^1.0.0-rc.12",
     "compression": "^1.7.4",
     "connect-redis": "^7.1.0",
     "cookie-parser": "^1.4.6",
@@ -32,6 +36,8 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "mysql2": "^3.6.5",
+    "node-cron": "^3.0.3",
+    "puppeteer": "^21.7.0",
     "redis": "^4.6.12",
     "sharp": "^0.34.5",
     "uuid": "^9.0.1",
