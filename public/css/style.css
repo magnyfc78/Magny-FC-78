@@ -442,6 +442,7 @@ nav a.active {
   padding: 5px 15px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  border-radius: 20px;
 }
 
 .badge-or {
@@ -563,6 +564,7 @@ nav a.active {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
+  border-radius: 20px;
 }
 
 .actu-date {
@@ -1239,7 +1241,7 @@ footer {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  border-radius: 3px;
+  border-radius: 20px;
 }
 
 .album-info {
@@ -1439,6 +1441,7 @@ footer {
   letter-spacing: 3px;
   position: relative;
   z-index: 2;
+  border-radius: 30px;
 }
 
 .timeline-albums {
