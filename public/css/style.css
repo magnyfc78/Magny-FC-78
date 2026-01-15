@@ -225,7 +225,7 @@ nav a.active {
 .hero-subtitle {
   font-family: var(--font-texte);
   font-size: 1.2rem;
-  font-weight: 300;
+  font-weight: 700;
   color: var(--blanc);
   margin-bottom: 50px;
   letter-spacing: 1px;
@@ -244,6 +244,7 @@ nav a.active {
   letter-spacing: 2px;
   text-transform: uppercase;
   border: none;
+  border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -361,6 +362,7 @@ nav a.active {
   background: var(--blanc);
   color: var(--bleu-fonce);
   border: 2px solid var(--bleu-fonce);
+  border-radius: 50px;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -828,6 +830,7 @@ textarea.form-control {
   text-transform: uppercase;
   letter-spacing: 2px;
   border: none;
+  border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -1112,6 +1115,7 @@ footer {
   text-transform: uppercase;
   letter-spacing: 2px;
   border: none;
+  border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
