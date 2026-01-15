@@ -853,6 +853,7 @@ function renderEquipes(equipes) {
         <div class="equipe-info">
           ${e.nb_joueurs > 0 ? `<p>👥 ${e.nb_joueurs} joueurs</p>` : ''}
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
+          ${e.assistant ? `<p>🤝 Assistant: ${e.assistant}</p>` : ''}
           ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
           ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
         </div>
@@ -891,7 +892,6 @@ function renderActualites(actualites) {
           </div>
           <h3 class="actu-title">${a.titre}</h3>
           <p class="actu-excerpt">${a.extrait || ''}</p>
-          <span class="actu-views">👁 ${a.vues || 0} vues</span>
           ${instagramIcon}
         </div>
       </article>

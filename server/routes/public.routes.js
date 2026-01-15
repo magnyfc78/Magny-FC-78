@@ -54,7 +54,7 @@ router.get('/equipes', async (req, res, next) => {
   try {
     const { categorie } = req.query;
     let sql = `
-      SELECT e.id, e.nom, e.slug, e.division, e.coach, e.description, e.photo, e.photo_equipe,
+      SELECT e.id, e.nom, e.slug, e.division, e.coach, e.assistant, e.description, e.photo, e.photo_equipe,
              e.horaires_entrainement, e.terrain,
              c.nom as categorie_nom, c.slug as categorie_slug,
              (SELECT COUNT(*) FROM joueurs WHERE equipe_id = e.id AND actif = 1) as nb_joueurs
