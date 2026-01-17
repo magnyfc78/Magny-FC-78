@@ -149,7 +149,80 @@
         .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
         .modal-body { padding: 25px; }
         .modal-footer { padding: 15px 25px; border-top: 1px solid var(--light); display: flex; justify-content: flex-end; gap: 10px; }
-        
+
+        /* Modal Overlay (pour admin-members) */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-overlay .modal {
+            background: var(--white); border-radius: 10px; width: 100%;
+            max-width: 600px; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-overlay .modal-header {
+            padding: 20px 25px; border-bottom: 1px solid var(--light);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-overlay .modal-header h3 { font-size: 1.2rem; font-weight: 600; margin: 0; }
+        .modal-overlay .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
+        .modal-overlay .modal-body { padding: 25px; }
+        .modal-overlay .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* Import Tabs */
+        .import-tabs { display: flex; border-bottom: 2px solid var(--light); margin-bottom: 20px; }
+        .import-tab {
+            padding: 10px 20px; cursor: pointer; border: none; background: none;
+            font-weight: 500; color: var(--gray); border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s;
+        }
+        .import-tab:hover { color: var(--primary); }
+        .import-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        /* Import File Zone (drag & drop) */
+        .import-file-zone {
+            border: 2px dashed #ddd; border-radius: 8px; padding: 40px 20px;
+            text-align: center; background: #fafafa; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .import-file-zone:hover, .import-file-zone.dragover {
+            border-color: var(--primary); background: #f0f7ff;
+        }
+        .import-file-zone svg { color: var(--gray); margin-bottom: 10px; }
+        .import-file-zone p { margin: 5px 0; }
+        .import-file-zone .text-muted { color: var(--gray); font-size: 0.9rem; }
+        .import-file-zone a { color: var(--primary); text-decoration: underline; }
+
+        /* Import Template Link */
+        .import-template { margin-top: 15px; text-align: center; }
+
+        /* Import Instructions */
+        .import-instructions {
+            background: #f8f9fa; border-radius: 6px; padding: 15px;
+            margin-bottom: 15px; font-size: 0.9rem;
+        }
+        .import-instructions code {
+            display: block; margin-top: 8px; padding: 10px;
+            background: #e9ecef; border-radius: 4px; font-size: 0.8rem;
+            overflow-x: auto;
+        }
+
+        /* Form in modal */
+        .modal-overlay .form-group { margin-bottom: 15px; }
+        .modal-overlay label { display: block; font-weight: 500; margin-bottom: 6px; color: var(--dark); font-size: 0.9rem; }
+        .modal-overlay input, .modal-overlay textarea, .modal-overlay select {
+            width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+            border-radius: 6px; font-size: 0.95rem;
+        }
+        .modal-overlay textarea { min-height: 150px; resize: vertical; font-family: monospace; }
+
+        /* Btn Outline */
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: var(--white); }
+
+        /* Alert error */
+        .alert-error { background: #fee2e2; color: #991b1b; }
+
         /* Alert */
         .alert {
             padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;

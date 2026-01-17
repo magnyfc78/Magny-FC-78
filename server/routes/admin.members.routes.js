@@ -5,6 +5,8 @@
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const { parse } = require('csv-parse/sync');
 const db = require('../config/database');
 const { protect, restrictTo } = require('../middleware/auth');
 const { AppError } = require('../middleware/errorHandler');
@@ -12,6 +14,20 @@ const logger = require('../utils/logger');
 const { sendEmail } = require('../utils/email');
 const config = require('../config');
 const { generateInvitationCode } = require('../middleware/memberAuth');
+
+// Configuration multer pour l'upload CSV
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Seuls les fichiers CSV sont acceptés.', 400), false);
+    }
+  }
+});
 
 const router = express.Router();
 
@@ -426,21 +442,97 @@ router.delete('/licenses/:id', async (req, res, next) => {
   }
 });
 
-// Import en masse des licences (CSV)
-router.post('/licenses/import', async (req, res, next) => {
-  try {
-    const { licenses, season = getCurrentSeason() } = req.body;
+// Template CSV pour l'import
+router.get('/licenses/import/template', (req, res) => {
+  const template = `license_number,first_name,last_name,birth_date,gender,category,email,phone
+2512345678,Jean,DUPONT,2015-03-25,M,U11,parent@email.com,0612345678
+2512345679,Marie,MARTIN,2012-07-14,F,U13,marie.parent@email.com,0698765432`;
 
-    if (!Array.isArray(licenses) || licenses.length === 0) {
-      throw new AppError('Liste de licences vide ou invalide.', 400);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename=template_import_licences.csv');
+  res.send(template);
+});
+
+// Import en masse des licences via fichier CSV
+router.post('/licenses/import', upload.single('file'), async (req, res, next) => {
+  try {
+    const season = req.body.season || getCurrentSeason();
+    let licenses = [];
+
+    // Si un fichier CSV est uploadé
+    if (req.file) {
+      const csvContent = req.file.buffer.toString('utf-8');
+
+      // Parser le CSV
+      try {
+        const records = parse(csvContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          bom: true, // Gérer le BOM UTF-8
+          relaxColumnCount: true
+        });
+
+        // Mapper les colonnes (supporte plusieurs formats)
+        licenses = records.map(row => ({
+          license_number: row.license_number || row.numero_licence || row['Numéro de licence'] || row.numero,
+          first_name: row.first_name || row.prenom || row['Prénom'] || row.firstname,
+          last_name: row.last_name || row.nom || row['Nom'] || row.lastname,
+          birth_date: normalizeDate(row.birth_date || row.date_naissance || row['Date de naissance'] || row.birthdate),
+          gender: normalizeGender(row.gender || row.sexe || row['Sexe']),
+          category: row.category || row.categorie || row['Catégorie'],
+          email: row.email || row['Email'] || row.mail,
+          phone: row.phone || row.telephone || row['Téléphone'] || row.tel
+        }));
+      } catch (parseError) {
+        throw new AppError(`Erreur de parsing CSV: ${parseError.message}`, 400);
+      }
+    }
+    // Sinon, accepter un JSON dans le body
+    else if (req.body.licenses && Array.isArray(req.body.licenses)) {
+      licenses = req.body.licenses;
+    }
+    else {
+      throw new AppError('Veuillez fournir un fichier CSV ou un tableau de licences.', 400);
     }
 
+    if (licenses.length === 0) {
+      throw new AppError('Aucune licence valide trouvée dans le fichier.', 400);
+    }
+
+    // Valider et importer
     let imported = 0;
     let updated = 0;
+    let skipped = 0;
     let errors = [];
 
-    for (const lic of licenses) {
+    for (let i = 0; i < licenses.length; i++) {
+      const lic = licenses[i];
+      const lineNum = i + 2; // +2 pour header + index 0
+
       try {
+        // Validation des champs obligatoires
+        if (!lic.license_number) {
+          errors.push({ line: lineNum, error: 'Numéro de licence manquant' });
+          skipped++;
+          continue;
+        }
+        if (!lic.first_name || !lic.last_name) {
+          errors.push({ line: lineNum, license: lic.license_number, error: 'Nom ou prénom manquant' });
+          skipped++;
+          continue;
+        }
+        if (!lic.birth_date) {
+          errors.push({ line: lineNum, license: lic.license_number, error: 'Date de naissance manquante ou invalide' });
+          skipped++;
+          continue;
+        }
+        if (!lic.gender || !['M', 'F'].includes(lic.gender)) {
+          errors.push({ line: lineNum, license: lic.license_number, error: 'Sexe invalide (M ou F attendu)' });
+          skipped++;
+          continue;
+        }
+
         // Vérifier si la licence existe déjà
         const [existing] = await db.pool.execute(
           'SELECT id FROM licenses WHERE license_number = ?',
@@ -452,7 +544,7 @@ router.post('/licenses/import', async (req, res, next) => {
           await db.pool.execute(
             `UPDATE licenses SET
               first_name = ?, last_name = ?, birth_date = ?, gender = ?,
-              category = ?, email = ?, phone = ?, season = ?
+              category = ?, email = ?, phone = ?, season = ?, is_active = TRUE
              WHERE license_number = ?`,
             [
               lic.first_name, lic.last_name, lic.birth_date, lic.gender,
@@ -475,22 +567,74 @@ router.post('/licenses/import', async (req, res, next) => {
           imported++;
         }
       } catch (err) {
-        errors.push({ license: lic.license_number, error: err.message });
+        errors.push({ line: lineNum, license: lic.license_number, error: err.message });
       }
     }
 
-    await logAdminActivity(req.user.id, 'import', 'licenses', null, { imported, updated, errors: errors.length });
+    await logAdminActivity(req.user.id, 'import', 'licenses', null, {
+      total: licenses.length,
+      imported,
+      updated,
+      skipped,
+      errors: errors.length
+    });
+
+    logger.info(`Import licences: ${imported} créées, ${updated} mises à jour, ${skipped} ignorées, ${errors.length} erreurs`);
 
     res.json({
       success: true,
-      message: `Import terminé: ${imported} créées, ${updated} mises à jour, ${errors.length} erreurs.`,
-      data: { imported, updated, errors }
+      message: `Import terminé: ${imported} créées, ${updated} mises à jour, ${skipped} ignorées.`,
+      data: {
+        total: licenses.length,
+        imported,
+        updated,
+        skipped,
+        errors: errors.slice(0, 20) // Limiter à 20 erreurs dans la réponse
+      }
     });
 
   } catch (error) {
     next(error);
   }
 });
+
+// Helpers pour normaliser les données CSV
+function normalizeDate(dateStr) {
+  if (!dateStr) return null;
+
+  // Essayer différents formats
+  // Format ISO: 2015-03-25
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+
+  // Format FR: 25/03/2015 ou 25-03-2015
+  const frMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (frMatch) {
+    const [, day, month, year] = frMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Format US: 03/25/2015
+  const usMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (usMatch) {
+    const [, month, day, year] = usMatch;
+    // Heuristique: si le premier nombre > 12, c'est probablement le jour (format FR)
+    if (parseInt(month) > 12) {
+      return `${year}-${day.padStart(2, '0')}-${month.padStart(2, '0')}`;
+    }
+  }
+
+  return null;
+}
+
+function normalizeGender(gender) {
+  if (!gender) return null;
+  const g = gender.toString().toUpperCase().trim();
+  if (g === 'M' || g === 'MASCULIN' || g === 'HOMME' || g === 'H' || g === 'MALE') return 'M';
+  if (g === 'F' || g === 'FEMININ' || g === 'FEMME' || g === 'FEMALE') return 'F';
+  return null;
+}
 
 // =====================================================
 // INVITATIONS

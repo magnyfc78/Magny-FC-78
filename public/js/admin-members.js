@@ -1031,19 +1031,43 @@ async function unlinkFromAccount(accountId, licenseId) {
 
 function showImportModal() {
   const modal = createModal('Importer des licences', `
-    <div class="import-instructions">
-      <p>Collez les données CSV des licences. Format attendu :</p>
-      <code>license_number,first_name,last_name,birth_date,gender,category,email,phone</code>
-      <p class="text-muted">La première ligne doit contenir les en-têtes.</p>
+    <div class="import-tabs">
+      <button class="import-tab active" onclick="switchImportTab('file')">Fichier CSV</button>
+      <button class="import-tab" onclick="switchImportTab('paste')">Coller les données</button>
     </div>
-    <form id="import-form" onsubmit="importLicenses(event)">
+
+    <form id="import-form">
       <div class="form-group">
         <label>Saison</label>
         <input type="text" name="season" value="${currentSeason}" required>
       </div>
-      <div class="form-group">
-        <label>Données CSV</label>
-        <textarea name="csvData" rows="10" placeholder="Collez les données ici..." required></textarea>
+
+      <!-- Onglet Upload fichier -->
+      <div id="import-tab-file" class="import-tab-content">
+        <div class="import-file-zone" id="import-dropzone">
+          <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+          <svg viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M14,2H6C4.89,2 4,2.89 4,4V20C4,21.1 4.89,22 6,22H18C19.11,22 20,21.1 20,20V8L14,2M18,20H6V4H13V9H18V20M15,11V19H9L12,15.5L9.5,12.5L15,11Z"/></svg>
+          <p><strong>Glissez un fichier CSV ici</strong></p>
+          <p class="text-muted">ou <a href="#" onclick="document.getElementById('csv-file-input').click(); return false;">parcourir</a></p>
+          <p id="selected-file-name" class="text-muted"></p>
+        </div>
+        <div class="import-template">
+          <a href="/api/admin/members/licenses/import/template" download class="btn btn-sm btn-outline">
+            Télécharger le modèle CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- Onglet Coller données -->
+      <div id="import-tab-paste" class="import-tab-content" style="display: none;">
+        <div class="import-instructions">
+          <p>Format attendu :</p>
+          <code>license_number,first_name,last_name,birth_date,gender,category,email,phone</code>
+        </div>
+        <div class="form-group">
+          <label>Données CSV</label>
+          <textarea name="csvData" rows="8" placeholder="Collez les données ici..."></textarea>
+        </div>
       </div>
 
       <div id="import-error" class="alert alert-error" style="display: none;"></div>
@@ -1051,49 +1075,126 @@ function showImportModal() {
 
       <div class="modal-actions">
         <button type="button" onclick="closeModal()" class="btn btn-outline">Annuler</button>
-        <button type="submit" class="btn btn-primary">Importer</button>
+        <button type="submit" class="btn btn-primary" onclick="importLicenses(event)">Importer</button>
       </div>
     </form>
   `);
 
   document.body.appendChild(modal);
+
+  // Setup drag and drop
+  const dropzone = document.getElementById('import-dropzone');
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      handleFileSelect({ target: { files: e.dataTransfer.files } });
+    }
+  });
+}
+
+let selectedCSVFile = null;
+
+function switchImportTab(tab) {
+  document.querySelectorAll('.import-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.import-tab-content').forEach(c => c.style.display = 'none');
+
+  document.querySelector(`.import-tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById(`import-tab-${tab}`).style.display = 'block';
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file && file.name.endsWith('.csv')) {
+    selectedCSVFile = file;
+    document.getElementById('selected-file-name').textContent = `Fichier sélectionné : ${file.name}`;
+  }
 }
 
 async function importLicenses(e) {
   e.preventDefault();
-  const form = e.target;
+  const form = document.getElementById('import-form');
   const errorDiv = document.getElementById('import-error');
   const resultDiv = document.getElementById('import-result');
+  const submitBtn = form.querySelector('button[type="submit"]');
 
   errorDiv.style.display = 'none';
   resultDiv.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Import en cours...';
 
   try {
-    const csvData = form.csvData.value;
-    const licenses = parseCSV(csvData);
+    const season = form.querySelector('input[name="season"]').value;
+    let response;
 
-    if (licenses.length === 0) {
-      throw new Error('Aucune donnée valide trouvée');
+    // Si un fichier est sélectionné, utiliser l'upload
+    if (selectedCSVFile) {
+      const formData = new FormData();
+      formData.append('file', selectedCSVFile);
+      formData.append('season', season);
+
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch('/api/admin/members/licenses/import', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+        credentials: 'include'
+      });
+
+      response = await res.json();
+      if (!res.ok) throw new Error(response.error || 'Erreur d\'import');
     }
+    // Sinon, utiliser les données collées
+    else {
+      const csvData = form.querySelector('textarea[name="csvData"]')?.value;
+      if (!csvData || csvData.trim().length === 0) {
+        throw new Error('Veuillez sélectionner un fichier CSV ou coller des données');
+      }
 
-    const response = await adminMembersAPI.importLicenses(licenses, form.season.value);
+      const licenses = parseCSV(csvData);
+      if (licenses.length === 0) {
+        throw new Error('Aucune donnée valide trouvée');
+      }
+
+      response = await adminMembersAPI.importLicenses(licenses, season);
+    }
 
     resultDiv.innerHTML = `
       <strong>Import terminé !</strong><br>
       ${response.data.imported} licences créées<br>
       ${response.data.updated} licences mises à jour<br>
+      ${response.data.skipped || 0} ignorées<br>
       ${response.data.errors.length} erreurs
     `;
     resultDiv.style.display = 'block';
 
-    if (response.data.errors.length > 0) {
-      errorDiv.innerHTML = `<strong>Erreurs :</strong><br>${response.data.errors.map(e => `${e.license}: ${e.error}`).join('<br>')}`;
+    if (response.data.errors && response.data.errors.length > 0) {
+      const errorsHtml = response.data.errors.map(e =>
+        `Ligne ${e.line || '?'}: ${e.license || ''} - ${e.error}`
+      ).join('<br>');
+      errorDiv.innerHTML = `<strong>Erreurs :</strong><br>${errorsHtml}`;
       errorDiv.style.display = 'block';
     }
+
+    // Reset
+    selectedCSVFile = null;
+    document.getElementById('selected-file-name').textContent = '';
 
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Importer';
   }
 }
 
