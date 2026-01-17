@@ -22,7 +22,7 @@ const views = {
   async home() {
     const [matchsRes, actusRes, configRes, partenairesRes] = await Promise.all([
       api.getMatchs('a_venir', 6),
-      api.getActualites(3),
+      api.getActualites(4),
       fetch('/api/config').then(r => r.json()).catch(() => ({ success: false })),
       fetch('/api/partenaires').then(r => r.json()).catch(() => ({ success: false }))
     ]);
