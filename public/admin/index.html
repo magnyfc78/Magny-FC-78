@@ -348,6 +348,11 @@
         </nav>
         
         <nav class="nav-section">
+            <div class="nav-section-title">Adhérents</div>
+            <button class="nav-item" data-section="membres"><span class="nav-item-icon">🎫</span> Gestion Adhérents</button>
+        </nav>
+
+        <nav class="nav-section">
             <div class="nav-section-title">Contenu</div>
             <button class="nav-item" data-section="equipes"><span class="nav-item-icon">👥</span> Équipes</button>
             <button class="nav-item" data-section="matchs"><span class="nav-item-icon">⚽</span> Matchs</button>
@@ -398,6 +403,13 @@
                 </div>
             </div>
             
+            <!-- Gestion des Adhérents -->
+            <div class="section" id="section-membres">
+                <div id="admin-content">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+
             <!-- Configuration -->
             <div class="section" id="section-config">
                 <div class="tabs">
@@ -564,5 +576,6 @@
 
     <script src="/js/api.js?v=1.1.0"></script>
     <script src="/js/admin.js?v=1.1.0"></script>
+    <script src="/js/admin-members.js?v=1.0.0"></script>
 </body>
 </html>

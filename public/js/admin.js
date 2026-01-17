@@ -184,6 +184,7 @@ function switchSection(section) {
 
   const titles = {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
+    membres: 'Gestion des Adhérents',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
     galerie: 'Galerie', histoire: 'Histoire du club', organigramme: 'Organigramme',
     partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
@@ -193,6 +194,7 @@ function switchSection(section) {
   // Charger les données
   const loaders = {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
+    membres: typeof renderAdminMembersDashboard === 'function' ? renderAdminMembersDashboard : null,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
     galerie: loadGalerie, histoire: loadHistoire, organigramme: loadOrganigramme,
     partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers, logs: loadLogs
