@@ -300,6 +300,95 @@ router.put('/:licenseId/primary', async (req, res, next) => {
 });
 
 // =====================================================
+// POST /api/member/licenses/link-direct - Rattacher une licence via numéro + date de naissance
+// =====================================================
+router.post('/link-direct', async (req, res, next) => {
+  try {
+    const { licenseNumber, birthDate, relationship } = req.body;
+
+    if (!licenseNumber || !birthDate) {
+      throw new AppError('Numéro de licence et date de naissance requis.', 400);
+    }
+
+    // Rechercher la licence
+    const [licenses] = await db.pool.execute(
+      `SELECT id, license_number, first_name, last_name, birth_date, category, email
+       FROM licenses
+       WHERE license_number = ? AND is_active = TRUE`,
+      [licenseNumber.toUpperCase().trim()]
+    );
+
+    if (!licenses.length) {
+      throw new AppError('Aucune licence trouvée avec ce numéro.', 404);
+    }
+
+    const license = licenses[0];
+
+    // Vérifier la date de naissance
+    const inputDate = new Date(birthDate).toISOString().split('T')[0];
+    const licenseDate = new Date(license.birth_date).toISOString().split('T')[0];
+
+    if (inputDate !== licenseDate) {
+      throw new AppError('La date de naissance ne correspond pas à celle de la licence.', 400);
+    }
+
+    // Vérifier si la licence n'est pas déjà liée à ce compte
+    const [existingLink] = await db.pool.execute(
+      'SELECT id FROM account_licenses WHERE account_id = ? AND license_id = ?',
+      [req.member.id, license.id]
+    );
+
+    if (existingLink.length) {
+      throw new AppError('Cette licence est déjà rattachée à votre compte.', 400);
+    }
+
+    // Déterminer la relation
+    // Si l'email de la licence correspond à celui du compte = self
+    // Sinon = parent par défaut (ou la valeur fournie)
+    let finalRelationship = relationship || 'parent';
+    if (license.email && license.email.toLowerCase() === req.member.email.toLowerCase()) {
+      finalRelationship = 'self';
+    }
+
+    // Déterminer si c'est la première licence (= primary)
+    const isPrimary = req.member.licenses.length === 0;
+
+    // Créer la liaison
+    await db.pool.execute(
+      `INSERT INTO account_licenses (account_id, license_id, relationship, is_primary, verified_at)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [req.member.id, license.id, finalRelationship, isPrimary]
+    );
+
+    await logMemberActivity(req.member.id, license.id, 'license_linked_direct', {
+      licenseNumber: license.license_number,
+      relationship: finalRelationship
+    }, req);
+
+    logger.info(`Licence ${license.license_number} rattachée au compte ${req.member.email} (vérification directe)`);
+
+    res.json({
+      success: true,
+      message: `La licence de ${license.first_name} ${license.last_name} a été rattachée à votre compte.`,
+      data: {
+        license: {
+          id: license.id,
+          licenseNumber: license.license_number,
+          firstName: license.first_name,
+          lastName: license.last_name,
+          fullName: `${license.first_name} ${license.last_name}`,
+          category: license.category,
+          relationship: finalRelationship
+        }
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =====================================================
 // POST /api/member/licenses/link - Rattacher une licence via code
 // =====================================================
 router.post('/link', async (req, res, next) => {

@@ -115,6 +115,16 @@ class MemberAPI {
     return response;
   }
 
+  // Vérifier si l'email correspond à une licence existante
+  async checkLicenseByEmail(email) {
+    return this.post('/auth/check-license-by-email', { email });
+  }
+
+  // Vérifier une licence par numéro + date de naissance
+  async verifyLicense(licenseNumber, birthDate) {
+    return this.post('/auth/verify-license', { licenseNumber, birthDate });
+  }
+
   async login(email, password, rememberMe = false) {
     const response = await this.post('/auth/login', { email, password, rememberMe });
     if (response.success) {
@@ -222,6 +232,11 @@ class MemberAPI {
 
   async linkLicense(code) {
     return this.post('/licenses/link', { code });
+  }
+
+  // Lier une licence directement via numéro + date de naissance
+  async linkLicenseDirect(licenseNumber, birthDate, relationship = 'parent') {
+    return this.post('/licenses/link-direct', { licenseNumber, birthDate, relationship });
   }
 
   async unlinkLicense(id) {

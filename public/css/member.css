@@ -1094,3 +1094,277 @@
     width: 100%;
   }
 }
+
+/* =====================================================
+   MULTI-STEP REGISTRATION
+   ===================================================== */
+
+.member-auth-container-wide {
+  max-width: 560px;
+}
+
+.register-steps {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 0 2rem 1.5rem;
+  position: relative;
+}
+
+.register-steps::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--member-border);
+  z-index: 0;
+}
+
+.register-steps .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.register-steps .step span {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--member-border);
+  color: var(--member-text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.register-steps .step.active span {
+  background: var(--member-secondary);
+  color: var(--member-primary);
+}
+
+.register-steps .step.current span {
+  background: var(--member-primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(26, 39, 68, 0.2);
+}
+
+.license-found-card,
+.license-verified-card {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid var(--member-success);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.license-found-icon,
+.license-verified-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--member-success);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1rem;
+}
+
+.license-found-card h3 {
+  color: var(--member-success);
+  margin-bottom: 1rem;
+}
+
+.license-found-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.license-found-details strong {
+  font-size: 1.25rem;
+  color: var(--member-primary);
+}
+
+.license-found-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.parent-question-card {
+  background: var(--member-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.parent-question-card h3 {
+  margin-bottom: 1rem;
+  color: var(--member-primary);
+}
+
+.parent-question-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.parent-question-actions .btn.active {
+  background: var(--member-primary);
+  color: white;
+}
+
+.license-verify-form {
+  background: #fef3c7;
+  border: 1px solid var(--member-warning);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.license-verify-form h4 {
+  color: var(--member-primary);
+  margin-bottom: 1rem;
+}
+
+.license-verified-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  padding: 1rem 1.5rem;
+}
+
+.license-verified-card .license-verified-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 1.25rem;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.license-summary {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid var(--member-success);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.register-nav-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.register-nav-buttons .btn {
+  flex: 1;
+}
+
+.no-license-found > p {
+  text-align: center;
+  color: var(--member-text-light);
+  margin-bottom: 1rem;
+}
+
+/* =====================================================
+   LINK LICENSE PAGE - TABS
+   ===================================================== */
+
+.link-method-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  background: var(--member-bg);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.link-method-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--member-text-light);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.link-method-tab:hover {
+  color: var(--member-primary);
+}
+
+.link-method-tab.active {
+  background: var(--member-card-bg);
+  color: var(--member-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.link-method-content h3 {
+  color: var(--member-primary);
+  margin-bottom: 0.5rem;
+}
+
+.link-method-content > .card-body > p {
+  color: var(--member-text-light);
+  margin-bottom: 1.5rem;
+}
+
+/* =====================================================
+   RESPONSIVE - REGISTRATION
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .member-auth-container-wide {
+    max-width: 100%;
+  }
+
+  .register-steps {
+    padding: 0 1rem 1rem;
+  }
+
+  .register-steps::before {
+    left: 15%;
+    right: 15%;
+  }
+
+  .license-found-actions,
+  .parent-question-actions {
+    flex-direction: column;
+  }
+
+  .register-nav-buttons {
+    flex-direction: column-reverse;
+  }
+
+  .link-method-tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .license-verified-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}

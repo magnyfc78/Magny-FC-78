@@ -22,11 +22,119 @@ const {
 const router = express.Router();
 
 // =====================================================
+// POST /api/member/auth/check-license-by-email - Vérifier si l'email correspond à une licence
+// =====================================================
+router.post('/check-license-by-email', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError('Email requis.', 400);
+    }
+
+    // Rechercher une licence avec cet email
+    const [licenses] = await db.pool.execute(
+      `SELECT id, license_number, first_name, last_name, category, birth_date
+       FROM licenses
+       WHERE email = ? AND is_active = TRUE`,
+      [email.toLowerCase()]
+    );
+
+    if (licenses.length > 0) {
+      // Licence trouvée - ne pas révéler trop d'infos avant vérification
+      const license = licenses[0];
+      res.json({
+        success: true,
+        data: {
+          found: true,
+          license: {
+            id: license.id,
+            firstName: license.first_name,
+            lastName: license.last_name,
+            licenseNumber: license.license_number,
+            category: license.category
+          }
+        }
+      });
+    } else {
+      res.json({
+        success: true,
+        data: {
+          found: false
+        }
+      });
+    }
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =====================================================
+// POST /api/member/auth/verify-license - Vérifier une licence par numéro + date de naissance
+// =====================================================
+router.post('/verify-license', async (req, res, next) => {
+  try {
+    const { licenseNumber, birthDate } = req.body;
+
+    if (!licenseNumber || !birthDate) {
+      throw new AppError('Numéro de licence et date de naissance requis.', 400);
+    }
+
+    // Rechercher la licence
+    const [licenses] = await db.pool.execute(
+      `SELECT id, license_number, first_name, last_name, category, birth_date, email
+       FROM licenses
+       WHERE license_number = ? AND is_active = TRUE`,
+      [licenseNumber.toUpperCase()]
+    );
+
+    if (!licenses.length) {
+      throw new AppError('Aucune licence trouvée avec ce numéro.', 404);
+    }
+
+    const license = licenses[0];
+
+    // Vérifier la date de naissance
+    const inputDate = new Date(birthDate).toISOString().split('T')[0];
+    const licenseDate = new Date(license.birth_date).toISOString().split('T')[0];
+
+    if (inputDate !== licenseDate) {
+      throw new AppError('La date de naissance ne correspond pas.', 400);
+    }
+
+    // Vérifier si la licence n'est pas déjà liée à un compte
+    const [existingLinks] = await db.pool.execute(
+      'SELECT account_id FROM account_licenses WHERE license_id = ?',
+      [license.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        verified: true,
+        license: {
+          id: license.id,
+          licenseNumber: license.license_number,
+          firstName: license.first_name,
+          lastName: license.last_name,
+          category: license.category
+        },
+        alreadyLinked: existingLinks.length > 0
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =====================================================
 // POST /api/member/auth/register - Inscription membre
 // =====================================================
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName, phone } = req.body;
+    const { email, password, firstName, lastName, phone, licenseId, licenseVerification } = req.body;
 
     // Validation basique
     if (!email || !password || !firstName || !lastName) {
@@ -76,6 +184,52 @@ router.post('/register', async (req, res, next) => {
     );
 
     const accountId = result.insertId;
+
+    // Si une licence a été vérifiée pendant l'inscription, la lier au compte
+    let linkedLicense = null;
+    if (licenseId && licenseVerification) {
+      // Vérifier la licence une dernière fois (numéro + date de naissance)
+      const [licenses] = await db.pool.execute(
+        `SELECT id, license_number, first_name, last_name, birth_date
+         FROM licenses
+         WHERE id = ? AND is_active = TRUE`,
+        [licenseId]
+      );
+
+      if (licenses.length > 0) {
+        const license = licenses[0];
+        const inputDate = new Date(licenseVerification.birthDate).toISOString().split('T')[0];
+        const licenseDate = new Date(license.birth_date).toISOString().split('T')[0];
+
+        // Vérifier que la date de naissance correspond
+        if (inputDate === licenseDate) {
+          // Vérifier que la licence n'est pas déjà liée
+          const [existingLink] = await db.pool.execute(
+            'SELECT id FROM account_licenses WHERE license_id = ?',
+            [licenseId]
+          );
+
+          if (!existingLink.length) {
+            // Déterminer la relation (self si l'email correspond, parent sinon)
+            const relationship = licenseVerification.relationship || 'self';
+
+            await db.pool.execute(
+              `INSERT INTO account_licenses (account_id, license_id, relationship, is_primary, verified_at)
+               VALUES (?, ?, ?, TRUE, NOW())`,
+              [accountId, licenseId, relationship]
+            );
+
+            linkedLicense = {
+              id: license.id,
+              licenseNumber: license.license_number,
+              fullName: `${license.first_name} ${license.last_name}`
+            };
+
+            logger.info(`Licence ${license.license_number} liée au nouveau compte ${email}`);
+          }
+        }
+      }
+    }
 
     // Envoyer l'email de vérification
     const verificationUrl = `${config.server.baseUrl || 'https://magnyfc78.com'}/espace-membre/verify?token=${verificationToken}`;
@@ -143,10 +297,13 @@ L'équipe du Magny FC 78
 
     res.status(201).json({
       success: true,
-      message: 'Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.',
+      message: linkedLicense
+        ? `Compte créé et licence de ${linkedLicense.fullName} rattachée. Veuillez vérifier votre email.`
+        : 'Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.',
       data: {
         email: email.toLowerCase(),
-        requiresVerification: true
+        requiresVerification: true,
+        linkedLicense
       }
     });
 

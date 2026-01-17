@@ -235,14 +235,26 @@ async function handleMemberLogin(e) {
 }
 
 // =====================================================
-// PAGE INSCRIPTION
+// PAGE INSCRIPTION - MULTI-ÉTAPES
 // =====================================================
+
+// État global de l'inscription
+let registerState = {
+  step: 1,
+  email: '',
+  foundLicense: null,
+  isParent: false,
+  verifiedLicense: null,
+  relationship: 'self'
+};
+
 function renderMemberRegister() {
   const main = document.getElementById('main-content') || document.body;
+  registerState = { step: 1, email: '', foundLicense: null, isParent: false, verifiedLicense: null, relationship: 'self' };
 
   main.innerHTML = `
     <div class="member-auth-page">
-      <div class="member-auth-container">
+      <div class="member-auth-container member-auth-container-wide">
         <div class="member-auth-header">
           <a href="/" class="member-auth-logo">
             <img src="/assets/images/logo.jpeg" alt="Magny FC 78">
@@ -251,52 +263,17 @@ function renderMemberRegister() {
           <p>Rejoignez l'espace membre du Magny FC 78</p>
         </div>
 
-        <form id="member-register-form" class="member-auth-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="firstName">Prénom *</label>
-              <input type="text" id="firstName" name="firstName" required>
-            </div>
-            <div class="form-group">
-              <label for="lastName">Nom *</label>
-              <input type="text" id="lastName" name="lastName" required>
-            </div>
-          </div>
+        <!-- Indicateur d'étapes -->
+        <div class="register-steps">
+          <div class="step active" data-step="1"><span>1</span> Email</div>
+          <div class="step" data-step="2"><span>2</span> Licence</div>
+          <div class="step" data-step="3"><span>3</span> Compte</div>
+        </div>
 
-          <div class="form-group">
-            <label for="email">Adresse email *</label>
-            <input type="email" id="email" name="email" required autocomplete="email">
-            <small>Utilisez l'email associé à votre licence si possible</small>
-          </div>
-
-          <div class="form-group">
-            <label for="phone">Téléphone</label>
-            <input type="tel" id="phone" name="phone" autocomplete="tel">
-          </div>
-
-          <div class="form-group">
-            <label for="password">Mot de passe *</label>
-            <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
-            <small>Minimum 8 caractères, avec majuscule, minuscule et chiffre</small>
-          </div>
-
-          <div class="form-group">
-            <label for="confirmPassword">Confirmer le mot de passe *</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
-          </div>
-
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="terms" name="terms" required>
-              <span>J'accepte les <a href="/mentions-legales" target="_blank">conditions d'utilisation</a></span>
-            </label>
-          </div>
-
-          <div id="register-error" class="alert alert-error" style="display: none;"></div>
-          <div id="register-success" class="alert alert-success" style="display: none;"></div>
-
-          <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
-        </form>
+        <div id="register-content">
+          <!-- Étape 1 : Email -->
+          ${renderRegisterStep1()}
+        </div>
 
         <div class="member-auth-footer">
           <p>Déjà un compte ? <a href="/espace-membre/login">Se connecter</a></p>
@@ -304,21 +281,343 @@ function renderMemberRegister() {
       </div>
     </div>
   `;
+}
 
-  document.getElementById('member-register-form').addEventListener('submit', handleMemberRegister);
+function renderRegisterStep1() {
+  return `
+    <form id="register-step1-form" class="member-auth-form">
+      <div class="form-group">
+        <label for="email">Votre adresse email</label>
+        <input type="email" id="email" name="email" required autocomplete="email" placeholder="exemple@email.com"
+               value="${registerState.email}">
+        <small>Utilisez l'email associé à votre licence FFF si possible</small>
+      </div>
+
+      <div id="register-error" class="alert alert-error" style="display: none;"></div>
+
+      <button type="submit" class="btn btn-primary btn-block">Continuer</button>
+    </form>
+  `;
+}
+
+function renderRegisterStep2License() {
+  // Scénario 1 : Licence trouvée par email
+  if (registerState.foundLicense) {
+    return `
+      <div class="license-found-card">
+        <div class="license-found-icon">✓</div>
+        <h3>Licence trouvée !</h3>
+        <div class="license-found-details">
+          <strong>${registerState.foundLicense.firstName} ${registerState.foundLicense.lastName}</strong>
+          <span>N° ${registerState.foundLicense.licenseNumber}</span>
+          <span class="badge">${registerState.foundLicense.category || 'Catégorie non définie'}</span>
+        </div>
+        <p>Cette licence correspond à votre email. Confirmez-vous qu'il s'agit de vous ?</p>
+        <div class="license-found-actions">
+          <button onclick="confirmFoundLicense(true)" class="btn btn-primary">Oui, c'est moi</button>
+          <button onclick="confirmFoundLicense(false)" class="btn btn-outline">Non, ce n'est pas moi</button>
+        </div>
+      </div>
+      <div id="register-error" class="alert alert-error" style="display: none;"></div>
+    `;
+  }
+
+  // Scénario 2 : Pas de licence trouvée - demander si parent
+  return `
+    <div class="no-license-found">
+      <p>Aucune licence n'est associée à l'email <strong>${registerState.email}</strong>.</p>
+
+      <div class="parent-question-card">
+        <h3>Êtes-vous parent d'un joueur licencié au club ?</h3>
+        <div class="parent-question-actions">
+          <button onclick="setIsParent(true)" class="btn btn-primary ${registerState.isParent ? 'active' : ''}">
+            Oui, je suis parent
+          </button>
+          <button onclick="setIsParent(false)" class="btn btn-outline ${!registerState.isParent ? 'active' : ''}">
+            Non, pas de licence
+          </button>
+        </div>
+      </div>
+
+      ${registerState.isParent ? renderLicenseVerificationForm() : ''}
+
+      <div id="register-error" class="alert alert-error" style="display: none;"></div>
+      <div id="register-success" class="alert alert-success" style="display: none;"></div>
+
+      <div class="register-nav-buttons">
+        <button onclick="goToRegisterStep(1)" class="btn btn-outline">Retour</button>
+        <button onclick="goToRegisterStep(3)" class="btn btn-primary"
+                ${registerState.isParent && !registerState.verifiedLicense ? 'disabled' : ''}>
+          ${registerState.isParent && !registerState.verifiedLicense ? 'Vérifiez d\'abord la licence' : 'Continuer'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLicenseVerificationForm() {
+  if (registerState.verifiedLicense) {
+    return `
+      <div class="license-verified-card">
+        <div class="license-verified-icon">✓</div>
+        <p><strong>Licence vérifiée :</strong> ${registerState.verifiedLicense.firstName} ${registerState.verifiedLicense.lastName}</p>
+        <button onclick="clearVerifiedLicense()" class="btn btn-sm btn-outline">Modifier</button>
+        <button onclick="addAnotherLicense()" class="btn btn-sm btn-secondary">+ Ajouter un autre enfant</button>
+      </div>
+    `;
+  }
+
+  return `
+    <form id="verify-license-form" class="license-verify-form">
+      <h4>Vérifier la licence de votre enfant</h4>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="licenseNumber">Numéro de licence FFF</label>
+          <input type="text" id="licenseNumber" name="licenseNumber" required
+                 placeholder="Ex: 2512345678" style="text-transform: uppercase;">
+        </div>
+        <div class="form-group">
+          <label for="birthDate">Date de naissance</label>
+          <input type="date" id="birthDate" name="birthDate" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-secondary">Vérifier la licence</button>
+    </form>
+  `;
+}
+
+function renderRegisterStep3Account() {
+  const licenseInfo = registerState.foundLicense || registerState.verifiedLicense;
+
+  return `
+    <form id="register-step3-form" class="member-auth-form">
+      ${licenseInfo ? `
+        <div class="license-summary">
+          <span class="badge badge-success">Licence à rattacher</span>
+          <strong>${licenseInfo.firstName} ${licenseInfo.lastName}</strong>
+          <span>${licenseInfo.licenseNumber}</span>
+        </div>
+      ` : ''}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName">Votre prénom *</label>
+          <input type="text" id="firstName" name="firstName" required
+                 value="${registerState.foundLicense?.firstName || ''}">
+        </div>
+        <div class="form-group">
+          <label for="lastName">Votre nom *</label>
+          <input type="text" id="lastName" name="lastName" required
+                 value="${registerState.foundLicense?.lastName || ''}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" value="${registerState.email}" disabled class="form-control-disabled">
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Téléphone</label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe *</label>
+        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+        <small>Minimum 8 caractères, avec majuscule, minuscule et chiffre</small>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirmer le mot de passe *</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="terms" name="terms" required>
+          <span>J'accepte les <a href="/mentions-legales" target="_blank">conditions d'utilisation</a></span>
+        </label>
+      </div>
+
+      <div id="register-error" class="alert alert-error" style="display: none;"></div>
+      <div id="register-success" class="alert alert-success" style="display: none;"></div>
+
+      <div class="register-nav-buttons">
+        <button type="button" onclick="goToRegisterStep(2)" class="btn btn-outline">Retour</button>
+        <button type="submit" class="btn btn-primary">Créer mon compte</button>
+      </div>
+    </form>
+  `;
+}
+
+function updateRegisterStepIndicator(step) {
+  document.querySelectorAll('.register-steps .step').forEach((el, index) => {
+    el.classList.toggle('active', index + 1 <= step);
+    el.classList.toggle('current', index + 1 === step);
+  });
+}
+
+function goToRegisterStep(step) {
+  registerState.step = step;
+  updateRegisterStepIndicator(step);
+  const content = document.getElementById('register-content');
+
+  switch (step) {
+    case 1:
+      content.innerHTML = renderRegisterStep1();
+      setupRegisterStep1Events();
+      break;
+    case 2:
+      content.innerHTML = renderRegisterStep2License();
+      setupRegisterStep2Events();
+      break;
+    case 3:
+      content.innerHTML = renderRegisterStep3Account();
+      setupRegisterStep3Events();
+      break;
+  }
+}
+
+function setupRegisterStep1Events() {
+  document.getElementById('register-step1-form')?.addEventListener('submit', handleRegisterStep1);
+}
+
+function setupRegisterStep2Events() {
+  document.getElementById('verify-license-form')?.addEventListener('submit', handleVerifyLicense);
+}
+
+function setupRegisterStep3Events() {
+  document.getElementById('register-step3-form')?.addEventListener('submit', handleMemberRegister);
+}
+
+async function handleRegisterStep1(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const errorDiv = document.getElementById('register-error');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  errorDiv.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Vérification...';
+
+  try {
+    // Vérifier si l'email existe déjà comme compte
+    registerState.email = email;
+
+    // Vérifier si une licence correspond à cet email
+    const response = await memberAPI.checkLicenseByEmail(email);
+
+    if (response.success && response.data.found) {
+      registerState.foundLicense = response.data.license;
+      registerState.relationship = 'self';
+    } else {
+      registerState.foundLicense = null;
+    }
+
+    goToRegisterStep(2);
+
+  } catch (error) {
+    errorDiv.textContent = error.message || 'Erreur lors de la vérification.';
+    errorDiv.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Continuer';
+  }
+}
+
+function confirmFoundLicense(confirmed) {
+  if (confirmed) {
+    registerState.relationship = 'self';
+    goToRegisterStep(3);
+  } else {
+    registerState.foundLicense = null;
+    registerState.relationship = 'parent';
+    goToRegisterStep(2);
+  }
+}
+
+function setIsParent(isParent) {
+  registerState.isParent = isParent;
+  registerState.relationship = isParent ? 'parent' : null;
+  if (!isParent) {
+    registerState.verifiedLicense = null;
+  }
+  goToRegisterStep(2);
+}
+
+async function handleVerifyLicense(e) {
+  e.preventDefault();
+  const licenseNumber = document.getElementById('licenseNumber').value.trim().toUpperCase();
+  const birthDate = document.getElementById('birthDate').value;
+  const errorDiv = document.getElementById('register-error');
+  const successDiv = document.getElementById('register-success');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  errorDiv.style.display = 'none';
+  successDiv.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Vérification...';
+
+  try {
+    const response = await memberAPI.verifyLicense(licenseNumber, birthDate);
+
+    if (response.success && response.data.verified) {
+      if (response.data.alreadyLinked) {
+        errorDiv.textContent = 'Cette licence est déjà rattachée à un autre compte.';
+        errorDiv.style.display = 'block';
+      } else {
+        registerState.verifiedLicense = {
+          ...response.data.license,
+          birthDate: birthDate
+        };
+        successDiv.textContent = `Licence vérifiée : ${response.data.license.firstName} ${response.data.license.lastName}`;
+        successDiv.style.display = 'block';
+        goToRegisterStep(2); // Refresh step 2 to show verified license
+      }
+    }
+  } catch (error) {
+    errorDiv.textContent = error.message || 'Impossible de vérifier la licence.';
+    errorDiv.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Vérifier la licence';
+  }
+}
+
+function clearVerifiedLicense() {
+  registerState.verifiedLicense = null;
+  goToRegisterStep(2);
+}
+
+function addAnotherLicense() {
+  // Pour l'instant, on redirige vers l'espace membre après inscription
+  // L'utilisateur pourra ajouter d'autres licences depuis là
+  showNotification('Vous pourrez ajouter d\'autres licences depuis votre espace membre après inscription.', 'info');
 }
 
 async function handleMemberRegister(e) {
   e.preventDefault();
 
   const form = e.target;
+  const licenseToLink = registerState.foundLicense || registerState.verifiedLicense;
+
   const data = {
     firstName: form.firstName.value,
     lastName: form.lastName.value,
-    email: form.email.value,
-    phone: form.phone.value || null,
+    email: registerState.email,
+    phone: form.phone?.value || null,
     password: form.password.value
   };
+
+  // Si une licence a été vérifiée, l'inclure
+  if (licenseToLink) {
+    data.licenseId = licenseToLink.id;
+    data.licenseVerification = {
+      birthDate: licenseToLink.birthDate || registerState.verifiedLicense?.birthDate,
+      relationship: registerState.relationship
+    };
+  }
 
   const errorDiv = document.getElementById('register-error');
   const successDiv = document.getElementById('register-success');
@@ -341,13 +640,22 @@ async function handleMemberRegister(e) {
     const response = await memberAPI.register(data);
 
     if (response.success) {
-      successDiv.innerHTML = `
-        <strong>Compte créé avec succès !</strong><br>
+      let message = `<strong>Compte créé avec succès !</strong><br>
         Un email de vérification a été envoyé à <strong>${data.email}</strong>.<br>
-        Veuillez cliquer sur le lien dans l'email pour activer votre compte.
-      `;
+        Veuillez cliquer sur le lien dans l'email pour activer votre compte.`;
+
+      if (response.data.linkedLicense) {
+        message += `<br><br><span class="badge badge-success">Licence rattachée</span>
+          ${response.data.linkedLicense.fullName}`;
+      }
+
+      successDiv.innerHTML = message;
       successDiv.style.display = 'block';
       form.reset();
+
+      // Masquer le bouton retour et le formulaire
+      form.querySelectorAll('input, button').forEach(el => el.style.display = 'none');
+      successDiv.innerHTML += `<br><br><a href="/espace-membre/login" class="btn btn-primary">Se connecter</a>`;
     }
   } catch (error) {
     errorDiv.textContent = error.message || 'Erreur lors de la création du compte.';
@@ -357,6 +665,13 @@ async function handleMemberRegister(e) {
     submitBtn.textContent = 'Créer mon compte';
   }
 }
+
+// Initialiser les événements au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.location.pathname === '/espace-membre/register') {
+    setupRegisterStep1Events();
+  }
+});
 
 // =====================================================
 // VÉRIFICATION EMAIL
@@ -865,32 +1180,82 @@ function renderLinkLicense() {
       <main class="member-main">
         <div class="member-page-header">
           <h1>Rattacher une licence</h1>
-          <p>Utilisez le code d'invitation reçu par email ou fourni par le club</p>
+          <p>Ajoutez une licence à votre compte</p>
         </div>
 
         <div class="link-license-container">
-          <form id="link-license-form" class="card">
+          <!-- Onglets de méthode -->
+          <div class="link-method-tabs">
+            <button class="link-method-tab active" data-method="direct" onclick="switchLinkMethod('direct')">
+              Par numéro de licence
+            </button>
+            <button class="link-method-tab" data-method="code" onclick="switchLinkMethod('code')">
+              Par code d'invitation
+            </button>
+          </div>
+
+          <!-- Méthode 1 : Vérification directe (numéro + date de naissance) -->
+          <div id="link-method-direct" class="link-method-content card">
             <div class="card-body">
-              <div class="form-group">
-                <label for="invitation-code">Code d'invitation</label>
-                <input type="text" id="invitation-code" value="${code}" placeholder="Ex: ABCD1234"
-                       class="input-large" style="text-transform: uppercase; font-family: monospace; letter-spacing: 2px;">
-                <small>Le code à 8 caractères fourni par le club</small>
-              </div>
+              <h3>Rattacher par vérification</h3>
+              <p>Entrez le numéro de licence et la date de naissance du licencié.</p>
 
-              <div id="link-message" class="alert" style="display: none;"></div>
+              <form id="link-direct-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="license-number">Numéro de licence FFF</label>
+                    <input type="text" id="license-number" placeholder="Ex: 2512345678"
+                           class="input-large" style="text-transform: uppercase;" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="birth-date">Date de naissance</label>
+                    <input type="date" id="birth-date" required>
+                  </div>
+                </div>
 
-              <button type="submit" class="btn btn-primary btn-block">Rattacher la licence</button>
+                <div class="form-group">
+                  <label for="relationship-direct">Votre lien avec ce licencié</label>
+                  <select id="relationship-direct" class="form-control">
+                    <option value="parent">Je suis son parent / tuteur</option>
+                    <option value="self">C'est ma propre licence</option>
+                    <option value="other">Autre</option>
+                  </select>
+                </div>
+
+                <div id="link-direct-message" class="alert" style="display: none;"></div>
+
+                <button type="submit" class="btn btn-primary btn-block">Vérifier et rattacher</button>
+              </form>
             </div>
-          </form>
+          </div>
+
+          <!-- Méthode 2 : Code d'invitation -->
+          <div id="link-method-code" class="link-method-content card" style="display: none;">
+            <div class="card-body">
+              <h3>Rattacher par code d'invitation</h3>
+              <p>Entrez le code reçu par email ou fourni par le club.</p>
+
+              <form id="link-code-form">
+                <div class="form-group">
+                  <label for="invitation-code">Code d'invitation</label>
+                  <input type="text" id="invitation-code" value="${code}" placeholder="Ex: ABCD1234"
+                         class="input-large" style="text-transform: uppercase; font-family: monospace; letter-spacing: 2px;">
+                  <small>Le code à 8 caractères fourni par le club</small>
+                </div>
+
+                <div id="link-code-message" class="alert" style="display: none;"></div>
+
+                <button type="submit" class="btn btn-primary btn-block">Rattacher la licence</button>
+              </form>
+            </div>
+          </div>
 
           <div class="link-help card">
             <div class="card-body">
-              <h3>Comment obtenir un code ?</h3>
+              <h3>Comment rattacher une licence ?</h3>
               <ul>
-                <li>Le club vous envoie un code par email lors de votre inscription</li>
-                <li>Demandez au secrétariat du club</li>
-                <li>Contactez votre responsable d'équipe</li>
+                <li><strong>Par numéro de licence :</strong> Entrez le numéro de licence FFF et la date de naissance pour vérifier l'identité.</li>
+                <li><strong>Par code d'invitation :</strong> Utilisez le code reçu par email ou demandez-le au secrétariat.</li>
               </ul>
               <p>Vous pouvez rattacher plusieurs licences à un même compte (ex: parent avec plusieurs enfants).</p>
             </div>
@@ -900,49 +1265,104 @@ function renderLinkLicense() {
     </div>
   `;
 
-  document.getElementById('link-license-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = document.getElementById('invitation-code').value.trim().toUpperCase();
-    const messageDiv = document.getElementById('link-message');
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+  // Event listeners
+  document.getElementById('link-direct-form').addEventListener('submit', handleLinkDirect);
+  document.getElementById('link-code-form').addEventListener('submit', handleLinkByCode);
+}
 
-    if (!code || code.length < 6) {
-      messageDiv.className = 'alert alert-error';
-      messageDiv.textContent = 'Veuillez entrer un code d\'invitation valide.';
-      messageDiv.style.display = 'block';
-      return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Vérification...';
-
-    try {
-      const response = await memberAPI.linkLicense(code);
-
-      if (response.success) {
-        messageDiv.className = 'alert alert-success';
-        messageDiv.innerHTML = `
-          <strong>Licence rattachée avec succès !</strong><br>
-          ${response.message}
-        `;
-        messageDiv.style.display = 'block';
-
-        // Rafraîchir les données
-        await memberAPI.getMe();
-
-        // Rediriger après 2s
-        setTimeout(() => {
-          window.location.href = '/espace-membre/licenses';
-        }, 2000);
-      }
-    } catch (error) {
-      messageDiv.className = 'alert alert-error';
-      messageDiv.textContent = error.message;
-      messageDiv.style.display = 'block';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Rattacher la licence';
-    }
+function switchLinkMethod(method) {
+  // Toggle tabs
+  document.querySelectorAll('.link-method-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.method === method);
   });
+
+  // Toggle content
+  document.getElementById('link-method-direct').style.display = method === 'direct' ? 'block' : 'none';
+  document.getElementById('link-method-code').style.display = method === 'code' ? 'block' : 'none';
+}
+
+async function handleLinkDirect(e) {
+  e.preventDefault();
+  const licenseNumber = document.getElementById('license-number').value.trim().toUpperCase();
+  const birthDate = document.getElementById('birth-date').value;
+  const relationship = document.getElementById('relationship-direct').value;
+  const messageDiv = document.getElementById('link-direct-message');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  messageDiv.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Vérification...';
+
+  try {
+    const response = await memberAPI.linkLicenseDirect(licenseNumber, birthDate, relationship);
+
+    if (response.success) {
+      messageDiv.className = 'alert alert-success';
+      messageDiv.innerHTML = `
+        <strong>Licence rattachée avec succès !</strong><br>
+        ${response.message}
+      `;
+      messageDiv.style.display = 'block';
+
+      // Rafraîchir les données
+      await memberAPI.getMe();
+
+      // Rediriger après 2s
+      setTimeout(() => {
+        window.location.href = '/espace-membre/licenses';
+      }, 2000);
+    }
+  } catch (error) {
+    messageDiv.className = 'alert alert-error';
+    messageDiv.textContent = error.message;
+    messageDiv.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Vérifier et rattacher';
+  }
+}
+
+async function handleLinkByCode(e) {
+  e.preventDefault();
+  const code = document.getElementById('invitation-code').value.trim().toUpperCase();
+  const messageDiv = document.getElementById('link-code-message');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  if (!code || code.length < 6) {
+    messageDiv.className = 'alert alert-error';
+    messageDiv.textContent = 'Veuillez entrer un code d\'invitation valide.';
+    messageDiv.style.display = 'block';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Vérification...';
+
+  try {
+    const response = await memberAPI.linkLicense(code);
+
+    if (response.success) {
+      messageDiv.className = 'alert alert-success';
+      messageDiv.innerHTML = `
+        <strong>Licence rattachée avec succès !</strong><br>
+        ${response.message}
+      `;
+      messageDiv.style.display = 'block';
+
+      // Rafraîchir les données
+      await memberAPI.getMe();
+
+      // Rediriger après 2s
+      setTimeout(() => {
+        window.location.href = '/espace-membre/licenses';
+      }, 2000);
+    }
+  } catch (error) {
+    messageDiv.className = 'alert alert-error';
+    messageDiv.textContent = error.message;
+    messageDiv.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Rattacher la licence';
+  }
 }
 
 // =====================================================
