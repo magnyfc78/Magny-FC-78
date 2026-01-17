@@ -207,7 +207,7 @@ const views = {
 
   // Page actualités
   async actualites() {
-    const res = await api.getActualites(20);
+    const res = await api.getActualites(100);
     const actualites = res?.data?.actualites || [];
     const categories = ['Tous', 'Match', 'Événement', 'Club', 'Formation'];
     const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
