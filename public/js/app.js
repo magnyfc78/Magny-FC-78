@@ -481,11 +481,15 @@ const views = {
         <h1>Calendrier</h1>
         <p>Tous les matchs de la saison</p>
       </section>
-      
+
       <section class="section">
         <div class="container" style="max-width: 900px;">
-          ${matchs.map(m => `
-            <div class="match-card">
+          ${matchs.map(m => {
+            const isTermine = m.statut === 'termine';
+            const scoreDom = m.lieu === 'domicile' ? m.score_domicile : m.score_exterieur;
+            const scoreExt = m.lieu === 'domicile' ? m.score_exterieur : m.score_domicile;
+            return `
+            <div class="match-card ${isTermine ? 'match-termine' : ''}">
               <div class="match-date">
                 <div class="day">${m.date_formatee.split(' ')[0]}</div>
                 <div class="month">${m.date_formatee.split(' ')[1]}</div>
@@ -493,7 +497,9 @@ const views = {
               <div class="match-content">
                 <div class="match-teams">
                   <span class="team ${m.equipe_dom.includes('Magny') ? 'highlight' : ''}">${m.equipe_dom}</span>
-                  <span class="vs">VS</span>
+                  ${isTermine && scoreDom !== null ?
+                    `<span class="match-score">${scoreDom} - ${scoreExt}</span>` :
+                    `<span class="vs">VS</span>`}
                   <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                 </div>
                 <div class="match-meta">
@@ -503,7 +509,7 @@ const views = {
                 </div>
               </div>
             </div>
-          `).join('') || '<p class="text-center">Aucun match programmé</p>'}
+          `}).join('') || '<p class="text-center">Aucun match programmé</p>'}
         </div>
       </section>
     `;
