@@ -5,17 +5,17 @@
  * Club: Magny FC 78 (scl=25702)
  *
  * Données récupérées:
- *   - Résultats : Matchs terminés avec scores
- *   - Agenda : Matchs à venir
+ *   - Calendrier : Calendrier complet (passé + futur) pour chaque équipe
  *   - Classement : Classements des compétitions
- *   - Calendrier : Calendrier complet de la saison
+ *
+ * Note: Résultats et Agenda sont inclus dans Calendrier, pas besoin de les scraper séparément
  *
  * Usage:
  *   npm run scrape:fff           # Exécution normale
  *   npm run scrape:fff:dry       # Mode test (pas d'écriture en base)
  *   node server/scripts/scrape-fff.js --verbose  # Mode détaillé
  *   node server/scripts/scrape-fff.js --debug    # Mode debug (capture screenshots + HTML)
- *   node server/scripts/scrape-fff.js --tab=resultats  # Scraper un onglet spécifique
+ *   node server/scripts/scrape-fff.js --tab=calendrier  # Scraper un onglet spécifique
  */
 
 const path = require('path');
@@ -694,86 +694,112 @@ async function scrapeCalendrier(page) {
 
   await saveDebugInfo(page, 'calendrier');
 
-  // ÉTAPE 1: Récupérer la liste des compétitions (Championnats et Coupes)
-  const competitionLinks = await page.evaluate(() => {
-    const competitions = [];
+  // ÉTAPE 1: Récupérer la liste des équipes du club
+  // Structure: app-calendriers-list avec sections "Championnats" et "Coupes"
+  // Chaque lien pointe vers le calendrier d'une équipe spécifique
+  const teamLinks = await page.evaluate(() => {
+    const teams = [];
     const baseUrl = 'https://dyf78.fff.fr';
 
-    // Structure: app-calendriers-list avec sections "Championnats" et "Coupes"
-    const container = document.querySelector('app-calendriers-list, .calendriers-list');
-    if (!container) return competitions;
+    // Chercher dans app-calendriers-list ou .calendriers-list
+    const container = document.querySelector('app-calendriers-list, .calendriers-list, app-calendrier-tab');
+    if (!container) {
+      // Fallback: chercher tous les liens avec calendrier dans l'URL
+      const allLinks = document.querySelectorAll('a[href*="calendar"], a[href*="calendrier"]');
+      allLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        const name = link.innerText.trim();
+        if (name && href && name.length > 3) {
+          teams.push({
+            name: name,
+            url: href.startsWith('/') ? baseUrl + href : href
+          });
+        }
+      });
+      return teams;
+    }
 
     let currentCategory = null;
 
-    // Parcourir tous les enfants
-    const children = container.querySelectorAll('.calendrier-competition, a');
-    children.forEach(el => {
-      if (el.classList.contains('calendrier-competition')) {
-        // C'est un titre de catégorie (Championnats, Coupes)
-        const titleEl = el.querySelector('.title');
+    // Parcourir tous les éléments
+    const elements = container.querySelectorAll('.calendrier-competition, a, .title');
+    elements.forEach(el => {
+      // Détecter les titres de catégorie (Championnats, Coupes)
+      if (el.classList.contains('calendrier-competition') || el.classList.contains('title')) {
+        const titleEl = el.classList.contains('title') ? el : el.querySelector('.title');
         if (titleEl) {
           currentCategory = titleEl.innerText.trim();
         }
       } else if (el.tagName === 'A') {
-        // C'est un lien vers une compétition
         const href = el.getAttribute('href');
         const name = el.innerText.trim();
 
-        if (name && href) {
-          competitions.push({
+        if (name && href && name.length > 3) {
+          teams.push({
             name: name,
             url: href.startsWith('/') ? baseUrl + href : href,
-            category: currentCategory
+            category: currentCategory || 'Compétition'
           });
         }
       }
     });
 
-    // Fallback: si la structure est différente, chercher tous les liens
-    if (competitions.length === 0) {
+    // Si toujours vide, chercher tous les liens directs
+    if (teams.length === 0) {
       const links = container.querySelectorAll('a');
       links.forEach(link => {
         const href = link.getAttribute('href');
         const name = link.innerText.trim();
 
-        if (name && href && !name.includes('Magny')) {
-          competitions.push({
+        if (name && href && name.length > 3) {
+          teams.push({
             name: name,
             url: href.startsWith('/') ? baseUrl + href : href,
-            category: 'Compétition'
+            category: 'Équipe'
           });
         }
       });
     }
 
-    return competitions;
+    return teams;
   });
 
-  scraperLogger.info(`Compétitions calendrier trouvées: ${competitionLinks.length}`);
-  competitionLinks.forEach(c => scraperLogger.info(`  - [${c.category}] ${c.name}`));
+  scraperLogger.info(`Équipes/Compétitions trouvées: ${teamLinks.length}`);
+  teamLinks.forEach(t => scraperLogger.info(`  - [${t.category || 'Équipe'}] ${t.name}`));
 
-  // ÉTAPE 2: Naviguer vers chaque compétition pour récupérer le calendrier complet
+  if (teamLinks.length === 0) {
+    scraperLogger.warn('Aucune équipe trouvée sur la page calendrier');
+    return [];
+  }
+
+  // ÉTAPE 2: Naviguer vers chaque équipe pour récupérer son calendrier complet
   const allMatches = [];
   const months = { 'janvier': '01', 'février': '02', 'fevrier': '02', 'mars': '03', 'avril': '04', 'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08', 'aout': '08', 'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12', 'decembre': '12' };
 
-  for (const comp of competitionLinks) {
+  for (const team of teamLinks) {
     try {
-      scraperLogger.info(`  -> Récupération calendrier: ${comp.name}`);
-      await page.goto(comp.url, {
+      scraperLogger.info(`  -> Récupération calendrier: ${team.name}`);
+      scraperLogger.info(`     URL: ${team.url}`);
+
+      await page.goto(team.url, {
         waitUntil: 'networkidle2',
         timeout: CONFIG.timeout
       });
-      await delay(1500);
+      await delay(2000);
+
+      // Fermer la popup de cookies si elle réapparaît
+      await dismissCookiePopup(page);
+      await delay(1000);
 
       if (DEBUG) {
-        await saveDebugInfo(page, `calendrier-${comp.name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`);
+        await saveDebugInfo(page, `calendrier-${team.name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`);
       }
 
-      // Récupérer les matchs de cette compétition (même structure que résultats/agenda: app-confrontation)
-      const matches = await page.evaluate((competitionName, monthsMap) => {
+      // Récupérer tous les matchs de cette équipe (passés et futurs)
+      const matches = await page.evaluate((teamName, monthsMap) => {
         const results = [];
 
-        // Utiliser la même structure que résultats/agenda
+        // Chercher les matchs avec app-confrontation (même structure que résultats/agenda)
         const confrontations = document.querySelectorAll('app-confrontation');
 
         confrontations.forEach(el => {
@@ -785,14 +811,23 @@ async function scrapeCalendrier(page) {
               scoreAway: null,
               date: null,
               heure: null,
-              competition: competitionName,
+              competition: teamName,
               url: null,
-              forfait: null
+              forfait: null,
+              statut: 'a_venir'
             };
 
+            // URL du match détail
             const link = el.querySelector('a');
             if (link) match.url = link.getAttribute('href');
 
+            // Compétition (si disponible dans l'élément)
+            const competitionEl = el.querySelector('.competition');
+            if (competitionEl) {
+              match.competition = competitionEl.innerText.replace(/\n/g, ' ').trim();
+            }
+
+            // Date et heure
             const dateEl = el.querySelector('.date');
             if (dateEl) {
               const dateText = dateEl.innerText;
@@ -810,62 +845,89 @@ async function scrapeCalendrier(page) {
               }
             }
 
+            // Équipe domicile (equipe1)
             const equipe1 = el.querySelector('.equipe1 .name');
             if (equipe1) {
               const text = equipe1.innerText.trim();
-              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)?\s*$/);
+              // Format possible: "NOM ÉQUIPE   SCORE" ou juste "NOM ÉQUIPE"
+              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)\s*$/);
               if (scoreMatch) {
                 match.homeTeam = scoreMatch[1].trim();
-                if (scoreMatch[2]) match.scoreHome = parseInt(scoreMatch[2]);
+                match.scoreHome = parseInt(scoreMatch[2]);
               } else {
-                match.homeTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                // Chercher le score dans un élément séparé
+                const scoreEl = el.querySelector('.equipe1 .score, .equipe1 .resultat');
+                if (scoreEl) {
+                  match.homeTeam = text.trim();
+                  const score = parseInt(scoreEl.innerText.trim());
+                  if (!isNaN(score)) match.scoreHome = score;
+                } else {
+                  match.homeTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                }
               }
             }
 
+            // Équipe extérieur (equipe2)
             const equipe2 = el.querySelector('.equipe2 .name');
             if (equipe2) {
               const text = equipe2.innerText.trim();
-              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)?\s*$/);
+              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)\s*$/);
               if (scoreMatch) {
                 match.awayTeam = scoreMatch[1].trim();
-                if (scoreMatch[2]) match.scoreAway = parseInt(scoreMatch[2]);
+                match.scoreAway = parseInt(scoreMatch[2]);
               } else {
-                match.awayTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                const scoreEl = el.querySelector('.equipe2 .score, .equipe2 .resultat');
+                if (scoreEl) {
+                  match.awayTeam = text.trim();
+                  const score = parseInt(scoreEl.innerText.trim());
+                  if (!isNaN(score)) match.scoreAway = score;
+                } else {
+                  match.awayTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                }
               }
             }
 
-            const forfait = el.querySelector('.forfeit span');
+            // Forfait
+            const forfait = el.querySelector('.forfeit span, .forfait');
             if (forfait) {
               match.forfait = forfait.innerText.trim();
             }
 
-            // Définir le statut
-            match.statut = match.scoreHome !== null ? 'termine' : 'a_venir';
+            // Déterminer le statut (terminé si scores présents)
+            if (match.scoreHome !== null || match.scoreAway !== null) {
+              match.statut = 'termine';
+            }
 
+            // Ajouter uniquement si on a les deux équipes
             if (match.homeTeam && match.awayTeam) {
               results.push(match);
             }
-          } catch (err) {}
+          } catch (err) {
+            // Ignorer les erreurs de parsing individuel
+          }
         });
 
         return results;
-      }, comp.name, months);
+      }, team.name, months);
 
       if (matches.length > 0) {
-        scraperLogger.info(`     ${matches.length} matchs trouvés`);
+        scraperLogger.info(`     ${matches.length} matchs trouvés (${matches.filter(m => m.statut === 'termine').length} terminés, ${matches.filter(m => m.statut === 'a_venir').length} à venir)`);
         allMatches.push(...matches);
       } else {
-        scraperLogger.warn(`     Aucun match trouvé pour ${comp.name}`);
+        scraperLogger.warn(`     Aucun match trouvé pour ${team.name}`);
       }
 
     } catch (err) {
-      scraperLogger.error(`  Erreur récupération ${comp.name}: ${err.message}`);
+      scraperLogger.error(`  Erreur récupération ${team.name}: ${err.message}`);
     }
   }
 
-  scraperLogger.info(`Total calendrier récupéré: ${allMatches.length} matchs`);
+  scraperLogger.info(`\nTotal calendrier récupéré: ${allMatches.length} matchs`);
+  scraperLogger.info(`  - Matchs terminés: ${allMatches.filter(m => m.statut === 'termine').length}`);
+  scraperLogger.info(`  - Matchs à venir: ${allMatches.filter(m => m.statut === 'a_venir').length}`);
+
   if (DEBUG && allMatches.length > 0) {
-    scraperLogger.info(`Premier match calendrier: ${JSON.stringify(allMatches[0])}`);
+    scraperLogger.info(`Premier match: ${JSON.stringify(allMatches[0])}`);
   }
   return allMatches;
 }
@@ -1093,7 +1155,9 @@ async function main() {
     browser = await launchBrowser();
     const page = await setupPage(browser);
 
-    const tabs = SPECIFIC_TAB ? [SPECIFIC_TAB] : ['resultats', 'agenda', 'classement', 'calendrier'];
+    // Par défaut: calendrier (contient résultats + agenda) et classement
+    // resultats et agenda sont gardés pour compatibilité mais ne sont plus utilisés par défaut
+    const tabs = SPECIFIC_TAB ? [SPECIFIC_TAB] : ['calendrier', 'classement'];
 
     for (const tab of tabs) {
       try {
@@ -1102,6 +1166,8 @@ async function main() {
         let data = [];
         switch (tab) {
           case 'resultats':
+            // OBSOLÈTE: les résultats sont inclus dans le calendrier
+            scraperLogger.info('Note: Les résultats sont maintenant récupérés via le calendrier');
             data = await scrapeResultats(page);
             stats.resultats.found = data.length;
             if (!DRY_RUN) {
@@ -1114,6 +1180,8 @@ async function main() {
             break;
 
           case 'agenda':
+            // OBSOLÈTE: l'agenda est inclus dans le calendrier
+            scraperLogger.info('Note: L\'agenda est maintenant récupéré via le calendrier');
             data = await scrapeAgenda(page);
             stats.agenda.found = data.length;
             if (!DRY_RUN) {
