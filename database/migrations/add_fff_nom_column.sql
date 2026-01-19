@@ -6,7 +6,7 @@
 
 -- Add FFF team name to equipes table (the name as it appears on dyf78.fff.fr)
 ALTER TABLE equipes
-ADD COLUMN IF NOT EXISTS fff_nom VARCHAR(150) DEFAULT NULL COMMENT 'Nom de l''équipe sur le site FFF (pour le matching)';
+ADD COLUMN fff_nom VARCHAR(150) DEFAULT NULL COMMENT 'Nom de l''équipe sur le site FFF (pour le matching)';
 
 -- Example values:
 -- Local team: "Seniors A"     -> fff_nom: "MAGNY 78 FC - Seniors A"
