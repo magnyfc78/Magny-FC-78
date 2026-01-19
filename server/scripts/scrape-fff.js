@@ -39,8 +39,8 @@ const CONFIG = {
   urls: {
     resultats: 'https://dyf78.fff.fr/recherche-clubs?subtab=resultats&tab=resultats&scl=25702',
     agenda: 'https://dyf78.fff.fr/recherche-clubs?subtab=agenda&tab=resultats&scl=25702',
-    classement: 'https://dyf78.fff.fr/recherche-clubs?subtab=classement&tab=resultats&scl=25702',
-    calendrier: 'https://dyf78.fff.fr/recherche-clubs?subtab=calendrier&tab=resultats&scl=25702'
+    classement: 'https://dyf78.fff.fr/recherche-clubs?subtab=ranking&tab=resultats&scl=25702',
+    calendrier: 'https://dyf78.fff.fr/recherche-clubs?subtab=calendar&tab=resultats&scl=25702'
   },
   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   timeout: 60000,
