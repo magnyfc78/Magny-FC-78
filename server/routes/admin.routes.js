@@ -244,13 +244,14 @@ router.post('/matchs', async (req, res, next) => {
 router.put('/matchs/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { equipe_id, adversaire, date_match, lieu, adresse_match, competition, journee, 
+    const { equipe_id, adversaire, date_match, lieu, adresse_match, competition, journee,
             score_domicile, score_exterieur, resume, statut, visible } = req.body;
     await db.pool.execute(
       `UPDATE matchs SET equipe_id = ?, adversaire = ?, date_match = ?, lieu = ?, adresse_match = ?,
        competition = ?, journee = ?, score_domicile = ?, score_exterieur = ?, resume = ?, statut = ?, visible = ? WHERE id = ?`,
-      [equipe_id, adversaire, date_match, lieu, adresse_match, competition, journee, 
-       score_domicile, score_exterieur, resume, statut, visible, id]
+      [equipe_id || null, adversaire || null, date_match || null, lieu || null, adresse_match || null,
+       competition || null, journee || null, score_domicile ?? null, score_exterieur ?? null,
+       resume || null, statut || 'a_venir', visible !== undefined ? visible : true, id]
     );
     await logActivity(req.user.id, 'update', 'matchs', id);
     res.json({ success: true, message: 'Match mis à jour' });
