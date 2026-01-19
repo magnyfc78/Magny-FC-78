@@ -245,45 +245,72 @@ async function setupPage(browser) {
   return page;
 }
 
-// Fermer la popup de consentement cookies
+// Fermer la popup de consentement cookies (Didomi)
 async function dismissCookiePopup(page) {
   try {
-    // Attendre que la popup apparaisse (max 5 secondes)
-    const acceptButton = await page.waitForSelector('button:has-text("Accepter"), button:has-text("Refuser"), [class*="cookie"] button, .didomi-popup button', { timeout: 5000 }).catch(() => null);
+    scraperLogger.info('Recherche de la popup cookies Didomi...');
 
-    if (acceptButton) {
-      scraperLogger.info('Popup cookies détectée, fermeture...');
-      await acceptButton.click();
+    // Attendre que la popup Didomi soit visible
+    await delay(1000);
+
+    // Vérifier si la popup est ouverte
+    const hasPopup = await page.evaluate(() => {
+      return document.body.classList.contains('didomi-popup-open') ||
+             document.querySelector('.didomi-popup-container') !== null;
+    });
+
+    if (!hasPopup) {
+      scraperLogger.info('Pas de popup cookies détectée');
+      return;
+    }
+
+    scraperLogger.info('Popup Didomi détectée, fermeture...');
+
+    // Cliquer sur le bouton "Accepter" (classe: didomi-button-highlight ou contient "Accepter")
+    const clicked = await page.evaluate(() => {
+      // 1. Chercher par classe spécifique Didomi
+      const acceptBtn = document.querySelector('.didomi-button-highlight, .didomi-dismiss-button');
+      if (acceptBtn) {
+        acceptBtn.click();
+        return 'didomi-accept';
+      }
+
+      // 2. Chercher par texte "Accepter"
+      const allButtons = document.querySelectorAll('button');
+      for (const btn of allButtons) {
+        if (btn.textContent.trim() === 'Accepter') {
+          btn.click();
+          return 'text-accept';
+        }
+      }
+
+      // 3. Chercher "Refuser" comme fallback
+      for (const btn of allButtons) {
+        if (btn.textContent.trim() === 'Refuser') {
+          btn.click();
+          return 'text-refuse';
+        }
+      }
+
+      return null;
+    });
+
+    if (clicked) {
+      scraperLogger.info(`Bouton cliqué: ${clicked}`);
+      await delay(2000);
+    } else {
+      scraperLogger.info('Aucun bouton trouvé, tentative de masquage forcé...');
+      // Forcer le masquage de la popup
+      await page.evaluate(() => {
+        document.body.classList.remove('didomi-popup-open');
+        const popups = document.querySelectorAll('.didomi-popup-container, .didomi-popup-backdrop, .didomi-popup-notice');
+        popups.forEach(p => p.style.display = 'none');
+      });
       await delay(1000);
     }
-  } catch (e) {
-    // Essayer avec d'autres sélecteurs
-    try {
-      // Chercher le bouton "Accepter" ou "Refuser" par son texte
-      const clicked = await page.evaluate(() => {
-        const buttons = document.querySelectorAll('button');
-        for (const btn of buttons) {
-          if (btn.innerText.includes('Accepter') || btn.innerText.includes('Refuser')) {
-            btn.click();
-            return true;
-          }
-        }
-        // Essayer aussi les boutons dans les iframes ou popups
-        const popupButtons = document.querySelectorAll('[class*="didomi"] button, [class*="cookie"] button, [class*="consent"] button');
-        if (popupButtons.length > 0) {
-          popupButtons[0].click();
-          return true;
-        }
-        return false;
-      });
 
-      if (clicked) {
-        scraperLogger.info('Popup cookies fermée via fallback');
-        await delay(1000);
-      }
-    } catch (err) {
-      scraperLogger.info('Pas de popup cookies ou déjà fermée');
-    }
+  } catch (err) {
+    scraperLogger.error(`Erreur fermeture popup: ${err.message}`);
   }
 }
 
