@@ -245,6 +245,48 @@ async function setupPage(browser) {
   return page;
 }
 
+// Fermer la popup de consentement cookies
+async function dismissCookiePopup(page) {
+  try {
+    // Attendre que la popup apparaisse (max 5 secondes)
+    const acceptButton = await page.waitForSelector('button:has-text("Accepter"), button:has-text("Refuser"), [class*="cookie"] button, .didomi-popup button', { timeout: 5000 }).catch(() => null);
+
+    if (acceptButton) {
+      scraperLogger.info('Popup cookies détectée, fermeture...');
+      await acceptButton.click();
+      await delay(1000);
+    }
+  } catch (e) {
+    // Essayer avec d'autres sélecteurs
+    try {
+      // Chercher le bouton "Accepter" ou "Refuser" par son texte
+      const clicked = await page.evaluate(() => {
+        const buttons = document.querySelectorAll('button');
+        for (const btn of buttons) {
+          if (btn.innerText.includes('Accepter') || btn.innerText.includes('Refuser')) {
+            btn.click();
+            return true;
+          }
+        }
+        // Essayer aussi les boutons dans les iframes ou popups
+        const popupButtons = document.querySelectorAll('[class*="didomi"] button, [class*="cookie"] button, [class*="consent"] button');
+        if (popupButtons.length > 0) {
+          popupButtons[0].click();
+          return true;
+        }
+        return false;
+      });
+
+      if (clicked) {
+        scraperLogger.info('Popup cookies fermée via fallback');
+        await delay(1000);
+      }
+    } catch (err) {
+      scraperLogger.info('Pas de popup cookies ou déjà fermée');
+    }
+  }
+}
+
 // =====================================================
 // SCRAPING DES RÉSULTATS
 // =====================================================
@@ -257,87 +299,85 @@ async function scrapeResultats(page) {
     timeout: CONFIG.timeout
   });
 
-  await delay(3000);
+  await delay(2000);
+
+  // Fermer la popup de cookies
+  await dismissCookiePopup(page);
+  await delay(2000);
+
   await saveDebugInfo(page, 'resultats');
 
   const resultats = await page.evaluate(() => {
     const matches = [];
+    const pageText = document.body.innerText;
 
-    document.querySelectorAll('table tbody tr, .match-result, .resultat-match, [class*="result"]').forEach((row) => {
-      const text = row.innerText.trim();
-      if (!text || text.length < 10) return;
+    // Regex pour extraire les matchs du texte de la page
+    // Format: "EQUIPE1 SCORE - SCORE EQUIPE2" ou similaire
+    const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
 
-      const cells = row.querySelectorAll('td');
-      if (cells.length >= 3) {
-        const match = {
-          date: null,
-          heure: null,
-          homeTeam: null,
-          awayTeam: null,
-          scoreHome: null,
-          scoreAway: null,
-          competition: null,
-          journee: null,
-          lieu: null,
-          raw: text
-        };
+    let currentCompetition = null;
+    let currentDate = null;
+    let currentTime = null;
 
-        cells.forEach((cell, index) => {
-          const cellText = cell.innerText.trim();
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
 
-          const dateMatch = cellText.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-          if (dateMatch && !match.date) {
-            const day = dateMatch[1].padStart(2, '0');
-            const month = dateMatch[2].padStart(2, '0');
-            const year = dateMatch[3] || new Date().getFullYear();
-            match.date = `${year}-${month}-${day}`;
-          }
+      // Détecter les compétitions (en majuscules, contient souvent CRITERIUM, COUPE, etc.)
+      if (/^(CRITERIUM|COUPE|SENIORS|VETERANS|U\d+|CHAMPIONNAT)/i.test(line) && !line.includes('-')) {
+        currentCompetition = line;
+        continue;
+      }
 
-          const timeMatch = cellText.match(/(\d{1,2})[h:](\d{2})/);
-          if (timeMatch && !match.heure) {
-            match.heure = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
-          }
+      // Détecter les dates (SAMEDI 24 JANVIER 2026 - 15H00)
+      const dateMatch = line.match(/(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+(\d{1,2})\s+(JANVIER|FÉVRIER|FEVRIER|MARS|AVRIL|MAI|JUIN|JUILLET|AOÛT|AOUT|SEPTEMBRE|OCTOBRE|NOVEMBRE|DÉCEMBRE|DECEMBRE)\s+(\d{4})\s*[-–]?\s*(\d{1,2})[hH:]?(\d{2})?/i);
+      if (dateMatch) {
+        const months = { 'JANVIER': '01', 'FÉVRIER': '02', 'FEVRIER': '02', 'MARS': '03', 'AVRIL': '04', 'MAI': '05', 'JUIN': '06', 'JUILLET': '07', 'AOÛT': '08', 'AOUT': '08', 'SEPTEMBRE': '09', 'OCTOBRE': '10', 'NOVEMBRE': '11', 'DÉCEMBRE': '12', 'DECEMBRE': '12' };
+        const day = dateMatch[2].padStart(2, '0');
+        const month = months[dateMatch[3].toUpperCase()] || '01';
+        const year = dateMatch[4];
+        currentDate = `${year}-${month}-${day}`;
+        currentTime = `${dateMatch[5].padStart(2, '0')}:${dateMatch[6] || '00'}`;
+        continue;
+      }
 
-          const scoreMatch = cellText.match(/(\d+)\s*[-–]\s*(\d+)/);
-          if (scoreMatch && match.scoreHome === null) {
-            match.scoreHome = parseInt(scoreMatch[1]);
-            match.scoreAway = parseInt(scoreMatch[2]);
-          }
+      // Détecter les matchs avec MAGNY
+      if (/MAGNY/i.test(line)) {
+        // Pattern: "EQUIPE1 SCORE - SCORE EQUIPE2" ou "EQUIPE1 SCORE EQUIPE2"
+        // Exemple: "MAGNY 78 F.C. 21 - VERSAILLES 78 FC 25"
+        const matchPattern = line.match(/(.+?)\s+(\d+)\s*[-–]\s*(\d+)?\s*(.+)/);
 
-          const teamLinks = cell.querySelectorAll('a');
-          if (teamLinks.length > 0) {
-            teamLinks.forEach((link) => {
-              const teamName = link.innerText.trim();
-              if (teamName && teamName.length > 2) {
-                if (!match.homeTeam) {
-                  match.homeTeam = teamName;
-                } else if (!match.awayTeam && teamName !== match.homeTeam) {
-                  match.awayTeam = teamName;
-                }
-              }
+        if (matchPattern) {
+          const homeTeam = matchPattern[1].replace(/\s+\d+$/, '').trim();
+          const scoreHome = parseInt(matchPattern[2]);
+          const scoreAway = matchPattern[3] ? parseInt(matchPattern[3]) : null;
+          let awayTeam = matchPattern[4].trim();
+
+          // Nettoyer le nom de l'équipe extérieure
+          awayTeam = awayTeam.replace(/^\d+\s*/, '').replace(/\s+\d+$/, '').trim();
+
+          if (homeTeam && awayTeam) {
+            matches.push({
+              homeTeam,
+              awayTeam,
+              scoreHome,
+              scoreAway,
+              date: currentDate,
+              heure: currentTime,
+              competition: currentCompetition,
+              raw: line
             });
           }
-        });
-
-        if (!match.homeTeam || !match.awayTeam) {
-          const vsMatch = text.match(/([^0-9]+?)\s*(?:\d+\s*[-–]\s*\d+)\s*([^0-9]+)/);
-          if (vsMatch) {
-            match.homeTeam = match.homeTeam || vsMatch[1].trim();
-            match.awayTeam = match.awayTeam || vsMatch[2].trim();
-          }
-        }
-
-        const isMagnyMatch = /magny/i.test(text);
-        if (isMagnyMatch && (match.date || match.scoreHome !== null)) {
-          matches.push(match);
         }
       }
-    });
+    }
 
     return matches;
   });
 
   scraperLogger.info(`Résultats trouvés: ${resultats.length} matchs`);
+  if (DEBUG && resultats.length > 0) {
+    scraperLogger.info(`Premier résultat: ${JSON.stringify(resultats[0])}`);
+  }
   return resultats;
 }
 
@@ -353,73 +393,77 @@ async function scrapeAgenda(page) {
     timeout: CONFIG.timeout
   });
 
-  await delay(3000);
+  await delay(2000);
+
+  // Fermer la popup de cookies
+  await dismissCookiePopup(page);
+  await delay(2000);
+
   await saveDebugInfo(page, 'agenda');
 
   const agenda = await page.evaluate(() => {
     const matches = [];
+    const pageText = document.body.innerText;
+    const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
 
-    document.querySelectorAll('table tbody tr, .match-agenda, .agenda-match, [class*="agenda"]').forEach((row) => {
-      const text = row.innerText.trim();
-      if (!text || text.length < 10) return;
+    let currentCompetition = null;
+    let currentDate = null;
+    let currentTime = null;
 
-      const cells = row.querySelectorAll('td');
-      if (cells.length >= 3) {
-        const match = {
-          date: null,
-          heure: null,
-          homeTeam: null,
-          awayTeam: null,
-          competition: null,
-          journee: null,
-          lieu: null,
-          raw: text
-        };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
 
-        cells.forEach((cell) => {
-          const cellText = cell.innerText.trim();
+      // Détecter les compétitions
+      if (/^(CRITERIUM|COUPE|SENIORS|VETERANS|U\d+|CHAMPIONNAT)/i.test(line) && !line.includes('-') && line.length < 100) {
+        currentCompetition = line;
+        continue;
+      }
 
-          const dateMatch = cellText.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-          if (dateMatch && !match.date) {
-            const day = dateMatch[1].padStart(2, '0');
-            const month = dateMatch[2].padStart(2, '0');
-            const year = dateMatch[3] || new Date().getFullYear();
-            match.date = `${year}-${month}-${day}`;
-          }
+      // Détecter les dates
+      const dateMatch = line.match(/(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+(\d{1,2})\s+(JANVIER|FÉVRIER|FEVRIER|MARS|AVRIL|MAI|JUIN|JUILLET|AOÛT|AOUT|SEPTEMBRE|OCTOBRE|NOVEMBRE|DÉCEMBRE|DECEMBRE)\s+(\d{4})\s*[-–]?\s*(\d{1,2})[hH:]?(\d{2})?/i);
+      if (dateMatch) {
+        const months = { 'JANVIER': '01', 'FÉVRIER': '02', 'FEVRIER': '02', 'MARS': '03', 'AVRIL': '04', 'MAI': '05', 'JUIN': '06', 'JUILLET': '07', 'AOÛT': '08', 'AOUT': '08', 'SEPTEMBRE': '09', 'OCTOBRE': '10', 'NOVEMBRE': '11', 'DÉCEMBRE': '12', 'DECEMBRE': '12' };
+        const day = dateMatch[2].padStart(2, '0');
+        const month = months[dateMatch[3].toUpperCase()] || '01';
+        const year = dateMatch[4];
+        currentDate = `${year}-${month}-${day}`;
+        currentTime = `${dateMatch[5].padStart(2, '0')}:${dateMatch[6] || '00'}`;
+        continue;
+      }
 
-          const timeMatch = cellText.match(/(\d{1,2})[h:](\d{2})/);
-          if (timeMatch && !match.heure) {
-            match.heure = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
-          }
+      // Détecter les matchs avec MAGNY (sans score pour l'agenda)
+      if (/MAGNY/i.test(line) && currentDate) {
+        // Pattern pour agenda: "EQUIPE1 vs EQUIPE2" ou "EQUIPE1 - EQUIPE2"
+        let homeTeam = null;
+        let awayTeam = null;
 
-          const teamLinks = cell.querySelectorAll('a');
-          teamLinks.forEach((link) => {
-            const teamName = link.innerText.trim();
-            if (teamName && teamName.length > 2) {
-              if (!match.homeTeam) {
-                match.homeTeam = teamName;
-              } else if (!match.awayTeam && teamName !== match.homeTeam) {
-                match.awayTeam = teamName;
-              }
-            }
+        // Chercher le pattern avec deux équipes séparées par - ou vs
+        const vsMatch = line.match(/(.+?)\s*[-–]\s*(.+)/);
+        if (vsMatch && vsMatch[1] && vsMatch[2]) {
+          homeTeam = vsMatch[1].trim();
+          awayTeam = vsMatch[2].trim();
+        }
+
+        if (homeTeam && awayTeam && (homeTeam.length > 3 || awayTeam.length > 3)) {
+          matches.push({
+            homeTeam,
+            awayTeam,
+            date: currentDate,
+            heure: currentTime,
+            competition: currentCompetition,
+            raw: line
           });
-
-          if (cellText.toLowerCase().includes('stade') || cellText.toLowerCase().includes('terrain')) {
-            match.lieu = cellText;
-          }
-        });
-
-        const isMagnyMatch = /magny/i.test(text);
-        if (isMagnyMatch && match.date) {
-          matches.push(match);
         }
       }
-    });
+    }
 
     return matches;
   });
 
   scraperLogger.info(`Agenda trouvé: ${agenda.length} matchs à venir`);
+  if (DEBUG && agenda.length > 0) {
+    scraperLogger.info(`Premier match agenda: ${JSON.stringify(agenda[0])}`);
+  }
   return agenda;
 }
 
@@ -435,68 +479,30 @@ async function scrapeClassement(page) {
     timeout: CONFIG.timeout
   });
 
-  await delay(3000);
+  await delay(2000);
+
+  // Fermer la popup de cookies
+  await dismissCookiePopup(page);
+  await delay(2000);
+
   await saveDebugInfo(page, 'classement');
 
+  // Le classement affiche une liste de compétitions sur le screenshot
+  // On va récupérer la liste des compétitions disponibles
   const classements = await page.evaluate(() => {
     const standings = [];
-    let currentCompetition = null;
+    const pageText = document.body.innerText;
+    const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
 
-    document.querySelectorAll('h3, h4, .competition-title, table').forEach((el) => {
-      if (el.tagName === 'H3' || el.tagName === 'H4' || el.classList.contains('competition-title')) {
-        currentCompetition = el.innerText.trim();
-        return;
-      }
-
-      if (el.tagName === 'TABLE') {
-        const rows = el.querySelectorAll('tbody tr');
-        rows.forEach((row) => {
-          const cells = row.querySelectorAll('td');
-          if (cells.length >= 5) {
-            const entry = {
-              competition: currentCompetition,
-              position: null,
-              equipe: null,
-              points: null,
-              joues: null,
-              gagnes: null,
-              nuls: null,
-              perdus: null,
-              butsPour: null,
-              butsContre: null,
-              difference: null
-            };
-
-            cells.forEach((cell, index) => {
-              const text = cell.innerText.trim();
-              const num = parseInt(text);
-
-              if (index === 0 && !isNaN(num) && num > 0 && num < 50) {
-                entry.position = num;
-              }
-
-              if (index === 1 || (isNaN(num) && text.length > 2)) {
-                if (!entry.equipe) {
-                  entry.equipe = text;
-                }
-              }
-
-              if (index >= 2 && !isNaN(num)) {
-                if (entry.points === null) entry.points = num;
-                else if (entry.joues === null) entry.joues = num;
-                else if (entry.gagnes === null) entry.gagnes = num;
-                else if (entry.nuls === null) entry.nuls = num;
-                else if (entry.perdus === null) entry.perdus = num;
-                else if (entry.butsPour === null) entry.butsPour = num;
-                else if (entry.butsContre === null) entry.butsContre = num;
-                else if (entry.difference === null) entry.difference = num;
-              }
-            });
-
-            if (entry.equipe && entry.position) {
-              standings.push(entry);
-            }
-          }
+    // Chercher les lignes qui ressemblent à des compétitions
+    lines.forEach(line => {
+      if (/^(SENIORS|VETERANS|U\d+|CRITERIUM|COUPE|CHAMPIONNAT)/i.test(line)) {
+        standings.push({
+          competition: line,
+          equipe: null,
+          position: null,
+          points: null,
+          joues: null
         });
       }
     });
@@ -504,7 +510,10 @@ async function scrapeClassement(page) {
     return standings;
   });
 
-  scraperLogger.info(`Classements trouvés: ${classements.length} lignes`);
+  scraperLogger.info(`Classements/Compétitions trouvés: ${classements.length}`);
+  if (DEBUG && classements.length > 0) {
+    scraperLogger.info(`Compétitions: ${classements.map(c => c.competition).join(', ')}`);
+  }
   return classements;
 }
 
@@ -520,78 +529,92 @@ async function scrapeCalendrier(page) {
     timeout: CONFIG.timeout
   });
 
-  await delay(3000);
+  await delay(2000);
+
+  // Fermer la popup de cookies
+  await dismissCookiePopup(page);
+  await delay(2000);
+
   await saveDebugInfo(page, 'calendrier');
 
   const calendrier = await page.evaluate(() => {
     const matches = [];
+    const pageText = document.body.innerText;
+    const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
 
-    document.querySelectorAll('table tbody tr, .calendrier-match, [class*="calendrier"]').forEach((row) => {
-      const text = row.innerText.trim();
-      if (!text || text.length < 10) return;
+    let currentCompetition = null;
+    let currentDate = null;
+    let currentTime = null;
 
-      const cells = row.querySelectorAll('td');
-      if (cells.length >= 3) {
-        const match = {
-          date: null,
-          heure: null,
-          homeTeam: null,
-          awayTeam: null,
-          scoreHome: null,
-          scoreAway: null,
-          competition: null,
-          journee: null,
-          statut: 'a_venir',
-          raw: text
-        };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
 
-        cells.forEach((cell) => {
-          const cellText = cell.innerText.trim();
+      // Détecter les compétitions
+      if (/^(CRITERIUM|COUPE|SENIORS|VETERANS|U\d+|CHAMPIONNAT)/i.test(line) && !line.includes('-') && line.length < 100) {
+        currentCompetition = line;
+        continue;
+      }
 
-          const dateMatch = cellText.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-          if (dateMatch && !match.date) {
-            const day = dateMatch[1].padStart(2, '0');
-            const month = dateMatch[2].padStart(2, '0');
-            const year = dateMatch[3] || new Date().getFullYear();
-            match.date = `${year}-${month}-${day}`;
+      // Détecter les dates
+      const dateMatch = line.match(/(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+(\d{1,2})\s+(JANVIER|FÉVRIER|FEVRIER|MARS|AVRIL|MAI|JUIN|JUILLET|AOÛT|AOUT|SEPTEMBRE|OCTOBRE|NOVEMBRE|DÉCEMBRE|DECEMBRE)\s+(\d{4})\s*[-–]?\s*(\d{1,2})[hH:]?(\d{2})?/i);
+      if (dateMatch) {
+        const months = { 'JANVIER': '01', 'FÉVRIER': '02', 'FEVRIER': '02', 'MARS': '03', 'AVRIL': '04', 'MAI': '05', 'JUIN': '06', 'JUILLET': '07', 'AOÛT': '08', 'AOUT': '08', 'SEPTEMBRE': '09', 'OCTOBRE': '10', 'NOVEMBRE': '11', 'DÉCEMBRE': '12', 'DECEMBRE': '12' };
+        const day = dateMatch[2].padStart(2, '0');
+        const month = months[dateMatch[3].toUpperCase()] || '01';
+        const year = dateMatch[4];
+        currentDate = `${year}-${month}-${day}`;
+        currentTime = `${dateMatch[5].padStart(2, '0')}:${dateMatch[6] || '00'}`;
+        continue;
+      }
+
+      // Détecter les matchs avec MAGNY
+      if (/MAGNY/i.test(line)) {
+        let homeTeam = null;
+        let awayTeam = null;
+        let scoreHome = null;
+        let scoreAway = null;
+        let statut = 'a_venir';
+
+        // Chercher score si présent
+        const scorePattern = line.match(/(.+?)\s+(\d+)\s*[-–]\s*(\d+)\s*(.+)/);
+        if (scorePattern) {
+          homeTeam = scorePattern[1].trim();
+          scoreHome = parseInt(scorePattern[2]);
+          scoreAway = parseInt(scorePattern[3]);
+          awayTeam = scorePattern[4].trim();
+          statut = 'termine';
+        } else {
+          // Sans score
+          const vsMatch = line.match(/(.+?)\s*[-–]\s*(.+)/);
+          if (vsMatch) {
+            homeTeam = vsMatch[1].trim();
+            awayTeam = vsMatch[2].trim();
           }
+        }
 
-          const timeMatch = cellText.match(/(\d{1,2})[h:](\d{2})/);
-          if (timeMatch && !match.heure) {
-            match.heure = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
-          }
-
-          const scoreMatch = cellText.match(/(\d+)\s*[-–]\s*(\d+)/);
-          if (scoreMatch && match.scoreHome === null) {
-            match.scoreHome = parseInt(scoreMatch[1]);
-            match.scoreAway = parseInt(scoreMatch[2]);
-            match.statut = 'termine';
-          }
-
-          const teamLinks = cell.querySelectorAll('a');
-          teamLinks.forEach((link) => {
-            const teamName = link.innerText.trim();
-            if (teamName && teamName.length > 2) {
-              if (!match.homeTeam) {
-                match.homeTeam = teamName;
-              } else if (!match.awayTeam && teamName !== match.homeTeam) {
-                match.awayTeam = teamName;
-              }
-            }
+        if (homeTeam && awayTeam) {
+          matches.push({
+            homeTeam,
+            awayTeam,
+            scoreHome,
+            scoreAway,
+            date: currentDate,
+            heure: currentTime,
+            competition: currentCompetition,
+            statut,
+            raw: line
           });
-        });
-
-        const isMagnyMatch = /magny/i.test(text);
-        if (isMagnyMatch && match.date) {
-          matches.push(match);
         }
       }
-    });
+    }
 
     return matches;
   });
 
   scraperLogger.info(`Calendrier trouvé: ${calendrier.length} matchs`);
+  if (DEBUG && calendrier.length > 0) {
+    scraperLogger.info(`Premier match calendrier: ${JSON.stringify(calendrier[0])}`);
+  }
   return calendrier;
 }
 
