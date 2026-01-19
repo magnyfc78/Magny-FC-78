@@ -174,18 +174,19 @@ router.get('/equipes', async (req, res, next) => {
       LEFT JOIN categories c ON e.categorie_id = c.id
       ORDER BY c.ordre, e.ordre, e.nom
     `);
+    // Include FFF fields: fff_nom, fff_team_id, fff_team_url
     res.json({ success: true, data: { equipes } });
   } catch (error) { next(error); }
 });
 
 router.post('/equipes', async (req, res, next) => {
   try {
-    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre } = req.body;
+    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, fff_nom, fff_team_id, fff_team_url } = req.body;
     const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const [result] = await db.pool.execute(
-      `INSERT INTO equipes (nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif !== false, ordre || 0]
+      `INSERT INTO equipes (nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, fff_nom, fff_team_id, fff_team_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif !== false, ordre || 0, fff_nom || null, fff_team_id || null, fff_team_url || null]
     );
     await logActivity(req.user.id, 'create', 'equipes', result.insertId, { nom });
     res.status(201).json({ success: true, data: { id: result.insertId } });
@@ -195,12 +196,13 @@ router.post('/equipes', async (req, res, next) => {
 router.put('/equipes/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre } = req.body;
+    const { nom, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, fff_nom, fff_team_id, fff_team_url } = req.body;
     const slug = nom.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     await db.pool.execute(
       `UPDATE equipes SET nom = ?, slug = ?, categorie_id = ?, division = ?, coach = ?, assistant = ?,
-       description = ?, horaires_entrainement = ?, terrain = ?, photo = ?, photo_equipe = ?, actif = ?, ordre = ? WHERE id = ?`,
-      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, id]
+       description = ?, horaires_entrainement = ?, terrain = ?, photo = ?, photo_equipe = ?, actif = ?, ordre = ?,
+       fff_nom = ?, fff_team_id = ?, fff_team_url = ? WHERE id = ?`,
+      [nom, slug, categorie_id, division, coach, assistant, description, horaires_entrainement, terrain, photo, photo_equipe, actif, ordre, fff_nom || null, fff_team_id || null, fff_team_url || null, id]
     );
     await logActivity(req.user.id, 'update', 'equipes', id, { nom });
     res.json({ success: true, message: 'Équipe mise à jour' });

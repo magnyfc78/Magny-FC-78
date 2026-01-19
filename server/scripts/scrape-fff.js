@@ -537,8 +537,24 @@ async function scrapeCalendrier(page) {
 // =====================================================
 
 async function findLocalTeam(teamName) {
-  const [teams] = await db.query('SELECT id, nom, slug, fff_team_id FROM equipes WHERE actif = 1');
+  const [teams] = await db.query('SELECT id, nom, slug, fff_team_id, fff_nom FROM equipes WHERE actif = 1');
 
+  // 1. PRIORITÉ: Matching exact par fff_nom (défini par l'admin)
+  const teamNameLower = teamName.toLowerCase().trim();
+  const exactMatch = teams.find(t => t.fff_nom && t.fff_nom.toLowerCase().trim() === teamNameLower);
+  if (exactMatch) {
+    log(`✓ Match exact fff_nom: "${teamName}" -> ${exactMatch.nom}`);
+    return exactMatch;
+  }
+
+  // 2. Matching partiel par fff_nom (contient le nom)
+  const partialMatch = teams.find(t => t.fff_nom && teamNameLower.includes(t.fff_nom.toLowerCase().trim()));
+  if (partialMatch) {
+    log(`✓ Match partiel fff_nom: "${teamName}" -> ${partialMatch.nom}`);
+    return partialMatch;
+  }
+
+  // 3. Fallback: Mapping par catégorie (anciennes correspondances)
   const normalized = teamName.toLowerCase()
     .replace(/magny\s*(fc\s*)?78?|f\.?c\.?/gi, '')
     .replace(/\s+/g, ' ')
@@ -569,11 +585,15 @@ async function findLocalTeam(teamName) {
   for (const [pattern, slugs] of Object.entries(mappings)) {
     if (normalized.includes(pattern) || teamName.toLowerCase().includes(pattern)) {
       const team = teams.find(t => slugs.includes(t.slug));
-      if (team) return team;
+      if (team) {
+        log(`⚠ Match par mapping (pas de fff_nom configuré): "${teamName}" -> ${team.nom}`);
+        return team;
+      }
     }
   }
 
-  return teams.find(t => t.slug === 'seniors-1') || null;
+  log(`✗ Aucune équipe trouvée pour: "${teamName}"`);
+  return null;
 }
 
 async function saveMatch(matchData, isResult = false) {

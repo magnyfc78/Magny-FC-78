@@ -463,7 +463,7 @@ async function loadEquipes() {
   await loadEquipesList();
   document.getElementById('equipes-list').innerHTML = equipes.length ? `
     <table class="table">
-      <thead><tr><th>Nom</th><th>Catégorie</th><th>Division</th><th>Coach</th><th>Joueurs</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Nom</th><th>Catégorie</th><th>Division</th><th>Coach</th><th>Joueurs</th><th>FFF</th><th>Actions</th></tr></thead>
       <tbody>
         ${equipes.map(e => `
           <tr>
@@ -472,6 +472,7 @@ async function loadEquipes() {
             <td>${e.division || '-'}</td>
             <td>${e.coach || '-'}</td>
             <td>${e.nb_joueurs || 0}</td>
+            <td>${e.fff_nom ? `<span class="badge badge-success" title="${e.fff_nom}">🔗 Lié</span>` : '<span class="badge badge-warning">Non lié</span>'}</td>
             <td>
               <button class="btn btn-sm" data-action="edit" data-type="equipe" data-id="${e.id}">✏️</button>
               <button class="btn btn-sm btn-danger" data-action="delete" data-type="equipes" data-id="${e.id}">🗑️</button>
@@ -492,7 +493,7 @@ async function loadMatchs() {
     matchs = res.data.matchs;
     document.getElementById('matchs-list').innerHTML = matchs.length ? `
       <table class="table">
-        <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>FFF</th><th>Actions</th></tr></thead>
         <tbody>
           ${matchs.map(m => `
             <tr>
@@ -502,6 +503,7 @@ async function loadMatchs() {
               <td>${m.competition || '-'}</td>
               <td>${m.statut === 'termine' ? `${m.score_domicile} - ${m.score_exterieur}` : '-'}</td>
               <td><span class="badge badge-${m.statut === 'termine' ? 'success' : m.statut === 'a_venir' ? 'info' : 'warning'}">${m.statut}</span></td>
+              <td>${m.fff_id ? '<span class="badge badge-primary" title="Synchronisé FFF">🔗</span>' : '-'}</td>
               <td>
                 <button class="btn btn-sm" data-action="edit" data-type="match" data-id="${m.id}">✏️</button>
                 <button class="btn btn-sm btn-danger" data-action="delete" data-type="matchs" data-id="${m.id}">🗑️</button>
@@ -1298,6 +1300,24 @@ function openModal(type, data = null) {
             <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
           </div>
         </div>
+        <div class="form-section-title" style="margin-top:20px;padding-top:15px;border-top:1px solid #e5e7eb;font-weight:600;color:#374151;">
+          🔗 Lien FFF (District des Yvelines)
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom FFF</label>
+          <input type="text" class="form-control" id="f-fff_nom" value="${data?.fff_nom || ''}" placeholder="Ex: MAGNY 78 FC - Seniors A">
+          <small style="color:#6b7280;font-size:12px;">Le nom exact de l'équipe tel qu'il apparaît sur dyf78.fff.fr</small>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ID FFF</label>
+            <input type="text" class="form-control" id="f-fff_team_id" value="${data?.fff_team_id || ''}" placeholder="Ex: 12345">
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL FFF</label>
+            <input type="text" class="form-control" id="f-fff_team_url" value="${data?.fff_team_url || ''}" placeholder="https://dyf78.fff.fr/...">
+          </div>
+        </div>
       `;
       break;
     case 'match':
@@ -1350,6 +1370,19 @@ function openModal(type, data = null) {
               <option value="reporte" ${data?.statut === 'reporte' ? 'selected' : ''}>Reporté</option>
             </select>
           </div>
+          ${data?.fff_id ? `
+          <div class="form-section-title" style="margin-top:20px;padding-top:15px;border-top:1px solid #e5e7eb;font-weight:600;color:#374151;">
+            🔗 Données FFF (synchronisées automatiquement)
+          </div>
+          <div class="fff-info" style="background:#f3f4f6;padding:12px;border-radius:8px;font-size:13px;">
+            <div style="margin-bottom:8px;"><strong>ID FFF:</strong> ${data.fff_id}</div>
+            ${data.fff_home_team ? `<div style="margin-bottom:8px;"><strong>Équipe Dom.:</strong> ${data.fff_home_team}</div>` : ''}
+            ${data.fff_away_team ? `<div style="margin-bottom:8px;"><strong>Équipe Ext.:</strong> ${data.fff_away_team}</div>` : ''}
+            ${data.fff_venue ? `<div style="margin-bottom:8px;"><strong>Lieu:</strong> ${data.fff_venue}</div>` : ''}
+            ${data.fff_url ? `<div style="margin-bottom:8px;"><strong>URL:</strong> <a href="${data.fff_url}" target="_blank" style="color:#2563eb;">${data.fff_url}</a></div>` : ''}
+            ${data.fff_synced_at ? `<div style="color:#6b7280;"><strong>Dernière sync:</strong> ${new Date(data.fff_synced_at).toLocaleString('fr-FR')}</div>` : ''}
+          </div>
+          ` : ''}
         ` : ''}
       `;
       break;
@@ -1694,7 +1727,11 @@ async function saveModal() {
         photo: getValue('f-photo') || null,
         photo_equipe: photoEquipePath,
         actif: getChecked('f-actif'),
-        ordre: parseInt(getValue('f-ordre')) || 0
+        ordre: parseInt(getValue('f-ordre')) || 0,
+        // Champs FFF
+        fff_nom: getValue('f-fff_nom') || null,
+        fff_team_id: getValue('f-fff_team_id') || null,
+        fff_team_url: getValue('f-fff_team_url') || null
       };
       endpoint = '/admin/equipes';
       break;
