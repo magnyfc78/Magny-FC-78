@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS fff_competitions (
 
 -- Ajouter la colonne competition_fff_id à la table matchs si elle n'existe pas
 ALTER TABLE matchs
-ADD COLUMN IF NOT EXISTS competition_fff_id VARCHAR(100) DEFAULT NULL AFTER fff_competition_id;
 ADD COLUMN competition_fff_id VARCHAR(100) DEFAULT NULL AFTER fff_competition_id;
 
 -- Mettre à jour la configuration FFF du club
