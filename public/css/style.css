@@ -668,6 +668,19 @@ nav a.active {
   font-weight: 400;
 }
 
+.match-teams .match-score {
+  background: var(--turquoise);
+  color: var(--bleu-fonce);
+  padding: 5px 15px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 20px;
+}
+
+.match-card.match-termine {
+  opacity: 0.85;
+}
+
 .match-meta {
   display: flex;
   align-items: center;
