@@ -152,6 +152,9 @@ async function updateScrapingLog(logId, data) {
   await db.query(`UPDATE fff_scraping_logs SET ${updates.join(', ')} WHERE id = ?`, params);
 }
 
+// Helper function to replace deprecated page.waitForTimeout
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Lancer le navigateur Puppeteer
 async function launchBrowser() {
   scraperLogger.info('Démarrage du navigateur Puppeteer...');
@@ -195,13 +198,14 @@ async function setupPage(browser) {
 // =====================================================
 async function scrapeResultats(page) {
   scraperLogger.info('Scraping des RÉSULTATS...');
+  scraperLogger.info(`URL: ${CONFIG.urls.resultats}`);
 
   await page.goto(CONFIG.urls.resultats, {
     waitUntil: 'networkidle2',
     timeout: CONFIG.timeout
   });
 
-  await page.waitForTimeout(3000);
+  await delay(3000);
 
   const resultats = await page.evaluate(() => {
     const matches = [];
@@ -289,13 +293,14 @@ async function scrapeResultats(page) {
 // =====================================================
 async function scrapeAgenda(page) {
   scraperLogger.info("Scraping de l'AGENDA...");
+  scraperLogger.info(`URL: ${CONFIG.urls.agenda}`);
 
   await page.goto(CONFIG.urls.agenda, {
     waitUntil: 'networkidle2',
     timeout: CONFIG.timeout
   });
 
-  await page.waitForTimeout(3000);
+  await delay(3000);
 
   const agenda = await page.evaluate(() => {
     const matches = [];
@@ -369,13 +374,14 @@ async function scrapeAgenda(page) {
 // =====================================================
 async function scrapeClassement(page) {
   scraperLogger.info('Scraping du CLASSEMENT...');
+  scraperLogger.info(`URL: ${CONFIG.urls.classement}`);
 
   await page.goto(CONFIG.urls.classement, {
     waitUntil: 'networkidle2',
     timeout: CONFIG.timeout
   });
 
-  await page.waitForTimeout(3000);
+  await delay(3000);
 
   const classements = await page.evaluate(() => {
     const standings = [];
@@ -452,13 +458,14 @@ async function scrapeClassement(page) {
 // =====================================================
 async function scrapeCalendrier(page) {
   scraperLogger.info('Scraping du CALENDRIER complet...');
+  scraperLogger.info(`URL: ${CONFIG.urls.calendrier}`);
 
   await page.goto(CONFIG.urls.calendrier, {
     waitUntil: 'networkidle2',
     timeout: CONFIG.timeout
   });
 
-  await page.waitForTimeout(3000);
+  await delay(3000);
 
   const calendrier = await page.evaluate(() => {
     const matches = [];
