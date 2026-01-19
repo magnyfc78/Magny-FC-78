@@ -14,6 +14,7 @@
  *   npm run scrape:fff           # Exécution normale
  *   npm run scrape:fff:dry       # Mode test (pas d'écriture en base)
  *   node server/scripts/scrape-fff.js --verbose  # Mode détaillé
+ *   node server/scripts/scrape-fff.js --debug    # Mode debug (capture screenshots + HTML)
  *   node server/scripts/scrape-fff.js --tab=resultats  # Scraper un onglet spécifique
  */
 
@@ -52,8 +53,12 @@ const CONFIG = {
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const VERBOSE = args.includes('--verbose');
+const DEBUG = args.includes('--debug');
 const TAB_ARG = args.find(a => a.startsWith('--tab='));
 const SPECIFIC_TAB = TAB_ARG ? TAB_ARG.split('=')[1] : null;
+
+// Dossier pour les fichiers de debug
+const DEBUG_DIR = path.join(ROOT_DIR, 'logs', 'scraper-debug');
 
 // Logger personnalisé pour le scraping
 const scraperLogger = {
@@ -155,6 +160,53 @@ async function updateScrapingLog(logId, data) {
 // Helper function to replace deprecated page.waitForTimeout
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Sauvegarder les infos de debug (screenshot + HTML)
+async function saveDebugInfo(page, tabName) {
+  if (!DEBUG) return;
+
+  try {
+    // Créer le dossier de debug si nécessaire
+    if (!fs.existsSync(DEBUG_DIR)) {
+      fs.mkdirSync(DEBUG_DIR, { recursive: true });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+    // Sauvegarder la capture d'écran
+    const screenshotPath = path.join(DEBUG_DIR, `${tabName}-${timestamp}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    scraperLogger.info(`[DEBUG] Screenshot sauvegardé: ${screenshotPath}`);
+
+    // Sauvegarder le HTML
+    const htmlPath = path.join(DEBUG_DIR, `${tabName}-${timestamp}.html`);
+    const html = await page.content();
+    fs.writeFileSync(htmlPath, html);
+    scraperLogger.info(`[DEBUG] HTML sauvegardé: ${htmlPath}`);
+
+    // Afficher les classes et IDs trouvés sur la page
+    const pageInfo = await page.evaluate(() => {
+      const info = {
+        tables: document.querySelectorAll('table').length,
+        divWithMatch: document.querySelectorAll('[class*="match"]').length,
+        divWithResult: document.querySelectorAll('[class*="result"]').length,
+        divWithRencontre: document.querySelectorAll('[class*="rencontre"]').length,
+        allClasses: [...new Set([...document.querySelectorAll('*')].map(el => el.className).filter(c => c && typeof c === 'string'))].slice(0, 50)
+      };
+      return info;
+    });
+
+    scraperLogger.info(`[DEBUG] Page info pour ${tabName}:`);
+    scraperLogger.info(`  - Tables trouvées: ${pageInfo.tables}`);
+    scraperLogger.info(`  - Éléments avec 'match': ${pageInfo.divWithMatch}`);
+    scraperLogger.info(`  - Éléments avec 'result': ${pageInfo.divWithResult}`);
+    scraperLogger.info(`  - Éléments avec 'rencontre': ${pageInfo.divWithRencontre}`);
+    scraperLogger.info(`  - Classes trouvées: ${pageInfo.allClasses.join(', ')}`);
+
+  } catch (err) {
+    scraperLogger.error(`[DEBUG] Erreur sauvegarde debug: ${err.message}`);
+  }
+}
+
 // Lancer le navigateur Puppeteer
 async function launchBrowser() {
   scraperLogger.info('Démarrage du navigateur Puppeteer...');
@@ -206,6 +258,7 @@ async function scrapeResultats(page) {
   });
 
   await delay(3000);
+  await saveDebugInfo(page, 'resultats');
 
   const resultats = await page.evaluate(() => {
     const matches = [];
@@ -301,6 +354,7 @@ async function scrapeAgenda(page) {
   });
 
   await delay(3000);
+  await saveDebugInfo(page, 'agenda');
 
   const agenda = await page.evaluate(() => {
     const matches = [];
@@ -382,6 +436,7 @@ async function scrapeClassement(page) {
   });
 
   await delay(3000);
+  await saveDebugInfo(page, 'classement');
 
   const classements = await page.evaluate(() => {
     const standings = [];
@@ -466,6 +521,7 @@ async function scrapeCalendrier(page) {
   });
 
   await delay(3000);
+  await saveDebugInfo(page, 'calendrier');
 
   const calendrier = await page.evaluate(() => {
     const matches = [];
