@@ -34,3 +34,7 @@ build/
 # Uploads (si vous avez des fichiers uploadés localement)
 uploads/
 !uploads/.gitkeep
+
+#package
+package-lock.json
+package.json
