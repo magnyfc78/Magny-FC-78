@@ -542,39 +542,160 @@ const views = {
     `;
   },
 
-  // Page calendrier
+  // Page calendrier avec 4 onglets (comme dyf78.fff.fr)
   async calendrier() {
-    const res = await api.getMatchs('tous', 30);
-    const matchs = res?.data?.matchs || [];
+    // Charger toutes les données en parallèle
+    const [resultatsRes, agendaRes, classementsRes] = await Promise.all([
+      api.getMatchs('termine', 50),
+      api.getMatchs('a_venir', 50),
+      fetch('/api/classements').then(r => r.json()).catch(() => ({ success: false, data: { classements: [] } }))
+    ]);
+
+    const resultats = resultatsRes?.data?.matchs || [];
+    const agenda = agendaRes?.data?.matchs || [];
+    const allMatchs = [...resultats, ...agenda].sort((a, b) => new Date(a.date_match) - new Date(b.date_match));
+    const classements = classementsRes?.success ? classementsRes.data.classements : [];
+
+    // Grouper les classements par compétition
+    const classementsByCompetition = {};
+    classements.forEach(c => {
+      if (!classementsByCompetition[c.competition_nom]) {
+        classementsByCompetition[c.competition_nom] = [];
+      }
+      classementsByCompetition[c.competition_nom].push(c);
+    });
+
+    // Stocker les données pour le filtrage par onglet
+    window.calendrierData = { resultats, agenda, allMatchs, classementsByCompetition };
+
+    // Fonction pour rendre une liste de matchs
+    const renderMatchList = (matchs, showScore = false) => {
+      if (!matchs.length) return '<p class="text-center text-muted">Aucun match</p>';
+      return matchs.map(m => `
+        <div class="match-card ${showScore && m.statut === 'termine' ? 'match-termine' : ''}">
+          <div class="match-date">
+            <div class="day">${m.date_formatee?.split(' ')[0] || '-'}</div>
+            <div class="month">${m.date_formatee?.split(' ')[1] || '-'}</div>
+          </div>
+          <div class="match-content">
+            <div class="match-teams">
+              <span class="team ${m.equipe_dom?.includes('Magny') ? 'highlight' : ''}">${m.equipe_dom || 'Équipe'}</span>
+              ${showScore && m.statut === 'termine' ? `
+                <span class="match-score">${m.score_dom ?? '-'} - ${m.score_ext ?? '-'}</span>
+              ` : '<span class="vs">VS</span>'}
+              <span class="team ${m.equipe_ext?.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext || 'Adversaire'}</span>
+            </div>
+            <div class="match-meta">
+              ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
+              <span class="match-time">${m.heure || '15:00'}</span>
+              <span class="match-competition">${m.competition || 'Match'}</span>
+              ${showScore && m.resultat ? `<span class="match-result match-result-${m.resultat}">${m.resultat === 'victoire' ? 'V' : m.resultat === 'nul' ? 'N' : 'D'}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    // Fonction pour rendre les classements
+    const renderClassements = () => {
+      if (Object.keys(classementsByCompetition).length === 0) {
+        return '<p class="text-center text-muted">Aucun classement disponible</p>';
+      }
+      return Object.entries(classementsByCompetition).map(([compName, teams]) => `
+        <div class="classement-group">
+          <h3 class="classement-title">${compName}</h3>
+          <div class="classement-table-wrapper">
+            <table class="classement-table">
+              <thead>
+                <tr>
+                  <th>Pos</th>
+                  <th>Équipe</th>
+                  <th>Pts</th>
+                  <th>J</th>
+                  <th>G</th>
+                  <th>N</th>
+                  <th>P</th>
+                  <th>+/-</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${teams.sort((a, b) => a.position - b.position).map(t => `
+                  <tr class="${/magny/i.test(t.equipe_nom) ? 'highlight-row' : ''}">
+                    <td class="position">${t.position}</td>
+                    <td class="team-name">${t.equipe_nom}</td>
+                    <td class="points"><strong>${t.points}</strong></td>
+                    <td>${t.joues}</td>
+                    <td>${t.gagnes}</td>
+                    <td>${t.nuls}</td>
+                    <td>${t.perdus}</td>
+                    <td class="${t.difference > 0 ? 'positive' : t.difference < 0 ? 'negative' : ''}">${t.difference > 0 ? '+' : ''}${t.difference}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('');
+    };
 
     return `
       <section class="page-header">
-        <h1>Calendrier</h1>
-        <p>Tous les matchs de la saison</p>
+        <h1>Calendrier & Résultats</h1>
+        <p>Saison 2024-2025</p>
       </section>
-      
-      <section class="section">
-        <div class="container" style="max-width: 900px;">
-          ${matchs.map(m => `
-            <div class="match-card">
-              <div class="match-date">
-                <div class="day">${m.date_formatee.split(' ')[0]}</div>
-                <div class="month">${m.date_formatee.split(' ')[1]}</div>
-              </div>
-              <div class="match-content">
-                <div class="match-teams">
-                  <span class="team ${m.equipe_dom.includes('Magny') ? 'highlight' : ''}">${m.equipe_dom}</span>
-                  <span class="vs">VS</span>
-                  <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
-                </div>
-                <div class="match-meta">
-                  ${m.categorie ? `<span class="match-category">${m.categorie}</span>` : ''}
-                  <span class="match-time">${m.heure}</span>
-                  <span class="match-competition">${m.competition || 'Match'}</span>
-                </div>
+
+      <section class="section calendrier-section">
+        <div class="container">
+          <!-- Onglets -->
+          <div class="calendrier-tabs" id="calendrier-tabs">
+            <button class="tab-btn active" data-tab="resultats">Résultats</button>
+            <button class="tab-btn" data-tab="agenda">Agenda</button>
+            <button class="tab-btn" data-tab="classement">Classement</button>
+            <button class="tab-btn" data-tab="calendrier">Calendrier</button>
+          </div>
+
+          <!-- Contenu des onglets -->
+          <div class="calendrier-content" id="calendrier-content">
+            <!-- Résultats (affiché par défaut) -->
+            <div class="tab-pane active" id="tab-resultats">
+              <h2 class="tab-section-title">Derniers Résultats</h2>
+              <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
+                ${renderMatchList(resultats.slice(0, 20), true)}
               </div>
             </div>
-          `).join('') || '<p class="text-center">Aucun match programmé</p>'}
+
+            <!-- Agenda -->
+            <div class="tab-pane" id="tab-agenda">
+              <h2 class="tab-section-title">Matchs à Venir</h2>
+              <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
+                ${renderMatchList(agenda.slice(0, 20), false)}
+              </div>
+            </div>
+
+            <!-- Classement -->
+            <div class="tab-pane" id="tab-classement">
+              <h2 class="tab-section-title">Classements</h2>
+              <div class="classements-container">
+                ${renderClassements()}
+              </div>
+            </div>
+
+            <!-- Calendrier complet -->
+            <div class="tab-pane" id="tab-calendrier">
+              <h2 class="tab-section-title">Calendrier Complet</h2>
+              <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
+                ${renderMatchList(allMatchs, true)}
+              </div>
+            </div>
+          </div>
+
+          <!-- Dernière mise à jour -->
+          <div class="calendrier-footer">
+            <p class="sync-info">Données synchronisées automatiquement depuis la FFF</p>
+            <a href="https://dyf78.fff.fr/recherche-clubs?tab=resultats&scl=25702" target="_blank" rel="noopener" class="fff-link">
+              Voir sur le site du District →
+            </a>
+          </div>
         </div>
       </section>
     `;
@@ -1157,6 +1278,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       case 'partenaires':
         filterPartenaires(category);
         break;
+    }
+  });
+
+  // Event delegation for calendrier tabs
+  document.addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('.tab-btn[data-tab]');
+    if (!tabBtn) return;
+
+    const tabId = tabBtn.dataset.tab;
+    const tabsContainer = tabBtn.closest('.calendrier-tabs');
+    const contentContainer = document.getElementById('calendrier-content');
+
+    if (!contentContainer) return;
+
+    // Update active tab button
+    tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    tabBtn.classList.add('active');
+
+    // Update active tab pane
+    contentContainer.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    const targetPane = document.getElementById(`tab-${tabId}`);
+    if (targetPane) {
+      targetPane.classList.add('active');
     }
   });
 

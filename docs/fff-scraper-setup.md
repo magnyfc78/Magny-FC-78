@@ -1,6 +1,20 @@
 # Configuration du Scraper FFF - Magny FC 78
 
-Ce document explique comment configurer et utiliser le système de scraping automatique des matchs depuis le site de la FFF.
+Ce document explique comment configurer et utiliser le système de scraping automatique des données depuis le site du District des Yvelines de Football (DYF78).
+
+## Source des données
+
+- **URL**: https://dyf78.fff.fr/recherche-clubs?subtab=agenda&tab=resultats&scl=25702
+- **Club ID**: 25702 (Magny 78 F.C.)
+
+## Données récupérées
+
+Le scraper récupère 4 types de données (comme sur le site dyf78.fff.fr):
+
+1. **Résultats** - Matchs terminés avec scores
+2. **Agenda** - Matchs à venir
+3. **Classement** - Classements des compétitions
+4. **Calendrier** - Vue complète de la saison
 
 ## Prérequis
 

@@ -28,9 +28,17 @@ const { spawn } = require('child_process');
 
 // Configuration des tâches
 const TASKS = {
-  scrapeFFF: {
-    name: 'Scraping FFF',
+  scrapeFFFMatin: {
+    name: 'Scraping FFF (Matin)',
     schedule: '0 6 * * *', // Tous les jours à 6h00
+    script: path.join(__dirname, 'scrape-fff.js'),
+    enabled: true,
+    timeout: 5 * 60 * 1000, // 5 minutes max
+    retries: 2
+  },
+  scrapeFFFSoir: {
+    name: 'Scraping FFF (Soir)',
+    schedule: '0 18 * * *', // Tous les jours à 18h00
     script: path.join(__dirname, 'scrape-fff.js'),
     enabled: true,
     timeout: 5 * 60 * 1000, // 5 minutes max

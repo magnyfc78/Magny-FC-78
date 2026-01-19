@@ -1898,3 +1898,278 @@ a.partenaire-clickable:hover::after {
 .equipe-card img {
   cursor: zoom-in;
 }
+
+/* =====================================================
+   CALENDRIER & RÉSULTATS - Onglets style FFF
+   ===================================================== */
+.calendrier-section {
+  padding-bottom: 60px;
+}
+
+.calendrier-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  background: var(--gris-clair);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.tab-btn {
+  padding: 12px 30px;
+  font-family: var(--font-titre);
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: transparent;
+  border: none;
+  color: var(--gris-fonce);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.tab-btn:hover {
+  background: rgba(26, 39, 68, 0.1);
+}
+
+.tab-btn.active {
+  background: var(--bleu-fonce);
+  color: var(--blanc);
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-section-title {
+  font-family: var(--font-titre);
+  font-size: 1.5rem;
+  color: var(--bleu-fonce);
+  margin-bottom: 30px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Match avec score */
+.match-card.match-termine .match-score {
+  font-family: var(--font-titre);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--bleu-fonce);
+  background: var(--or);
+  padding: 5px 15px;
+  border-radius: 4px;
+}
+
+.match-result {
+  font-family: var(--font-titre);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.match-result-victoire {
+  background: #10b981;
+  color: white;
+}
+
+.match-result-nul {
+  background: #f59e0b;
+  color: white;
+}
+
+.match-result-defaite {
+  background: #ef4444;
+  color: white;
+}
+
+/* =====================================================
+   CLASSEMENT TABLE
+   ===================================================== */
+.classements-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.classement-group {
+  margin-bottom: 40px;
+  background: var(--blanc);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.classement-title {
+  font-family: var(--font-titre);
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--blanc);
+  background: var(--bleu-fonce);
+  padding: 15px 20px;
+  margin: 0;
+}
+
+.classement-table-wrapper {
+  overflow-x: auto;
+}
+
+.classement-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.classement-table th {
+  background: var(--gris-clair);
+  color: var(--bleu-fonce);
+  font-family: var(--font-titre);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 2px solid var(--or);
+}
+
+.classement-table th:nth-child(2) {
+  text-align: left;
+  padding-left: 15px;
+}
+
+.classement-table td {
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.classement-table td.team-name {
+  text-align: left;
+  padding-left: 15px;
+  font-weight: 500;
+}
+
+.classement-table td.position {
+  font-family: var(--font-titre);
+  font-weight: 700;
+  color: var(--bleu-fonce);
+}
+
+.classement-table td.points strong {
+  color: var(--bleu-fonce);
+  font-size: 1.1rem;
+}
+
+.classement-table td.positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.classement-table td.negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.classement-table tbody tr:hover {
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.classement-table tbody tr.highlight-row {
+  background: rgba(201, 162, 39, 0.15);
+}
+
+.classement-table tbody tr.highlight-row:hover {
+  background: rgba(201, 162, 39, 0.25);
+}
+
+.classement-table tbody tr.highlight-row td.team-name {
+  color: var(--bleu-fonce);
+  font-weight: 700;
+}
+
+/* Footer calendrier */
+.calendrier-footer {
+  margin-top: 50px;
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid #eee;
+}
+
+.sync-info {
+  color: var(--gris);
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+.fff-link {
+  color: var(--bleu-fonce);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.fff-link:hover {
+  color: var(--or);
+}
+
+/* Responsive calendrier */
+@media (max-width: 768px) {
+  .calendrier-tabs {
+    gap: 3px;
+    padding: 5px;
+  }
+
+  .tab-btn {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .classement-table {
+    font-size: 0.85rem;
+  }
+
+  .classement-table th,
+  .classement-table td {
+    padding: 8px 5px;
+  }
+
+  .classement-title {
+    font-size: 1rem;
+    padding: 12px 15px;
+  }
+
+  .tab-section-title {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .classement-table th:nth-child(n+5),
+  .classement-table td:nth-child(n+5) {
+    display: none;
+  }
+}

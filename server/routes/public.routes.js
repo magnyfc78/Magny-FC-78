@@ -422,12 +422,111 @@ router.get('/pages/:slug', async (req, res, next) => {
       'SELECT titre, contenu, meta_description, image FROM pages WHERE slug = ? AND publie = 1',
       [req.params.slug]
     );
-    
+
     if (!pages.length) {
       return res.status(404).json({ success: false, error: 'Page non trouvée' });
     }
-    
+
     res.json({ success: true, data: { page: pages[0] } });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// CLASSEMENTS FFF
+// =====================================================
+router.get('/classements', async (req, res, next) => {
+  try {
+    const { competition, equipe_id } = req.query;
+
+    let sql = `
+      SELECT c.*, e.nom as equipe_locale_nom
+      FROM classements c
+      LEFT JOIN equipes e ON c.equipe_id = e.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (competition) {
+      sql += ' AND c.competition_id = ?';
+      params.push(competition);
+    }
+
+    if (equipe_id) {
+      sql += ' AND c.equipe_id = ?';
+      params.push(parseInt(equipe_id));
+    }
+
+    sql += ' ORDER BY c.competition_nom, c.position';
+
+    const classements = await db.query(sql, params);
+
+    res.json({
+      success: true,
+      data: {
+        classements,
+        total: classements.length
+      }
+    });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// COMPÉTITIONS FFF
+// =====================================================
+router.get('/competitions', async (req, res, next) => {
+  try {
+    const competitions = await db.query(`
+      SELECT DISTINCT competition_id, competition_nom
+      FROM classements
+      ORDER BY competition_nom
+    `);
+
+    res.json({
+      success: true,
+      data: { competitions }
+    });
+  } catch (error) { next(error); }
+});
+
+// =====================================================
+// STATISTIQUES SCRAPING FFF
+// =====================================================
+router.get('/fff/status', async (req, res, next) => {
+  try {
+    // Dernière synchronisation
+    const [lastSync] = await db.pool.execute(`
+      SELECT started_at, finished_at, status, matches_found, matches_inserted, matches_updated
+      FROM fff_scraping_logs
+      ORDER BY started_at DESC
+      LIMIT 1
+    `);
+
+    // Statistiques matchs FFF
+    const statsResult = await db.query(`
+      SELECT
+        COUNT(*) as total_matchs,
+        SUM(CASE WHEN fff_id IS NOT NULL THEN 1 ELSE 0 END) as matchs_fff,
+        SUM(CASE WHEN statut = 'a_venir' THEN 1 ELSE 0 END) as matchs_a_venir,
+        SUM(CASE WHEN statut = 'termine' THEN 1 ELSE 0 END) as matchs_termines,
+        MAX(fff_synced_at) as derniere_synchro
+      FROM matchs
+    `);
+
+    // Statistiques classements
+    const classementStats = await db.query(`
+      SELECT COUNT(DISTINCT competition_id) as nb_competitions, COUNT(*) as nb_lignes
+      FROM classements
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        lastSync: lastSync[0] || null,
+        matchStats: statsResult[0] || {},
+        classementStats: classementStats[0] || {},
+        source: 'https://dyf78.fff.fr'
+      }
+    });
   } catch (error) { next(error); }
 });
 
