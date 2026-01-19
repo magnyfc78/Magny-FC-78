@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS fff_competitions (
 -- Ajouter la colonne competition_fff_id à la table matchs si elle n'existe pas
 ALTER TABLE matchs
 ADD COLUMN IF NOT EXISTS competition_fff_id VARCHAR(100) DEFAULT NULL AFTER fff_competition_id;
+ADD COLUMN competition_fff_id VARCHAR(100) DEFAULT NULL AFTER fff_competition_id;
 
 -- Mettre à jour la configuration FFF du club
 INSERT INTO site_config (cle, valeur, type, groupe, label) VALUES
@@ -66,5 +67,3 @@ INSERT INTO menu_items (label, url, ordre, actif)
 SELECT 'CALENDRIER', '/calendrier', 6, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM menu_items WHERE url = '/calendrier');
 
--- Mettre à jour l'ordre du menu Contact
-UPDATE menu_items SET ordre = 7 WHERE url = '/contact' AND ordre <= 6;
