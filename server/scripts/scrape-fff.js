@@ -943,14 +943,14 @@ async function findLocalTeam(teamName) {
   const teamNameLower = teamName.toLowerCase().trim();
   const exactMatch = teams.find(t => t.fff_nom && t.fff_nom.toLowerCase().trim() === teamNameLower);
   if (exactMatch) {
-    log(`✓ Match exact fff_nom: "${teamName}" -> ${exactMatch.nom}`);
+    scraperLogger.debug(`✓ Match exact fff_nom: "${teamName}" -> ${exactMatch.nom}`);
     return exactMatch;
   }
 
   // 2. Matching partiel par fff_nom (contient le nom)
   const partialMatch = teams.find(t => t.fff_nom && teamNameLower.includes(t.fff_nom.toLowerCase().trim()));
   if (partialMatch) {
-    log(`✓ Match partiel fff_nom: "${teamName}" -> ${partialMatch.nom}`);
+    scraperLogger.debug(`✓ Match partiel fff_nom: "${teamName}" -> ${partialMatch.nom}`);
     return partialMatch;
   }
 
@@ -986,13 +986,13 @@ async function findLocalTeam(teamName) {
     if (normalized.includes(pattern) || teamName.toLowerCase().includes(pattern)) {
       const team = teams.find(t => slugs.includes(t.slug));
       if (team) {
-        log(`⚠ Match par mapping (pas de fff_nom configuré): "${teamName}" -> ${team.nom}`);
+        scraperLogger.debug(`⚠ Match par mapping (pas de fff_nom configuré): "${teamName}" -> ${team.nom}`);
         return team;
       }
     }
   }
 
-  log(`✗ Aucune équipe trouvée pour: "${teamName}"`);
+  scraperLogger.debug(`✗ Aucune équipe trouvée pour: "${teamName}"`);
   return null;
 }
 
