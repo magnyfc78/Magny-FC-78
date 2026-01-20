@@ -798,6 +798,8 @@ async function scrapeCalendrier(page) {
       // Récupérer tous les matchs de cette équipe (passés et futurs)
       const matches = await page.evaluate((teamName, monthsMap) => {
         const results = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         // Chercher les matchs avec app-confrontation (même structure que résultats/agenda)
         const confrontations = document.querySelectorAll('app-confrontation');
@@ -829,6 +831,7 @@ async function scrapeCalendrier(page) {
 
             // Date et heure
             const dateEl = el.querySelector('.date');
+            let matchDate = null;
             if (dateEl) {
               const dateText = dateEl.innerText;
               const dateMatch = dateText.match(/(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+(\d{4})/i);
@@ -837,6 +840,7 @@ async function scrapeCalendrier(page) {
                 const month = monthsMap[dateMatch[2].toLowerCase()] || '01';
                 const year = dateMatch[3];
                 match.date = `${year}-${month}-${day}`;
+                matchDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
               }
 
               const timeMatch = dateText.match(/(\d{1,2})[hH](\d{2})/);
@@ -845,24 +849,44 @@ async function scrapeCalendrier(page) {
               }
             }
 
+            // Fonction pour nettoyer le nom d'équipe (enlever EQUIPE XX à la fin)
+            const cleanTeamName = (text) => {
+              return text
+                .replace(/\s+EQUIPE\s*\d+\s*$/i, '')  // Enlever "EQUIPE 21" etc. à la fin
+                .replace(/\s+\d+\s*$/, '')  // Enlever les numéros isolés à la fin
+                .trim();
+            };
+
+            // Chercher le score dans un élément dédié (pas dans le nom d'équipe)
+            const scoreContainer = el.querySelector('.score, .resultat, .scores');
+            let hasRealScore = false;
+
+            if (scoreContainer) {
+              const scoreText = scoreContainer.innerText.trim();
+              // Format attendu: "2 - 1" ou "2-1" ou juste des chiffres séparés
+              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
+              if (scoreMatch) {
+                match.scoreHome = parseInt(scoreMatch[1]);
+                match.scoreAway = parseInt(scoreMatch[2]);
+                hasRealScore = true;
+              }
+            }
+
             // Équipe domicile (equipe1)
             const equipe1 = el.querySelector('.equipe1 .name');
             if (equipe1) {
               const text = equipe1.innerText.trim();
-              // Format possible: "NOM ÉQUIPE   SCORE" ou juste "NOM ÉQUIPE"
-              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)\s*$/);
-              if (scoreMatch) {
-                match.homeTeam = scoreMatch[1].trim();
-                match.scoreHome = parseInt(scoreMatch[2]);
-              } else {
-                // Chercher le score dans un élément séparé
-                const scoreEl = el.querySelector('.equipe1 .score, .equipe1 .resultat');
+              match.homeTeam = cleanTeamName(text);
+
+              // Si pas de score trouvé dans le container dédié, chercher dans .equipe1 .score
+              if (!hasRealScore) {
+                const scoreEl = el.querySelector('.equipe1 .score');
                 if (scoreEl) {
-                  match.homeTeam = text.trim();
-                  const score = parseInt(scoreEl.innerText.trim());
-                  if (!isNaN(score)) match.scoreHome = score;
-                } else {
-                  match.homeTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                  const scoreText = scoreEl.innerText.trim();
+                  // Vérifier que c'est un score valide (0-99) et pas un numéro d'équipe
+                  if (/^\d{1,2}$/.test(scoreText) && parseInt(scoreText) < 20) {
+                    match.scoreHome = parseInt(scoreText);
+                  }
                 }
               }
             }
@@ -871,18 +895,16 @@ async function scrapeCalendrier(page) {
             const equipe2 = el.querySelector('.equipe2 .name');
             if (equipe2) {
               const text = equipe2.innerText.trim();
-              const scoreMatch = text.match(/^(.+?)\s{2,}(\d+)\s*$/);
-              if (scoreMatch) {
-                match.awayTeam = scoreMatch[1].trim();
-                match.scoreAway = parseInt(scoreMatch[2]);
-              } else {
-                const scoreEl = el.querySelector('.equipe2 .score, .equipe2 .resultat');
+              match.awayTeam = cleanTeamName(text);
+
+              // Si pas de score trouvé dans le container dédié, chercher dans .equipe2 .score
+              if (!hasRealScore) {
+                const scoreEl = el.querySelector('.equipe2 .score');
                 if (scoreEl) {
-                  match.awayTeam = text.trim();
-                  const score = parseInt(scoreEl.innerText.trim());
-                  if (!isNaN(score)) match.scoreAway = score;
-                } else {
-                  match.awayTeam = text.replace(/\s+\d+\s*$/, '').trim();
+                  const scoreText = scoreEl.innerText.trim();
+                  if (/^\d{1,2}$/.test(scoreText) && parseInt(scoreText) < 20) {
+                    match.scoreAway = parseInt(scoreText);
+                  }
                 }
               }
             }
@@ -893,9 +915,17 @@ async function scrapeCalendrier(page) {
               match.forfait = forfait.innerText.trim();
             }
 
-            // Déterminer le statut (terminé si scores présents)
-            if (match.scoreHome !== null || match.scoreAway !== null) {
-              match.statut = 'termine';
+            // Déterminer le statut basé sur la DATE (pas les scores)
+            // Un match est terminé si sa date est dans le passé
+            if (matchDate) {
+              if (matchDate < today) {
+                match.statut = 'termine';
+              } else {
+                match.statut = 'a_venir';
+                // Les matchs futurs ne doivent pas avoir de score
+                match.scoreHome = null;
+                match.scoreAway = null;
+              }
             }
 
             // Ajouter uniquement si on a les deux équipes
@@ -936,63 +966,98 @@ async function scrapeCalendrier(page) {
 // SAUVEGARDE DES DONNÉES
 // =====================================================
 
-async function findLocalTeam(teamName) {
+async function findLocalTeam(competitionOrTeamName) {
   const [teams] = await db.query('SELECT id, nom, slug, fff_team_id, fff_nom FROM equipes WHERE actif = 1');
 
+  const inputLower = competitionOrTeamName.toLowerCase().trim();
+
   // 1. PRIORITÉ: Matching exact par fff_nom (défini par l'admin)
-  const teamNameLower = teamName.toLowerCase().trim();
-  const exactMatch = teams.find(t => t.fff_nom && t.fff_nom.toLowerCase().trim() === teamNameLower);
+  const exactMatch = teams.find(t => t.fff_nom && t.fff_nom.toLowerCase().trim() === inputLower);
   if (exactMatch) {
-    scraperLogger.debug(`✓ Match exact fff_nom: "${teamName}" -> ${exactMatch.nom}`);
+    scraperLogger.debug(`✓ Match exact fff_nom: "${competitionOrTeamName}" -> ${exactMatch.nom}`);
     return exactMatch;
   }
 
-  // 2. Matching partiel par fff_nom (contient le nom)
-  const partialMatch = teams.find(t => t.fff_nom && teamNameLower.includes(t.fff_nom.toLowerCase().trim()));
+  // 2. Matching partiel par fff_nom (l'input contient le fff_nom)
+  const partialMatch = teams.find(t => t.fff_nom && inputLower.includes(t.fff_nom.toLowerCase().trim()));
   if (partialMatch) {
-    scraperLogger.debug(`✓ Match partiel fff_nom: "${teamName}" -> ${partialMatch.nom}`);
+    scraperLogger.debug(`✓ Match partiel fff_nom: "${competitionOrTeamName}" -> ${partialMatch.nom}`);
     return partialMatch;
   }
 
-  // 3. Fallback: Mapping par catégorie (anciennes correspondances)
-  const normalized = teamName.toLowerCase()
-    .replace(/magny\s*(fc\s*)?78?|f\.?c\.?/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // 3. Extraire la catégorie depuis le nom de compétition
+  // Format typique: "U14 N2 POULE D", "SENIORS D4 POULE C", "VETERANS D2 POULE B", "CRITERIUM SENIORS F À 8"
 
+  // Patterns pour extraire la catégorie (au début ou après "CRITERIUM")
+  const categoryPatterns = [
+    /^(U\d+)/i,                           // U14, U16, U18, etc.
+    /^(SENIORS?)/i,                       // SENIORS ou SENIOR
+    /^(VETERANS?|VÉTÉRANS?)/i,           // VETERANS
+    /CRITERIUM\s+(SENIORS?\s*F)/i,        // CRITERIUM SENIORS F
+    /CRITERIUM[^U]*(U\d+)/i,              // CRITERIUM ... U13, U11, U10
+    /(SENIORS?\s*F)/i,                    // SENIORS F (féminines)
+  ];
+
+  let extractedCategory = null;
+  for (const pattern of categoryPatterns) {
+    const match = inputLower.match(pattern);
+    if (match) {
+      extractedCategory = match[1].toLowerCase().trim();
+      break;
+    }
+  }
+
+  // Mappings catégorie -> slugs d'équipes locales
   const mappings = {
+    'seniors': ['seniors-1', 'seniors-2'],
     'senior': ['seniors-1', 'seniors-2'],
+    'seniors f': ['seniors-feminines'],
+    'senior f': ['seniors-feminines'],
     'u19': ['u19'],
-    'u18': ['u19'],
+    'u18': ['u18', 'u19'],
     'u17': ['u17'],
-    'u16': ['u17'],
+    'u16': ['u16', 'u17'],
     'u15': ['u15'],
-    'u14': ['u15'],
+    'u14': ['u14', 'u15'],
     'u13': ['u13'],
-    'u12': ['u13'],
+    'u12': ['u12', 'u13'],
     'u11': ['u11'],
-    'u10': ['u11'],
+    'u10': ['u10', 'u11'],
     'u9': ['u9'],
-    'u8': ['u9'],
+    'u8': ['u8', 'u9'],
     'u7': ['u7'],
-    'féminin': ['seniors-feminines'],
-    'feminin': ['seniors-feminines'],
-    'fémin': ['seniors-feminines'],
+    'veterans': ['veterans-1', 'veterans-2'],
     'veteran': ['veterans-1', 'veterans-2'],
-    'vétéran': ['veterans-1', 'veterans-2']
+    'vétérans': ['veterans-1', 'veterans-2'],
+    'vétéran': ['veterans-1', 'veterans-2'],
+    'féminin': ['seniors-feminines'],
+    'feminin': ['seniors-feminines']
   };
 
-  for (const [pattern, slugs] of Object.entries(mappings)) {
-    if (normalized.includes(pattern) || teamName.toLowerCase().includes(pattern)) {
+  // Si on a extrait une catégorie, chercher dans les mappings
+  if (extractedCategory) {
+    const slugs = mappings[extractedCategory];
+    if (slugs) {
       const team = teams.find(t => slugs.includes(t.slug));
       if (team) {
-        scraperLogger.debug(`⚠ Match par mapping (pas de fff_nom configuré): "${teamName}" -> ${team.nom}`);
+        scraperLogger.debug(`✓ Match par catégorie extraite "${extractedCategory}": "${competitionOrTeamName}" -> ${team.nom}`);
         return team;
       }
     }
   }
 
-  scraperLogger.debug(`✗ Aucune équipe trouvée pour: "${teamName}"`);
+  // 4. Fallback: chercher n'importe quel pattern connu dans le texte
+  for (const [pattern, slugs] of Object.entries(mappings)) {
+    if (inputLower.includes(pattern)) {
+      const team = teams.find(t => slugs.includes(t.slug));
+      if (team) {
+        scraperLogger.debug(`⚠ Match par pattern "${pattern}": "${competitionOrTeamName}" -> ${team.nom}`);
+        return team;
+      }
+    }
+  }
+
+  scraperLogger.debug(`✗ Aucune équipe trouvée pour: "${competitionOrTeamName}"`);
   return null;
 }
 
@@ -1005,7 +1070,8 @@ async function saveMatch(matchData, isResult = false) {
 
   const [existing] = await db.query('SELECT id FROM matchs WHERE fff_id = ?', [fffId]);
 
-  const localTeam = await findLocalTeam(matchData.raw || matchData.homeTeam || '');
+  // Utiliser la compétition pour trouver l'équipe locale (ex: "U14 N2 POULE D" -> équipe U14)
+  const localTeam = await findLocalTeam(matchData.competition || matchData.raw || matchData.homeTeam || '');
   const equipeId = localTeam ? localTeam.id : null;
 
   let dateMatch = null;
@@ -1014,9 +1080,12 @@ async function saveMatch(matchData, isResult = false) {
     dateMatch = `${matchData.date} ${timePart}:00`;
   }
 
-  const statut = isResult || matchData.scoreHome !== null ? 'termine' : 'a_venir';
-  const scoreHome = isMagnyHome ? matchData.scoreHome : matchData.scoreAway;
-  const scoreAway = isMagnyHome ? matchData.scoreAway : matchData.scoreHome;
+  // Utiliser le statut déjà calculé dans matchData (basé sur la date), sinon fallback
+  const statut = matchData.statut || (isResult || matchData.scoreHome !== null ? 'termine' : 'a_venir');
+
+  // Si le match est à venir, pas de scores
+  const scoreHome = statut === 'a_venir' ? null : (isMagnyHome ? matchData.scoreHome : matchData.scoreAway);
+  const scoreAway = statut === 'a_venir' ? null : (isMagnyHome ? matchData.scoreAway : matchData.scoreHome);
 
   if (existing.length > 0) {
     await db.query(`
