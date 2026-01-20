@@ -4,18 +4,23 @@
  * Récupération automatique des données depuis dyf78.fff.fr
  * Club: Magny FC 78 (scl=25702)
  *
+ * Approche:
+ *   1. Va sur la page équipes: https://dyf78.fff.fr/recherche-clubs?scl=25702&tab=teams
+ *   2. Pour chaque équipe FFF, navigue vers son calendrier
+ *   3. Match les équipes avec la base locale via le champ "fff_nom" (à configurer dans l'admin)
+ *   4. Détermine le statut (terminé/à venir) selon la date du match
+ *
  * Données récupérées:
- *   - Calendrier : Calendrier complet (passé + futur) pour chaque équipe
+ *   - Équipes : Calendrier complet de chaque équipe du club
  *   - Classement : Classements des compétitions
  *
- * Note: Résultats et Agenda sont inclus dans Calendrier, pas besoin de les scraper séparément
- *
  * Usage:
- *   npm run scrape:fff           # Exécution normale
- *   npm run scrape:fff:dry       # Mode test (pas d'écriture en base)
- *   node server/scripts/scrape-fff.js --verbose  # Mode détaillé
- *   node server/scripts/scrape-fff.js --debug    # Mode debug (capture screenshots + HTML)
- *   node server/scripts/scrape-fff.js --tab=calendrier  # Scraper un onglet spécifique
+ *   npm run scrape:fff                   # Exécution normale (équipes + classement)
+ *   npm run scrape:fff:dry               # Mode test (pas d'écriture en base)
+ *   node server/scripts/scrape-fff.js --verbose     # Mode détaillé
+ *   node server/scripts/scrape-fff.js --debug       # Mode debug (screenshots + HTML)
+ *   node server/scripts/scrape-fff.js --tab=equipes # Scraper uniquement les équipes
+ *   node server/scripts/scrape-fff.js --tab=classement # Scraper uniquement les classements
  */
 
 const path = require('path');
@@ -26,7 +31,7 @@ const ROOT_DIR = path.join(__dirname, '../..');
 const LOG_DIR = path.join(ROOT_DIR, 'logs');
 
 // Charger les variables d'environnement
-require('dotenv-flow').config({ path: ROOT_DIR });
+require('dotenv').config({ path: require('path').join(ROOT_DIR, '.env') });
 
 const puppeteer = require('puppeteer');
 const mysql = require('mysql2/promise');
@@ -38,6 +43,7 @@ const CONFIG = {
   baseUrl: 'https://dyf78.fff.fr',
   // URLs des différents onglets
   urls: {
+    equipes: 'https://dyf78.fff.fr/recherche-clubs?scl=25702&tab=teams',
     resultats: 'https://dyf78.fff.fr/recherche-clubs?subtab=resultats&tab=resultats&scl=25702',
     agenda: 'https://dyf78.fff.fr/recherche-clubs?subtab=agenda&tab=resultats&scl=25702',
     classement: 'https://dyf78.fff.fr/recherche-clubs?subtab=ranking&tab=resultats&scl=25702',
@@ -675,13 +681,19 @@ async function scrapeClassement(page) {
 }
 
 // =====================================================
-// SCRAPING DU CALENDRIER COMPLET
+// SCRAPING DES ÉQUIPES (nouvelle approche simple)
 // =====================================================
-async function scrapeCalendrier(page) {
-  scraperLogger.info('Scraping du CALENDRIER complet...');
-  scraperLogger.info(`URL: ${CONFIG.urls.calendrier}`);
+// Cette fonction:
+// 1. Va sur la page équipes: https://dyf78.fff.fr/recherche-clubs?scl=25702&tab=teams
+// 2. Récupère la liste de toutes les équipes du club
+// 3. Pour chaque équipe, navigue vers son calendrier
+// 4. Match avec notre base via la colonne "fff_nom"
+// =====================================================
+async function scrapeEquipes(page) {
+  scraperLogger.info('Scraping via la page ÉQUIPES...');
+  scraperLogger.info(`URL: ${CONFIG.urls.equipes}`);
 
-  await page.goto(CONFIG.urls.calendrier, {
+  await page.goto(CONFIG.urls.equipes, {
     waitUntil: 'networkidle2',
     timeout: CONFIG.timeout
   });
@@ -692,93 +704,110 @@ async function scrapeCalendrier(page) {
   await dismissCookiePopup(page);
   await delay(2000);
 
-  await saveDebugInfo(page, 'calendrier');
+  await saveDebugInfo(page, 'equipes');
 
-  // ÉTAPE 1: Récupérer la liste des équipes du club
-  // Structure: app-calendriers-list avec sections "Championnats" et "Coupes"
-  // Chaque lien pointe vers le calendrier d'une équipe spécifique
+  // ÉTAPE 1: Récupérer la liste des équipes FFF du club
+  // On cherche les liens qui pointent vers les calendriers d'équipes
+  // Format URL: ?scl=25702&tab=resultats&subtab=calendar&competition=XXX&stage=X&group=X&label=NOM_EQUIPE
   const teamLinks = await page.evaluate(() => {
     const teams = [];
     const baseUrl = 'https://dyf78.fff.fr';
 
-    // Chercher dans app-calendriers-list ou .calendriers-list
-    const container = document.querySelector('app-calendriers-list, .calendriers-list, app-calendrier-tab');
-    if (!container) {
-      // Fallback: chercher tous les liens avec calendrier dans l'URL
-      const allLinks = document.querySelectorAll('a[href*="calendar"], a[href*="calendrier"]');
-      allLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        const name = link.innerText.trim();
-        if (name && href && name.length > 3) {
+    // Chercher tous les liens de la page qui contiennent les infos d'équipe
+    // Les liens d'équipe ont généralement un attribut href avec "subtab=calendar" ou "label="
+    const allLinks = document.querySelectorAll('a[href*="label="], a[href*="subtab=calendar"]');
+
+    allLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      const text = link.innerText.trim();
+
+      // Extraire le label (nom de l'équipe) depuis l'URL
+      const labelMatch = href.match(/label=([^&]+)/);
+      const label = labelMatch ? decodeURIComponent(labelMatch[1]) : text;
+
+      if (label && href) {
+        // Éviter les doublons
+        const exists = teams.some(t => t.label === label);
+        if (!exists && label.length > 2) {
           teams.push({
-            name: name,
-            url: href.startsWith('/') ? baseUrl + href : href
-          });
-        }
-      });
-      return teams;
-    }
-
-    let currentCategory = null;
-
-    // Parcourir tous les éléments
-    const elements = container.querySelectorAll('.calendrier-competition, a, .title');
-    elements.forEach(el => {
-      // Détecter les titres de catégorie (Championnats, Coupes)
-      if (el.classList.contains('calendrier-competition') || el.classList.contains('title')) {
-        const titleEl = el.classList.contains('title') ? el : el.querySelector('.title');
-        if (titleEl) {
-          currentCategory = titleEl.innerText.trim();
-        }
-      } else if (el.tagName === 'A') {
-        const href = el.getAttribute('href');
-        const name = el.innerText.trim();
-
-        if (name && href && name.length > 3) {
-          teams.push({
-            name: name,
-            url: href.startsWith('/') ? baseUrl + href : href,
-            category: currentCategory || 'Compétition'
+            label: label,  // Nom FFF de l'équipe (ex: "SENIORS D4", "U14 N2 POULE D")
+            name: text,     // Texte affiché du lien
+            url: href.startsWith('/') ? baseUrl + href : (href.startsWith('http') ? href : baseUrl + '/' + href)
           });
         }
       }
     });
 
-    // Si toujours vide, chercher tous les liens directs
+    // Si pas trouvé via les liens avec label, chercher dans les conteneurs d'équipes
     if (teams.length === 0) {
-      const links = container.querySelectorAll('a');
-      links.forEach(link => {
-        const href = link.getAttribute('href');
-        const name = link.innerText.trim();
+      // Chercher dans app-teams-tab, app-teams-list, ou conteneur similaire
+      const containers = document.querySelectorAll('app-teams-tab, app-teams-list, .teams-list, .equipes-list, [class*="team"]');
 
-        if (name && href && name.length > 3) {
-          teams.push({
-            name: name,
-            url: href.startsWith('/') ? baseUrl + href : href,
-            category: 'Équipe'
-          });
-        }
+      containers.forEach(container => {
+        const links = container.querySelectorAll('a');
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          const text = link.innerText.trim();
+
+          if (text && href && text.length > 3) {
+            const exists = teams.some(t => t.label === text);
+            if (!exists) {
+              teams.push({
+                label: text,
+                name: text,
+                url: href.startsWith('/') ? baseUrl + href : href
+              });
+            }
+          }
+        });
       });
     }
 
     return teams;
   });
 
-  scraperLogger.info(`Équipes/Compétitions trouvées: ${teamLinks.length}`);
-  teamLinks.forEach(t => scraperLogger.info(`  - [${t.category || 'Équipe'}] ${t.name}`));
+  scraperLogger.info(`Équipes FFF trouvées: ${teamLinks.length}`);
+  teamLinks.forEach(t => scraperLogger.info(`  - ${t.label}`));
 
   if (teamLinks.length === 0) {
-    scraperLogger.warn('Aucune équipe trouvée sur la page calendrier');
-    return [];
+    scraperLogger.warn('Aucune équipe trouvée sur la page équipes');
+
+    // Fallback: essayer la page calendrier classique
+    scraperLogger.info('Tentative de fallback vers la page calendrier...');
+    return await scrapeCalendrierFallback(page);
   }
 
-  // ÉTAPE 2: Naviguer vers chaque équipe pour récupérer son calendrier complet
+  // ÉTAPE 2: Récupérer les équipes locales avec fff_nom pour le matching
+  const [localTeams] = await db.query('SELECT id, nom, slug, fff_nom FROM equipes WHERE actif = 1');
+  scraperLogger.info(`Équipes locales avec fff_nom configuré:`);
+  localTeams.filter(t => t.fff_nom).forEach(t => scraperLogger.info(`  - ${t.nom} -> fff_nom: "${t.fff_nom}"`));
+
+  // ÉTAPE 3: Pour chaque équipe FFF, naviguer vers son calendrier et récupérer les matchs
   const allMatches = [];
   const months = { 'janvier': '01', 'février': '02', 'fevrier': '02', 'mars': '03', 'avril': '04', 'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08', 'aout': '08', 'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12', 'decembre': '12' };
 
   for (const team of teamLinks) {
     try {
-      scraperLogger.info(`  -> Récupération calendrier: ${team.name}`);
+      scraperLogger.info(`\n  -> Récupération calendrier: ${team.label}`);
+
+      // Trouver l'équipe locale correspondante via fff_nom
+      const localTeam = localTeams.find(lt => {
+        if (!lt.fff_nom) return false;
+        const fffNomLower = lt.fff_nom.toLowerCase().trim();
+        const labelLower = team.label.toLowerCase().trim();
+
+        // Matching exact ou partiel
+        return labelLower === fffNomLower ||
+               labelLower.includes(fffNomLower) ||
+               fffNomLower.includes(labelLower);
+      });
+
+      if (localTeam) {
+        scraperLogger.info(`     ✓ Associé à équipe locale: ${localTeam.nom} (id: ${localTeam.id})`);
+      } else {
+        scraperLogger.info(`     ⚠ Pas d'équipe locale correspondante (configurer fff_nom dans l'admin)`);
+      }
+
       scraperLogger.info(`     URL: ${team.url}`);
 
       await page.goto(team.url, {
@@ -792,16 +821,16 @@ async function scrapeCalendrier(page) {
       await delay(1000);
 
       if (DEBUG) {
-        await saveDebugInfo(page, `calendrier-${team.name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`);
+        await saveDebugInfo(page, `equipe-${team.label.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`);
       }
 
       // Récupérer tous les matchs de cette équipe (passés et futurs)
-      const matches = await page.evaluate((teamName, monthsMap) => {
+      const matches = await page.evaluate((teamLabel, monthsMap) => {
         const results = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Chercher les matchs avec app-confrontation (même structure que résultats/agenda)
+        // Chercher les matchs avec app-confrontation
         const confrontations = document.querySelectorAll('app-confrontation');
 
         confrontations.forEach(el => {
@@ -813,7 +842,8 @@ async function scrapeCalendrier(page) {
               scoreAway: null,
               date: null,
               heure: null,
-              competition: teamName,
+              competition: teamLabel,  // Utiliser le label de l'équipe comme compétition
+              fffLabel: teamLabel,     // Garder le label FFF pour le matching
               url: null,
               forfait: null,
               statut: 'a_venir'
@@ -823,7 +853,7 @@ async function scrapeCalendrier(page) {
             const link = el.querySelector('a');
             if (link) match.url = link.getAttribute('href');
 
-            // Compétition (si disponible dans l'élément)
+            // Compétition (si disponible dans l'élément, sinon utiliser le label)
             const competitionEl = el.querySelector('.competition');
             if (competitionEl) {
               match.competition = competitionEl.innerText.replace(/\n/g, ' ').trim();
@@ -849,41 +879,36 @@ async function scrapeCalendrier(page) {
               }
             }
 
-            // Fonction pour nettoyer le nom d'équipe (enlever EQUIPE XX à la fin)
+            // Fonction pour nettoyer le nom d'équipe
             const cleanTeamName = (text) => {
               return text
-                .replace(/\s+EQUIPE\s*\d+\s*$/i, '')  // Enlever "EQUIPE 21" etc. à la fin
-                .replace(/\s+\d+\s*$/, '')  // Enlever les numéros isolés à la fin
+                .replace(/\s+EQUIPE\s*\d+\s*$/i, '')
+                .replace(/\s+\d+\s*$/, '')
                 .trim();
             };
 
             // Chercher le score dans l'élément .score_match
             const scoreContainer = el.querySelector('.score_match');
-            let hasRealScore = false;
 
             if (scoreContainer) {
               const scoreText = scoreContainer.innerText.trim();
-              // Format attendu: "2 - 1" ou "2-1" ou "2 1" (chiffres séparés)
               const scoreMatch = scoreText.match(/(\d+)\s*[-–\s]\s*(\d+)/);
               if (scoreMatch) {
                 match.scoreHome = parseInt(scoreMatch[1]);
                 match.scoreAway = parseInt(scoreMatch[2]);
-                hasRealScore = true;
               }
             }
 
             // Équipe domicile (equipe1)
             const equipe1 = el.querySelector('.equipe1 .name');
             if (equipe1) {
-              const text = equipe1.innerText.trim();
-              match.homeTeam = cleanTeamName(text);
+              match.homeTeam = cleanTeamName(equipe1.innerText.trim());
             }
 
             // Équipe extérieur (equipe2)
             const equipe2 = el.querySelector('.equipe2 .name');
             if (equipe2) {
-              const text = equipe2.innerText.trim();
-              match.awayTeam = cleanTeamName(text);
+              match.awayTeam = cleanTeamName(equipe2.innerText.trim());
             }
 
             // Forfait
@@ -892,14 +917,12 @@ async function scrapeCalendrier(page) {
               match.forfait = forfait.innerText.trim();
             }
 
-            // Déterminer le statut basé sur la DATE (pas les scores)
-            // Un match est terminé si sa date est dans le passé
+            // Déterminer le statut basé sur la DATE
             if (matchDate) {
               if (matchDate < today) {
                 match.statut = 'termine';
               } else {
                 match.statut = 'a_venir';
-                // Les matchs futurs ne doivent pas avoir de score
                 match.scoreHome = null;
                 match.scoreAway = null;
               }
@@ -915,27 +938,225 @@ async function scrapeCalendrier(page) {
         });
 
         return results;
-      }, team.name, months);
+      }, team.label, months);
+
+      // Enrichir chaque match avec l'ID de l'équipe locale
+      if (localTeam) {
+        matches.forEach(m => {
+          m.localTeamId = localTeam.id;
+          m.localTeamNom = localTeam.nom;
+        });
+      }
 
       if (matches.length > 0) {
         scraperLogger.info(`     ${matches.length} matchs trouvés (${matches.filter(m => m.statut === 'termine').length} terminés, ${matches.filter(m => m.statut === 'a_venir').length} à venir)`);
         allMatches.push(...matches);
       } else {
-        scraperLogger.warn(`     Aucun match trouvé pour ${team.name}`);
+        scraperLogger.warn(`     Aucun match trouvé pour ${team.label}`);
       }
 
     } catch (err) {
-      scraperLogger.error(`  Erreur récupération ${team.name}: ${err.message}`);
+      scraperLogger.error(`  Erreur récupération ${team.label}: ${err.message}`);
     }
   }
 
-  scraperLogger.info(`\nTotal calendrier récupéré: ${allMatches.length} matchs`);
+  scraperLogger.info(`\n${'='.repeat(50)}`);
+  scraperLogger.info(`Total équipes récupéré: ${allMatches.length} matchs`);
   scraperLogger.info(`  - Matchs terminés: ${allMatches.filter(m => m.statut === 'termine').length}`);
   scraperLogger.info(`  - Matchs à venir: ${allMatches.filter(m => m.statut === 'a_venir').length}`);
+  scraperLogger.info(`  - Matchs avec équipe locale: ${allMatches.filter(m => m.localTeamId).length}`);
+  scraperLogger.info(`  - Matchs sans équipe locale: ${allMatches.filter(m => !m.localTeamId).length}`);
 
   if (DEBUG && allMatches.length > 0) {
     scraperLogger.info(`Premier match: ${JSON.stringify(allMatches[0])}`);
   }
+  return allMatches;
+}
+
+// =====================================================
+// SCRAPING DU CALENDRIER (FALLBACK)
+// =====================================================
+// Utilisé si la page équipes ne fonctionne pas
+async function scrapeCalendrierFallback(page) {
+  scraperLogger.info('Scraping du CALENDRIER (fallback)...');
+  scraperLogger.info(`URL: ${CONFIG.urls.calendrier}`);
+
+  await page.goto(CONFIG.urls.calendrier, {
+    waitUntil: 'networkidle2',
+    timeout: CONFIG.timeout
+  });
+
+  await delay(2000);
+  await dismissCookiePopup(page);
+  await delay(2000);
+
+  await saveDebugInfo(page, 'calendrier-fallback');
+
+  // Récupérer les liens vers les calendriers
+  const teamLinks = await page.evaluate(() => {
+    const teams = [];
+    const baseUrl = 'https://dyf78.fff.fr';
+
+    const allLinks = document.querySelectorAll('a[href*="calendar"], a[href*="calendrier"], a[href*="label="]');
+    allLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      const name = link.innerText.trim();
+
+      // Extraire le label depuis l'URL
+      const labelMatch = href.match(/label=([^&]+)/);
+      const label = labelMatch ? decodeURIComponent(labelMatch[1]) : name;
+
+      if (label && href && label.length > 3) {
+        const exists = teams.some(t => t.label === label);
+        if (!exists) {
+          teams.push({
+            label: label,
+            name: name,
+            url: href.startsWith('/') ? baseUrl + href : href
+          });
+        }
+      }
+    });
+
+    return teams;
+  });
+
+  scraperLogger.info(`Équipes trouvées (fallback): ${teamLinks.length}`);
+
+  if (teamLinks.length === 0) {
+    scraperLogger.warn('Aucune équipe trouvée en mode fallback');
+    return [];
+  }
+
+  // Récupérer les matchs pour chaque équipe
+  const [localTeams] = await db.query('SELECT id, nom, slug, fff_nom FROM equipes WHERE actif = 1');
+  const allMatches = [];
+  const months = { 'janvier': '01', 'février': '02', 'fevrier': '02', 'mars': '03', 'avril': '04', 'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08', 'aout': '08', 'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12', 'decembre': '12' };
+
+  for (const team of teamLinks) {
+    try {
+      scraperLogger.info(`  -> ${team.label}`);
+
+      const localTeam = localTeams.find(lt => {
+        if (!lt.fff_nom) return false;
+        const fffNomLower = lt.fff_nom.toLowerCase().trim();
+        const labelLower = team.label.toLowerCase().trim();
+        return labelLower === fffNomLower || labelLower.includes(fffNomLower) || fffNomLower.includes(labelLower);
+      });
+
+      await page.goto(team.url, {
+        waitUntil: 'networkidle2',
+        timeout: CONFIG.timeout
+      });
+      await delay(2000);
+      await dismissCookiePopup(page);
+      await delay(1000);
+
+      const matches = await page.evaluate((teamLabel, monthsMap) => {
+        const results = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const confrontations = document.querySelectorAll('app-confrontation');
+
+        confrontations.forEach(el => {
+          try {
+            const match = {
+              homeTeam: null,
+              awayTeam: null,
+              scoreHome: null,
+              scoreAway: null,
+              date: null,
+              heure: null,
+              competition: teamLabel,
+              fffLabel: teamLabel,
+              url: null,
+              statut: 'a_venir'
+            };
+
+            const link = el.querySelector('a');
+            if (link) match.url = link.getAttribute('href');
+
+            const competitionEl = el.querySelector('.competition');
+            if (competitionEl) {
+              match.competition = competitionEl.innerText.replace(/\n/g, ' ').trim();
+            }
+
+            const dateEl = el.querySelector('.date');
+            let matchDate = null;
+            if (dateEl) {
+              const dateText = dateEl.innerText;
+              const dateMatch = dateText.match(/(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+(\d{4})/i);
+              if (dateMatch) {
+                const day = dateMatch[1].padStart(2, '0');
+                const month = monthsMap[dateMatch[2].toLowerCase()] || '01';
+                const year = dateMatch[3];
+                match.date = `${year}-${month}-${day}`;
+                matchDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              }
+
+              const timeMatch = dateText.match(/(\d{1,2})[hH](\d{2})/);
+              if (timeMatch) {
+                match.heure = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+              }
+            }
+
+            const cleanTeamName = (text) => {
+              return text.replace(/\s+EQUIPE\s*\d+\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
+            };
+
+            const scoreContainer = el.querySelector('.score_match');
+            if (scoreContainer) {
+              const scoreText = scoreContainer.innerText.trim();
+              const scoreMatch = scoreText.match(/(\d+)\s*[-–\s]\s*(\d+)/);
+              if (scoreMatch) {
+                match.scoreHome = parseInt(scoreMatch[1]);
+                match.scoreAway = parseInt(scoreMatch[2]);
+              }
+            }
+
+            const equipe1 = el.querySelector('.equipe1 .name');
+            if (equipe1) match.homeTeam = cleanTeamName(equipe1.innerText.trim());
+
+            const equipe2 = el.querySelector('.equipe2 .name');
+            if (equipe2) match.awayTeam = cleanTeamName(equipe2.innerText.trim());
+
+            if (matchDate) {
+              if (matchDate < today) {
+                match.statut = 'termine';
+              } else {
+                match.statut = 'a_venir';
+                match.scoreHome = null;
+                match.scoreAway = null;
+              }
+            }
+
+            if (match.homeTeam && match.awayTeam) {
+              results.push(match);
+            }
+          } catch (err) {}
+        });
+
+        return results;
+      }, team.label, months);
+
+      if (localTeam) {
+        matches.forEach(m => {
+          m.localTeamId = localTeam.id;
+          m.localTeamNom = localTeam.nom;
+        });
+      }
+
+      if (matches.length > 0) {
+        scraperLogger.info(`     ${matches.length} matchs`);
+        allMatches.push(...matches);
+      }
+
+    } catch (err) {
+      scraperLogger.error(`  Erreur ${team.label}: ${err.message}`);
+    }
+  }
+
   return allMatches;
 }
 
@@ -1047,9 +1268,21 @@ async function saveMatch(matchData, isResult = false) {
 
   const [existing] = await db.query('SELECT id FROM matchs WHERE fff_id = ?', [fffId]);
 
-  // Utiliser la compétition pour trouver l'équipe locale (ex: "U14 N2 POULE D" -> équipe U14)
-  const localTeam = await findLocalTeam(matchData.competition || matchData.raw || matchData.homeTeam || '');
-  const equipeId = localTeam ? localTeam.id : null;
+  // PRIORITÉ: Utiliser localTeamId si déjà défini (depuis scrapeEquipes avec matching fff_nom)
+  // Sinon, fallback sur findLocalTeam() avec la compétition
+  let equipeId = matchData.localTeamId || null;
+
+  if (!equipeId) {
+    // Fallback: chercher via le nom de compétition
+    const localTeam = await findLocalTeam(matchData.fffLabel || matchData.competition || matchData.raw || matchData.homeTeam || '');
+    equipeId = localTeam ? localTeam.id : null;
+  }
+
+  if (equipeId) {
+    scraperLogger.debug(`Match ${adversaire} (${matchData.date}) -> equipe_id: ${equipeId}`);
+  } else {
+    scraperLogger.debug(`Match ${adversaire} (${matchData.date}) -> AUCUNE équipe locale`);
+  }
 
   let dateMatch = null;
   if (matchData.date) {
@@ -1187,10 +1420,11 @@ async function main() {
   let scrapingLogId = null;
   let browser = null;
   const stats = {
-    resultats: { found: 0, inserted: 0, updated: 0 },
-    agenda: { found: 0, inserted: 0, updated: 0 },
+    equipes: { found: 0, inserted: 0, updated: 0 },     // Nouvelle approche par équipes
+    resultats: { found: 0, inserted: 0, updated: 0 },   // Obsolète
+    agenda: { found: 0, inserted: 0, updated: 0 },       // Obsolète
     classement: { found: 0, inserted: 0, updated: 0 },
-    calendrier: { found: 0, inserted: 0, updated: 0 }
+    calendrier: { found: 0, inserted: 0, updated: 0 }    // Fallback
   };
 
   try {
@@ -1201,9 +1435,10 @@ async function main() {
     browser = await launchBrowser();
     const page = await setupPage(browser);
 
-    // Par défaut: calendrier (contient résultats + agenda) et classement
-    // resultats et agenda sont gardés pour compatibilité mais ne sont plus utilisés par défaut
-    const tabs = SPECIFIC_TAB ? [SPECIFIC_TAB] : ['calendrier', 'classement'];
+    // Par défaut: equipes (nouvelle approche qui itère sur chaque équipe) et classement
+    // calendrier est gardé comme fallback
+    // resultats et agenda sont obsolètes (inclus dans le calendrier de chaque équipe)
+    const tabs = SPECIFIC_TAB ? [SPECIFIC_TAB] : ['equipes', 'classement'];
 
     for (const tab of tabs) {
       try {
@@ -1251,12 +1486,27 @@ async function main() {
             }
             break;
 
+          case 'equipes':
+            // Nouvelle approche: scraper via la page équipes
+            data = await scrapeEquipes(page);
+            stats.equipes.found = data.length;
+            if (!DRY_RUN) {
+              for (const match of data) {
+                const isResult = match.statut === 'termine';
+                const result = await saveMatch(match, isResult);
+                if (result.action === 'inserted') stats.equipes.inserted++;
+                else if (result.action === 'updated') stats.equipes.updated++;
+              }
+            }
+            break;
+
           case 'calendrier':
-            data = await scrapeCalendrier(page);
+            // Ancienne approche (gardée pour fallback/compatibilité)
+            data = await scrapeCalendrierFallback(page);
             stats.calendrier.found = data.length;
             if (!DRY_RUN) {
               for (const match of data) {
-                const isResult = match.scoreHome !== null;
+                const isResult = match.statut === 'termine';
                 const result = await saveMatch(match, isResult);
                 if (result.action === 'inserted') stats.calendrier.inserted++;
                 else if (result.action === 'updated') stats.calendrier.updated++;
