@@ -857,14 +857,14 @@ async function scrapeCalendrier(page) {
                 .trim();
             };
 
-            // Chercher le score dans un élément dédié (pas dans le nom d'équipe)
-            const scoreContainer = el.querySelector('.score, .resultat, .scores');
+            // Chercher le score dans l'élément .score_match
+            const scoreContainer = el.querySelector('.score_match');
             let hasRealScore = false;
 
             if (scoreContainer) {
               const scoreText = scoreContainer.innerText.trim();
-              // Format attendu: "2 - 1" ou "2-1" ou juste des chiffres séparés
-              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
+              // Format attendu: "2 - 1" ou "2-1" ou "2 1" (chiffres séparés)
+              const scoreMatch = scoreText.match(/(\d+)\s*[-–\s]\s*(\d+)/);
               if (scoreMatch) {
                 match.scoreHome = parseInt(scoreMatch[1]);
                 match.scoreAway = parseInt(scoreMatch[2]);
@@ -877,18 +877,6 @@ async function scrapeCalendrier(page) {
             if (equipe1) {
               const text = equipe1.innerText.trim();
               match.homeTeam = cleanTeamName(text);
-
-              // Si pas de score trouvé dans le container dédié, chercher dans .equipe1 .score
-              if (!hasRealScore) {
-                const scoreEl = el.querySelector('.equipe1 .score');
-                if (scoreEl) {
-                  const scoreText = scoreEl.innerText.trim();
-                  // Vérifier que c'est un score valide (0-99) et pas un numéro d'équipe
-                  if (/^\d{1,2}$/.test(scoreText) && parseInt(scoreText) < 20) {
-                    match.scoreHome = parseInt(scoreText);
-                  }
-                }
-              }
             }
 
             // Équipe extérieur (equipe2)
@@ -896,17 +884,6 @@ async function scrapeCalendrier(page) {
             if (equipe2) {
               const text = equipe2.innerText.trim();
               match.awayTeam = cleanTeamName(text);
-
-              // Si pas de score trouvé dans le container dédié, chercher dans .equipe2 .score
-              if (!hasRealScore) {
-                const scoreEl = el.querySelector('.equipe2 .score');
-                if (scoreEl) {
-                  const scoreText = scoreEl.innerText.trim();
-                  if (/^\d{1,2}$/.test(scoreText) && parseInt(scoreText) < 20) {
-                    match.scoreAway = parseInt(scoreText);
-                  }
-                }
-              }
             }
 
             // Forfait
