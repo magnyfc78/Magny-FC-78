@@ -24,6 +24,12 @@ const publicRoutes = require('./routes/public.routes');
 const adminRoutes = require('./routes/admin.routes');
 const uploadRoutes = require('./routes/upload.routes');
 
+// Routes espace membre
+const memberAuthRoutes = require('./routes/member.auth.routes');
+const memberLicensesRoutes = require('./routes/member.licenses.routes');
+const memberProfileRoutes = require('./routes/member.profile.routes');
+const adminMembersRoutes = require('./routes/admin.members.routes');
+
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 
@@ -136,6 +142,22 @@ const authLimiter = rateLimit({
   message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' }
 });
 app.use('/api/auth/login', authLimiter);
+app.use('/api/member/auth/login', authLimiter);
+app.use('/api/member/auth/register', rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  max: 5, // 5 inscriptions / heure
+  message: { error: 'Trop de tentatives d\'inscription. Réessayez plus tard.' }
+}));
+
+// Rate limit pour l'espace membre (API membre)
+const memberLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requêtes / minute
+  message: { error: 'Trop de requêtes. Patientez quelques secondes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api/member', memberLimiter);
 
 // =====================================================
 // SÉCURITÉ - Protection XSS & HPP
@@ -253,6 +275,12 @@ app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 
+// Routes espace membre
+app.use('/api/member/auth', memberAuthRoutes);
+app.use('/api/member/licenses', memberLicensesRoutes);
+app.use('/api/member/profile', memberProfileRoutes);
+app.use('/api/admin/members', adminMembersRoutes);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -261,6 +289,16 @@ app.get('/api/health', (req, res) => {
 // =====================================================
 // ROUTES FRONTEND (SPA)
 // =====================================================
+
+// Espace membre - servir la page dédiée
+app.get('/espace-membre*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, '../public/espace-membre/index.html'));
+});
+
+// Autres pages - SPA principale
 app.get('*', (req, res) => {
   // Désactiver le cache pour toutes les pages HTML (SPA)
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
