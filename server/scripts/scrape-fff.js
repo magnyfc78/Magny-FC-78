@@ -888,15 +888,44 @@ async function scrapeEquipes(page) {
             };
 
             // Chercher le score - plusieurs approches possibles
-            // 1. Dans .score_match (texte format "X - Y")
+            // 1. Dans .score_match .number avec images PNG (nom de fichier = score)
             const scoreContainer = el.querySelector('.score_match');
             if (scoreContainer) {
-              const scoreText = scoreContainer.innerText.trim();
-              // Format: "2 - 1" ou "2-1" ou "2 1"
-              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
-              if (scoreMatch) {
-                match.scoreHome = parseInt(scoreMatch[1]);
-                match.scoreAway = parseInt(scoreMatch[2]);
+              const numberElements = scoreContainer.querySelectorAll('.number');
+              const scores = [];
+
+              numberElements.forEach(numEl => {
+                // Chercher l'image PNG dont le nom contient le score
+                const img = numEl.querySelector('img');
+                if (img) {
+                  const src = img.getAttribute('src') || '';
+                  // Extraire le chiffre du nom de fichier (ex: "/assets/2.png" -> 2)
+                  const scoreMatch = src.match(/(\d+)\.png/i);
+                  if (scoreMatch) {
+                    scores.push(parseInt(scoreMatch[1]));
+                  }
+                }
+                // Fallback: si pas d'image, essayer le texte
+                if (scores.length === 0) {
+                  const text = numEl.innerText.trim();
+                  const val = parseInt(text);
+                  if (!isNaN(val)) {
+                    scores.push(val);
+                  }
+                }
+              });
+
+              if (scores.length >= 2) {
+                match.scoreHome = scores[0];
+                match.scoreAway = scores[1];
+              } else if (scores.length === 1) {
+                // Si un seul score trouvé, c'est peut-être le format "X - Y" en texte
+                const scoreText = scoreContainer.innerText.trim();
+                const textMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
+                if (textMatch) {
+                  match.scoreHome = parseInt(textMatch[1]);
+                  match.scoreAway = parseInt(textMatch[2]);
+                }
               }
             }
 
@@ -905,28 +934,28 @@ async function scrapeEquipes(page) {
               const score1El = el.querySelector('.equipe1 .score, .team1 .score, .home .score');
               const score2El = el.querySelector('.equipe2 .score, .team2 .score, .away .score');
               if (score1El && score2El) {
-                const s1 = parseInt(score1El.innerText.trim());
-                const s2 = parseInt(score2El.innerText.trim());
-                if (!isNaN(s1) && !isNaN(s2)) {
-                  match.scoreHome = s1;
-                  match.scoreAway = s2;
+                // Essayer d'abord les images
+                const img1 = score1El.querySelector('img');
+                const img2 = score2El.querySelector('img');
+                if (img1 && img2) {
+                  const src1 = img1.getAttribute('src') || '';
+                  const src2 = img2.getAttribute('src') || '';
+                  const m1 = src1.match(/(\d+)\.png/i);
+                  const m2 = src2.match(/(\d+)\.png/i);
+                  if (m1 && m2) {
+                    match.scoreHome = parseInt(m1[1]);
+                    match.scoreAway = parseInt(m2[1]);
+                  }
                 }
-              }
-            }
-
-            // 3. Si toujours pas trouvé, chercher dans des spans avec classe contenant "score"
-            if (match.scoreHome === null) {
-              const scoreSpans = el.querySelectorAll('[class*="score"]');
-              const scores = [];
-              scoreSpans.forEach(span => {
-                const val = parseInt(span.innerText.trim());
-                if (!isNaN(val) && val < 100) { // Score raisonnable
-                  scores.push(val);
+                // Sinon essayer le texte
+                if (match.scoreHome === null) {
+                  const s1 = parseInt(score1El.innerText.trim());
+                  const s2 = parseInt(score2El.innerText.trim());
+                  if (!isNaN(s1) && !isNaN(s2)) {
+                    match.scoreHome = s1;
+                    match.scoreAway = s2;
+                  }
                 }
-              });
-              if (scores.length >= 2) {
-                match.scoreHome = scores[0];
-                match.scoreAway = scores[1];
               }
             }
 
@@ -1136,14 +1165,31 @@ async function scrapeCalendrierFallback(page) {
               return text.replace(/\s+EQUIPE\s*\d+\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
             };
 
-            // Chercher le score - plusieurs approches
+            // Chercher le score - dans .score_match .number avec images PNG
             const scoreContainer = el.querySelector('.score_match');
             if (scoreContainer) {
-              const scoreText = scoreContainer.innerText.trim();
-              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
-              if (scoreMatch) {
-                match.scoreHome = parseInt(scoreMatch[1]);
-                match.scoreAway = parseInt(scoreMatch[2]);
+              const numberElements = scoreContainer.querySelectorAll('.number');
+              const scores = [];
+
+              numberElements.forEach(numEl => {
+                const img = numEl.querySelector('img');
+                if (img) {
+                  const src = img.getAttribute('src') || '';
+                  const scoreMatch = src.match(/(\d+)\.png/i);
+                  if (scoreMatch) {
+                    scores.push(parseInt(scoreMatch[1]));
+                  }
+                }
+                if (scores.length === 0) {
+                  const text = numEl.innerText.trim();
+                  const val = parseInt(text);
+                  if (!isNaN(val)) scores.push(val);
+                }
+              });
+
+              if (scores.length >= 2) {
+                match.scoreHome = scores[0];
+                match.scoreAway = scores[1];
               }
             }
 
@@ -1152,28 +1198,24 @@ async function scrapeCalendrierFallback(page) {
               const score1El = el.querySelector('.equipe1 .score, .team1 .score');
               const score2El = el.querySelector('.equipe2 .score, .team2 .score');
               if (score1El && score2El) {
-                const s1 = parseInt(score1El.innerText.trim());
-                const s2 = parseInt(score2El.innerText.trim());
-                if (!isNaN(s1) && !isNaN(s2)) {
-                  match.scoreHome = s1;
-                  match.scoreAway = s2;
+                const img1 = score1El.querySelector('img');
+                const img2 = score2El.querySelector('img');
+                if (img1 && img2) {
+                  const m1 = (img1.getAttribute('src') || '').match(/(\d+)\.png/i);
+                  const m2 = (img2.getAttribute('src') || '').match(/(\d+)\.png/i);
+                  if (m1 && m2) {
+                    match.scoreHome = parseInt(m1[1]);
+                    match.scoreAway = parseInt(m2[1]);
+                  }
                 }
-              }
-            }
-
-            // Chercher dans des spans avec classe contenant "score"
-            if (match.scoreHome === null) {
-              const scoreSpans = el.querySelectorAll('[class*="score"]');
-              const scores = [];
-              scoreSpans.forEach(span => {
-                const val = parseInt(span.innerText.trim());
-                if (!isNaN(val) && val < 100) {
-                  scores.push(val);
+                if (match.scoreHome === null) {
+                  const s1 = parseInt(score1El.innerText.trim());
+                  const s2 = parseInt(score2El.innerText.trim());
+                  if (!isNaN(s1) && !isNaN(s2)) {
+                    match.scoreHome = s1;
+                    match.scoreAway = s2;
+                  }
                 }
-              });
-              if (scores.length >= 2) {
-                match.scoreHome = scores[0];
-                match.scoreAway = scores[1];
               }
             }
 
