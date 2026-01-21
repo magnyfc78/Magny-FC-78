@@ -888,70 +888,52 @@ async function scrapeEquipes(page) {
             };
 
             // Chercher le score - plusieurs approches possibles
-            // 1. Dans .score_match .number avec images PNG (nom de fichier = chiffre)
-            // Chaque .number peut contenir plusieurs images pour les scores à plusieurs chiffres
+            // Structure: .score_match contient des <img class="number"> avec le chiffre dans le nom du fichier
+            // Exemple: <img class="number" src=".../9.png"> " - " <img class="number" src=".../1.png">
+            // Pour score 9-1
             const scoreContainer = el.querySelector('.score_match');
             if (scoreContainer) {
-              const numberElements = scoreContainer.querySelectorAll('.number');
-              const scoreValues = [];
+              // Récupérer toutes les images avec class="number"
+              const imgs = scoreContainer.querySelectorAll('img.number');
+              const digits = [];
 
-              numberElements.forEach(numEl => {
-                // Récupérer toutes les images dans ce .number et concaténer les chiffres
-                const imgs = numEl.querySelectorAll('img');
-                let digitStr = '';
-
-                imgs.forEach(img => {
-                  const src = img.getAttribute('src') || '';
-                  // Extraire le chiffre du nom de fichier (ex: "/assets/2.png" -> "2")
-                  const digitMatch = src.match(/(\d+)\.png/i);
-                  if (digitMatch) {
-                    digitStr += digitMatch[1];
-                  }
-                });
-
-                if (digitStr) {
-                  scoreValues.push(parseInt(digitStr));
-                } else {
-                  // Fallback: essayer le texte si pas d'image
-                  const text = numEl.innerText.trim();
-                  const val = parseInt(text);
-                  if (!isNaN(val)) {
-                    scoreValues.push(val);
-                  }
+              imgs.forEach(img => {
+                const src = img.getAttribute('src') || '';
+                // Extraire le chiffre du nom de fichier (ex: ".../9.png" -> "9")
+                const digitMatch = src.match(/(\d+)\.png/i);
+                if (digitMatch) {
+                  digits.push(digitMatch[1]);
                 }
               });
 
-              if (scoreValues.length >= 2) {
-                match.scoreHome = scoreValues[0];
-                match.scoreAway = scoreValues[1];
-              }
-            }
+              // Les chiffres sont séparés par " - " dans le HTML
+              // On doit déterminer où est la séparation
+              // Méthode: regarder le contenu HTML pour trouver le séparateur
+              const html = scoreContainer.innerHTML;
+              const separatorIndex = html.indexOf(' - ');
 
-            // 2. Si pas trouvé, chercher dans .score de chaque équipe
-            if (match.scoreHome === null) {
-              const score1El = el.querySelector('.equipe1 .score, .equipe1 .number, .team1 .score, .home .score');
-              const score2El = el.querySelector('.equipe2 .score, .equipe2 .number, .team2 .score, .away .score');
-              if (score1El && score2El) {
-                // Concaténer les chiffres de chaque côté
-                const getScoreFromElement = (elem) => {
-                  const imgs = elem.querySelectorAll('img');
-                  let digitStr = '';
-                  imgs.forEach(img => {
-                    const src = img.getAttribute('src') || '';
-                    const m = src.match(/(\d+)\.png/i);
-                    if (m) digitStr += m[1];
-                  });
-                  if (digitStr) return parseInt(digitStr);
-                  const val = parseInt(elem.innerText.trim());
-                  return isNaN(val) ? null : val;
-                };
+              if (digits.length >= 2 && separatorIndex > -1) {
+                // Compter combien d'images sont avant le séparateur
+                const beforeSeparator = html.substring(0, separatorIndex);
+                const imgCountBefore = (beforeSeparator.match(/<img[^>]*class="number"/g) || []).length;
 
-                const s1 = getScoreFromElement(score1El);
-                const s2 = getScoreFromElement(score2El);
-                if (s1 !== null && s2 !== null) {
-                  match.scoreHome = s1;
-                  match.scoreAway = s2;
+                // Concaténer les chiffres pour chaque équipe
+                const homeDigits = digits.slice(0, imgCountBefore).join('');
+                const awayDigits = digits.slice(imgCountBefore).join('');
+
+                if (homeDigits && awayDigits) {
+                  match.scoreHome = parseInt(homeDigits);
+                  match.scoreAway = parseInt(awayDigits);
                 }
+              } else if (digits.length === 2) {
+                // Fallback simple: 2 chiffres = 1 pour chaque équipe
+                match.scoreHome = parseInt(digits[0]);
+                match.scoreAway = parseInt(digits[1]);
+              } else if (digits.length > 2) {
+                // Fallback: diviser en deux moitiés
+                const mid = Math.floor(digits.length / 2);
+                match.scoreHome = parseInt(digits.slice(0, mid).join(''));
+                match.scoreAway = parseInt(digits.slice(mid).join(''));
               }
             }
 
@@ -1161,58 +1143,37 @@ async function scrapeCalendrierFallback(page) {
               return text.replace(/\s+EQUIPE\s*\d+\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
             };
 
-            // Chercher le score - dans .score_match .number avec images PNG
+            // Chercher le score - dans .score_match avec <img class="number">
             const scoreContainer = el.querySelector('.score_match');
             if (scoreContainer) {
-              const numberElements = scoreContainer.querySelectorAll('.number');
-              const scoreValues = [];
+              const imgs = scoreContainer.querySelectorAll('img.number');
+              const digits = [];
 
-              numberElements.forEach(numEl => {
-                const imgs = numEl.querySelectorAll('img');
-                let digitStr = '';
-                imgs.forEach(img => {
-                  const src = img.getAttribute('src') || '';
-                  const digitMatch = src.match(/(\d+)\.png/i);
-                  if (digitMatch) digitStr += digitMatch[1];
-                });
-                if (digitStr) {
-                  scoreValues.push(parseInt(digitStr));
-                } else {
-                  const text = numEl.innerText.trim();
-                  const val = parseInt(text);
-                  if (!isNaN(val)) scoreValues.push(val);
-                }
+              imgs.forEach(img => {
+                const src = img.getAttribute('src') || '';
+                const digitMatch = src.match(/(\d+)\.png/i);
+                if (digitMatch) digits.push(digitMatch[1]);
               });
 
-              if (scoreValues.length >= 2) {
-                match.scoreHome = scoreValues[0];
-                match.scoreAway = scoreValues[1];
-              }
-            }
+              const html = scoreContainer.innerHTML;
+              const separatorIndex = html.indexOf(' - ');
 
-            // Si pas trouvé, chercher dans .score de chaque équipe
-            if (match.scoreHome === null) {
-              const score1El = el.querySelector('.equipe1 .score, .equipe1 .number, .team1 .score');
-              const score2El = el.querySelector('.equipe2 .score, .equipe2 .number, .team2 .score');
-              if (score1El && score2El) {
-                const getScoreFromElement = (elem) => {
-                  const imgs = elem.querySelectorAll('img');
-                  let digitStr = '';
-                  imgs.forEach(img => {
-                    const src = img.getAttribute('src') || '';
-                    const m = src.match(/(\d+)\.png/i);
-                    if (m) digitStr += m[1];
-                  });
-                  if (digitStr) return parseInt(digitStr);
-                  const val = parseInt(elem.innerText.trim());
-                  return isNaN(val) ? null : val;
-                };
-                const s1 = getScoreFromElement(score1El);
-                const s2 = getScoreFromElement(score2El);
-                if (s1 !== null && s2 !== null) {
-                  match.scoreHome = s1;
-                  match.scoreAway = s2;
+              if (digits.length >= 2 && separatorIndex > -1) {
+                const beforeSeparator = html.substring(0, separatorIndex);
+                const imgCountBefore = (beforeSeparator.match(/<img[^>]*class="number"/g) || []).length;
+                const homeDigits = digits.slice(0, imgCountBefore).join('');
+                const awayDigits = digits.slice(imgCountBefore).join('');
+                if (homeDigits && awayDigits) {
+                  match.scoreHome = parseInt(homeDigits);
+                  match.scoreAway = parseInt(awayDigits);
                 }
+              } else if (digits.length === 2) {
+                match.scoreHome = parseInt(digits[0]);
+                match.scoreAway = parseInt(digits[1]);
+              } else if (digits.length > 2) {
+                const mid = Math.floor(digits.length / 2);
+                match.scoreHome = parseInt(digits.slice(0, mid).join(''));
+                match.scoreAway = parseInt(digits.slice(mid).join(''));
               }
             }
 
