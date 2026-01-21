@@ -887,15 +887,46 @@ async function scrapeEquipes(page) {
                 .trim();
             };
 
-            // Chercher le score dans l'élément .score_match
+            // Chercher le score - plusieurs approches possibles
+            // 1. Dans .score_match (texte format "X - Y")
             const scoreContainer = el.querySelector('.score_match');
-
             if (scoreContainer) {
               const scoreText = scoreContainer.innerText.trim();
-              const scoreMatch = scoreText.match(/(\d+)\s*[-–\s]\s*(\d+)/);
+              // Format: "2 - 1" ou "2-1" ou "2 1"
+              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
               if (scoreMatch) {
                 match.scoreHome = parseInt(scoreMatch[1]);
                 match.scoreAway = parseInt(scoreMatch[2]);
+              }
+            }
+
+            // 2. Si pas trouvé, chercher dans .score de chaque équipe
+            if (match.scoreHome === null) {
+              const score1El = el.querySelector('.equipe1 .score, .team1 .score, .home .score');
+              const score2El = el.querySelector('.equipe2 .score, .team2 .score, .away .score');
+              if (score1El && score2El) {
+                const s1 = parseInt(score1El.innerText.trim());
+                const s2 = parseInt(score2El.innerText.trim());
+                if (!isNaN(s1) && !isNaN(s2)) {
+                  match.scoreHome = s1;
+                  match.scoreAway = s2;
+                }
+              }
+            }
+
+            // 3. Si toujours pas trouvé, chercher dans des spans avec classe contenant "score"
+            if (match.scoreHome === null) {
+              const scoreSpans = el.querySelectorAll('[class*="score"]');
+              const scores = [];
+              scoreSpans.forEach(span => {
+                const val = parseInt(span.innerText.trim());
+                if (!isNaN(val) && val < 100) { // Score raisonnable
+                  scores.push(val);
+                }
+              });
+              if (scores.length >= 2) {
+                match.scoreHome = scores[0];
+                match.scoreAway = scores[1];
               }
             }
 
@@ -1105,13 +1136,44 @@ async function scrapeCalendrierFallback(page) {
               return text.replace(/\s+EQUIPE\s*\d+\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
             };
 
+            // Chercher le score - plusieurs approches
             const scoreContainer = el.querySelector('.score_match');
             if (scoreContainer) {
               const scoreText = scoreContainer.innerText.trim();
-              const scoreMatch = scoreText.match(/(\d+)\s*[-–\s]\s*(\d+)/);
+              const scoreMatch = scoreText.match(/(\d+)\s*[-–]\s*(\d+)/);
               if (scoreMatch) {
                 match.scoreHome = parseInt(scoreMatch[1]);
                 match.scoreAway = parseInt(scoreMatch[2]);
+              }
+            }
+
+            // Si pas trouvé, chercher dans .score de chaque équipe
+            if (match.scoreHome === null) {
+              const score1El = el.querySelector('.equipe1 .score, .team1 .score');
+              const score2El = el.querySelector('.equipe2 .score, .team2 .score');
+              if (score1El && score2El) {
+                const s1 = parseInt(score1El.innerText.trim());
+                const s2 = parseInt(score2El.innerText.trim());
+                if (!isNaN(s1) && !isNaN(s2)) {
+                  match.scoreHome = s1;
+                  match.scoreAway = s2;
+                }
+              }
+            }
+
+            // Chercher dans des spans avec classe contenant "score"
+            if (match.scoreHome === null) {
+              const scoreSpans = el.querySelectorAll('[class*="score"]');
+              const scores = [];
+              scoreSpans.forEach(span => {
+                const val = parseInt(span.innerText.trim());
+                if (!isNaN(val) && val < 100) {
+                  scores.push(val);
+                }
+              });
+              if (scores.length >= 2) {
+                match.scoreHome = scores[0];
+                match.scoreAway = scores[1];
               }
             }
 
@@ -1281,7 +1343,9 @@ async function saveMatch(matchData, isResult = false) {
   if (equipeId) {
     scraperLogger.debug(`Match ${adversaire} (${matchData.date}) -> equipe_id: ${equipeId}`);
   } else {
-    scraperLogger.debug(`Match ${adversaire} (${matchData.date}) -> AUCUNE équipe locale`);
+    // SKIP: Ne pas insérer les matchs sans équipe locale correspondante
+    scraperLogger.debug(`SKIP Match ${adversaire} (${matchData.date}) -> Pas d'équipe locale (configurer fff_nom dans l'admin)`);
+    return { action: 'skipped', reason: 'no_local_team' };
   }
 
   let dateMatch = null;
@@ -1420,11 +1484,11 @@ async function main() {
   let scrapingLogId = null;
   let browser = null;
   const stats = {
-    equipes: { found: 0, inserted: 0, updated: 0 },     // Nouvelle approche par équipes
-    resultats: { found: 0, inserted: 0, updated: 0 },   // Obsolète
-    agenda: { found: 0, inserted: 0, updated: 0 },       // Obsolète
-    classement: { found: 0, inserted: 0, updated: 0 },
-    calendrier: { found: 0, inserted: 0, updated: 0 }    // Fallback
+    equipes: { found: 0, inserted: 0, updated: 0, skipped: 0 },     // Nouvelle approche par équipes
+    resultats: { found: 0, inserted: 0, updated: 0, skipped: 0 },   // Obsolète
+    agenda: { found: 0, inserted: 0, updated: 0, skipped: 0 },       // Obsolète
+    classement: { found: 0, inserted: 0, updated: 0, skipped: 0 },
+    calendrier: { found: 0, inserted: 0, updated: 0, skipped: 0 }    // Fallback
   };
 
   try {
@@ -1496,6 +1560,7 @@ async function main() {
                 const result = await saveMatch(match, isResult);
                 if (result.action === 'inserted') stats.equipes.inserted++;
                 else if (result.action === 'updated') stats.equipes.updated++;
+                else if (result.action === 'skipped') stats.equipes.skipped++;
               }
             }
             break;
@@ -1510,6 +1575,7 @@ async function main() {
                 const result = await saveMatch(match, isResult);
                 if (result.action === 'inserted') stats.calendrier.inserted++;
                 else if (result.action === 'updated') stats.calendrier.updated++;
+                else if (result.action === 'skipped') stats.calendrier.skipped++;
               }
             }
             break;
@@ -1529,12 +1595,17 @@ async function main() {
     scraperLogger.info('\n' + '='.repeat(60));
     scraperLogger.success('RÉSUMÉ DU SCRAPING:');
     for (const [tab, s] of Object.entries(stats)) {
-      scraperLogger.info(`  ${tab}: ${s.found} trouvés, ${s.inserted} insérés, ${s.updated} mis à jour`);
+      if (s.found > 0 || s.inserted > 0 || s.updated > 0 || s.skipped > 0) {
+        scraperLogger.info(`  ${tab}: ${s.found} trouvés, ${s.inserted} insérés, ${s.updated} mis à jour, ${s.skipped} ignorés (pas d'équipe)`);
+      }
     }
 
     const totalFound = Object.values(stats).reduce((sum, s) => sum + s.found, 0);
     const totalInserted = Object.values(stats).reduce((sum, s) => sum + s.inserted, 0);
     const totalUpdated = Object.values(stats).reduce((sum, s) => sum + s.updated, 0);
+    const totalSkipped = Object.values(stats).reduce((sum, s) => sum + s.skipped, 0);
+
+    scraperLogger.info(`\nTOTAL: ${totalFound} trouvés, ${totalInserted} insérés, ${totalUpdated} mis à jour, ${totalSkipped} ignorés`);
 
     await updateScrapingLog(scrapingLogId, {
       status: 'success',
