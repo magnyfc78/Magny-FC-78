@@ -22,7 +22,7 @@ const views = {
   async home() {
     const [matchsRes, actusRes, configRes, partenairesRes] = await Promise.all([
       api.getMatchs('a_venir', 6),
-      api.getActualites(3),
+      api.getActualites(4),
       fetch('/api/config').then(r => r.json()).catch(() => ({ success: false })),
       fetch('/api/partenaires').then(r => r.json()).catch(() => ({ success: false }))
     ]);
@@ -205,7 +205,7 @@ const views = {
 
   // Page actualités
   async actualites() {
-    const res = await api.getActualites(20);
+    const res = await api.getActualites(100);
     const actualites = res?.data?.actualites || [];
     const categories = ['Tous', 'Match', 'Événement', 'Club', 'Formation'];
     const imageMap = { 'Match': 'match', 'Événement': 'evenement', 'Club': 'club', 'Formation': 'formation' };
@@ -931,10 +931,10 @@ const views = {
                 <div class="form-group">
                   <label for="sujet">Sujet</label>
                   <select id="sujet" name="sujet" class="form-control">
-                    <option>Inscription</option>
-                    <option>Information</option>
-                    <option>Partenariat</option>
-                    <option>Autre</option>
+                    <option value="Inscription">Inscription</option>
+                    <option value="Information">Information</option>
+                    <option value="Partenariat">Partenariat</option>
+                    <option value="Autre">Autre</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -974,6 +974,7 @@ function renderEquipes(equipes) {
         <div class="equipe-info">
           ${e.nb_joueurs > 0 ? `<p>👥 ${e.nb_joueurs} joueurs</p>` : ''}
           <p>🏆 Coach: ${e.coach || 'N/A'}</p>
+          ${e.assistant ? `<p>🤝 Assistant: ${e.assistant}</p>` : ''}
           ${e.horaires_entrainement ? `<p>🕐 ${e.horaires_entrainement}</p>` : ''}
           ${e.terrain ? `<p>📍 ${e.terrain}</p>` : ''}
         </div>
@@ -1012,7 +1013,6 @@ function renderActualites(actualites) {
           </div>
           <h3 class="actu-title">${a.titre}</h3>
           <p class="actu-excerpt">${a.extrait || ''}</p>
-          <span class="actu-views">👁 ${a.vues || 0} vues</span>
           ${instagramIcon}
         </div>
       </article>

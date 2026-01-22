@@ -4,6 +4,8 @@
 
 const express = require('express');
 const db = require('../config/database');
+const { sendContactNotification } = require('../utils/email');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -52,7 +54,7 @@ router.get('/equipes', async (req, res, next) => {
   try {
     const { categorie } = req.query;
     let sql = `
-      SELECT e.id, e.nom, e.slug, e.division, e.coach, e.description, e.photo, e.photo_equipe,
+      SELECT e.id, e.nom, e.slug, e.division, e.coach, e.assistant, e.description, e.photo, e.photo_equipe,
              e.horaires_entrainement, e.terrain,
              c.nom as categorie_nom, c.slug as categorie_slug,
              (SELECT COUNT(*) FROM joueurs WHERE equipe_id = e.id AND actif = 1) as nb_joueurs
@@ -396,19 +398,37 @@ router.get('/partenaires', async (req, res, next) => {
 // =====================================================
 router.post('/contact', async (req, res, next) => {
   try {
-    const { nom, email, telephone, sujet, message } = req.body;
-    
+    const { nom, email, message } = req.body;
+    const telephone = req.body.telephone || null;
+    const sujet = req.body.sujet || 'Autre';
+
     if (!nom || !email || !message) {
       return res.status(400).json({ success: false, error: 'Champs requis manquants' });
     }
-    
+
     const ip = req.ip || req.connection.remoteAddress;
-    
+
     await db.pool.execute(
       'INSERT INTO contacts (nom, email, telephone, sujet, message, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-      [nom, email.toLowerCase(), telephone, sujet || 'Autre', message, ip]
+      [nom, email.toLowerCase(), telephone, sujet, message, ip]
     );
-    
+
+    logger.info(`Nouveau message de contact reçu de: ${email}`);
+
+    // Envoyer un email de notification (non bloquant)
+    sendContactNotification({ nom, email, sujet, message })
+      .then(result => {
+        if (result.success) {
+          logger.info(`Email de notification envoyé pour le contact de: ${email}`);
+        } else {
+          logger.error(`Échec envoi email: ${result.error}`);
+        }
+      })
+      .catch(err => {
+        logger.error(`Erreur envoi notification email: ${err}`);
+        logger.error(err);
+      });
+
     res.status(201).json({ success: true, message: 'Message envoyé avec succès' });
   } catch (error) { next(error); }
 });

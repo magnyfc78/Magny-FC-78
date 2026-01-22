@@ -55,6 +55,17 @@ const config = {
   // Logs
   logging: {
     level: process.env.LOG_LEVEL || 'info'
+  },
+
+  // Email SMTP
+  email: {
+    host: process.env.SMTP_HOST || 'ssl0.ovh.net',
+    port: parseInt(process.env.SMTP_PORT, 10) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER,
+    password: process.env.SMTP_PASSWORD,
+    from: process.env.SMTP_FROM || 'contact@magnyfc78.fr',
+    contactEmail: process.env.CONTACT_EMAIL || 'contact@magnyfc78.fr'
   }
 };
 
