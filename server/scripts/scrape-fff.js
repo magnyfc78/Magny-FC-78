@@ -906,6 +906,11 @@ async function scrapeEquipes(page) {
                 }
               });
 
+              // DEBUG: Log pour voir ce qu'on trouve
+              if (digits.length > 0) {
+                console.log(`[SCORE DEBUG] Found ${imgs.length} images, digits: ${digits.join(',')}`);
+              }
+
               // Les chiffres sont séparés par " - " dans le HTML
               // On doit déterminer où est la séparation
               // Méthode: regarder le contenu HTML pour trouver le séparateur
@@ -924,16 +929,19 @@ async function scrapeEquipes(page) {
                 if (homeDigits && awayDigits) {
                   match.scoreHome = parseInt(homeDigits);
                   match.scoreAway = parseInt(awayDigits);
+                  console.log(`[SCORE DEBUG] Extracted: ${match.scoreHome} - ${match.scoreAway}`);
                 }
               } else if (digits.length === 2) {
                 // Fallback simple: 2 chiffres = 1 pour chaque équipe
                 match.scoreHome = parseInt(digits[0]);
                 match.scoreAway = parseInt(digits[1]);
+                console.log(`[SCORE DEBUG] Fallback 2 digits: ${match.scoreHome} - ${match.scoreAway}`);
               } else if (digits.length > 2) {
                 // Fallback: diviser en deux moitiés
                 const mid = Math.floor(digits.length / 2);
                 match.scoreHome = parseInt(digits.slice(0, mid).join(''));
                 match.scoreAway = parseInt(digits.slice(mid).join(''));
+                console.log(`[SCORE DEBUG] Fallback split: ${match.scoreHome} - ${match.scoreAway}`);
               }
             }
 
@@ -1356,6 +1364,9 @@ async function saveMatch(matchData, isResult = false) {
 
   // Utiliser le statut déjà calculé dans matchData (basé sur la date), sinon fallback
   const statut = matchData.statut || (isResult || matchData.scoreHome !== null ? 'termine' : 'a_venir');
+
+  // DEBUG: Log des scores reçus
+  scraperLogger.info(`[SAVE] ${adversaire} (${matchData.date}) - Scores reçus: ${matchData.scoreHome}-${matchData.scoreAway}, statut: ${statut}, isMagnyHome: ${isMagnyHome}`);
 
   // Si le match est à venir, pas de scores
   const scoreHome = statut === 'a_venir' ? null : (isMagnyHome ? matchData.scoreHome : matchData.scoreAway);
