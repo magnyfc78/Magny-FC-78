@@ -186,7 +186,8 @@ function switchSection(section) {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
     galerie: 'Galerie', histoire: 'Histoire du club', organigramme: 'Organigramme',
-    partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
+    partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs',
+    scraper: 'Scraper FFF', logs: 'Activité'
   };
   document.getElementById('page-title').textContent = titles[section] || section;
 
@@ -195,7 +196,8 @@ function switchSection(section) {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
     galerie: loadGalerie, histoire: loadHistoire, organigramme: loadOrganigramme,
-    partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers, logs: loadLogs
+    partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers,
+    scraper: loadScraper, logs: loadLogs
   };
   loaders[section]?.();
 }
@@ -1106,6 +1108,151 @@ async function viewContact(id) {
   document.getElementById('modal-submit').style.display = 'none';
   document.getElementById('modal').classList.add('active');
   if (!m.lu) await api.patch(`/admin/contacts/${id}/read`);
+}
+
+// =====================================================
+// SCRAPER FFF
+// =====================================================
+async function loadScraper() {
+  try {
+    const [configRes, statusRes] = await Promise.all([
+      api.get('/admin/scraper/config'),
+      api.get('/admin/scraper/status')
+    ]);
+
+    const config = configRes.data.config;
+    const status = statusRes.data.status;
+
+    // Jours de la semaine
+    const joursOptions = [
+      { value: '0', label: 'Dimanche' },
+      { value: '1', label: 'Lundi' },
+      { value: '2', label: 'Mardi' },
+      { value: '3', label: 'Mercredi' },
+      { value: '4', label: 'Jeudi' },
+      { value: '5', label: 'Vendredi' },
+      { value: '6', label: 'Samedi' }
+    ];
+
+    const selectedDays = (config.days || '0,1,6').split(',');
+    const selectedHours = (config.hours || '0,12').split(',');
+
+    document.getElementById('scraper-config').innerHTML = `
+      <form id="scraper-form">
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="scraper-enabled" ${config.enabled === 'true' ? 'checked' : ''}>
+            Activer le scraping automatique
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jours d'exécution</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            ${joursOptions.map(j => `
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" name="days" value="${j.value}" ${selectedDays.includes(j.value) ? 'checked' : ''}>
+                ${j.label}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Heures d'exécution</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            ${[0, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(h => `
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" name="hours" value="${h}" ${selectedHours.includes(String(h)) ? 'checked' : ''}>
+                ${String(h).padStart(2, '0')}:00
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Timeout (secondes)</label>
+            <input type="number" class="form-control" id="scraper-timeout" value="${Math.round((parseInt(config.timeout) || 300000) / 1000)}" min="60" max="600">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tentatives en cas d'échec</label>
+            <input type="number" class="form-control" id="scraper-retries" value="${config.retries || 2}" min="0" max="5">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Enregistrer la configuration</button>
+      </form>
+    `;
+
+    // Statut
+    const lastRun = status.last_run ? new Date(status.last_run).toLocaleString('fr-FR') : 'Jamais';
+    document.getElementById('scraper-status').innerHTML = `
+      <p><strong>Dernière exécution:</strong> ${lastRun}</p>
+      <p><strong>Statut:</strong> ${status.last_status || 'Inconnu'}</p>
+      <p style="margin-top: 15px; color: #6b7280; font-size: 0.9rem;">
+        Le scraper récupère automatiquement les matchs et résultats depuis le site de la FFF (District des Yvelines).
+      </p>
+    `;
+
+    // Event listeners
+    document.getElementById('scraper-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await saveScraperConfig();
+    });
+
+    document.getElementById('btn-run-scraper').addEventListener('click', async () => {
+      if (confirm('Lancer le scraping maintenant ?')) {
+        try {
+          document.getElementById('btn-run-scraper').disabled = true;
+          document.getElementById('btn-run-scraper').textContent = '⏳ En cours...';
+          await api.post('/admin/scraper/run', {});
+          showAlert('Scraper lancé en arrière-plan', 'success');
+          setTimeout(() => loadScraper(), 3000);
+        } catch (err) {
+          showAlert('Erreur: ' + err.message, 'danger');
+        } finally {
+          document.getElementById('btn-run-scraper').disabled = false;
+          document.getElementById('btn-run-scraper').textContent = '▶️ Exécuter maintenant';
+        }
+      }
+    });
+
+  } catch (e) {
+    document.getElementById('scraper-config').innerHTML = '<p class="text-danger">Erreur chargement configuration</p>';
+    console.error(e);
+  }
+}
+
+async function saveScraperConfig() {
+  try {
+    const enabled = document.getElementById('scraper-enabled').checked;
+    const daysChecked = [...document.querySelectorAll('input[name="days"]:checked')].map(c => c.value);
+    const hoursChecked = [...document.querySelectorAll('input[name="hours"]:checked')].map(c => c.value);
+    const timeout = parseInt(document.getElementById('scraper-timeout').value) * 1000;
+    const retries = parseInt(document.getElementById('scraper-retries').value);
+
+    if (daysChecked.length === 0) {
+      showAlert('Sélectionnez au moins un jour', 'danger');
+      return;
+    }
+    if (hoursChecked.length === 0) {
+      showAlert('Sélectionnez au moins une heure', 'danger');
+      return;
+    }
+
+    await api.put('/admin/scraper/config', {
+      enabled: String(enabled),
+      days: daysChecked.join(','),
+      hours: hoursChecked.join(','),
+      timeout: String(timeout),
+      retries: String(retries)
+    });
+
+    showAlert('Configuration sauvegardée', 'success');
+  } catch (e) {
+    showAlert('Erreur: ' + e.message, 'danger');
+  }
 }
 
 // =====================================================

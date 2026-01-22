@@ -900,4 +900,112 @@ async function logActivity(userId, action, entite, entiteId, details = null) {
   }
 }
 
+// =====================================================
+// CONFIGURATION SCRAPER FFF
+// =====================================================
+router.get('/scraper/config', async (req, res, next) => {
+  try {
+    const [rows] = await db.pool.execute('SELECT cle, valeur, description FROM scraper_config');
+    const config = {};
+    rows.forEach(row => {
+      config[row.cle] = row.valeur;
+    });
+    res.json({ success: true, data: { config } });
+  } catch (error) {
+    // Si la table n'existe pas encore, retourner config par défaut
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      res.json({
+        success: true,
+        data: {
+          config: {
+            enabled: 'true',
+            days: '0,1,6',
+            hours: '0,12',
+            timeout: '300000',
+            retries: '2',
+            last_run: '',
+            last_status: ''
+          }
+        }
+      });
+    } else {
+      next(error);
+    }
+  }
+});
+
+router.put('/scraper/config', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const { enabled, days, hours, timeout, retries } = req.body;
+
+    // Valider les données
+    if (days && !/^[0-6](,[0-6])*$/.test(days)) {
+      throw new AppError('Format jours invalide. Utilisez 0-6 séparés par des virgules.', 400);
+    }
+    if (hours && !/^([0-9]|1[0-9]|2[0-3])(,([0-9]|1[0-9]|2[0-3]))*$/.test(hours)) {
+      throw new AppError('Format heures invalide. Utilisez 0-23 séparés par des virgules.', 400);
+    }
+
+    // Mettre à jour chaque paramètre
+    const updates = { enabled, days, hours, timeout, retries };
+    for (const [cle, valeur] of Object.entries(updates)) {
+      if (valeur !== undefined) {
+        await db.pool.execute(
+          'INSERT INTO scraper_config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = ?',
+          [cle, String(valeur), String(valeur)]
+        );
+      }
+    }
+
+    await logActivity(req.user.id, 'update', 'scraper_config', null, updates);
+    res.json({ success: true, message: 'Configuration du scraper mise à jour' });
+  } catch (error) { next(error); }
+});
+
+// Exécuter le scraper manuellement
+router.post('/scraper/run', restrictTo('admin'), async (req, res, next) => {
+  try {
+    const { spawn } = require('child_process');
+    const path = require('path');
+
+    const scriptPath = path.join(__dirname, '../scripts/scrape-fff.js');
+
+    // Lancer le scraper en arrière-plan
+    const child = spawn('node', [scriptPath], {
+      cwd: path.join(__dirname, '../..'),
+      env: { ...process.env },
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    child.unref();
+
+    // Enregistrer le lancement
+    await db.pool.execute(
+      'INSERT INTO scraper_config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = ?',
+      ['last_run', new Date().toISOString(), new Date().toISOString()]
+    ).catch(() => {});
+
+    await logActivity(req.user.id, 'execute', 'scraper', null, { manual: true });
+
+    res.json({ success: true, message: 'Scraper lancé en arrière-plan' });
+  } catch (error) { next(error); }
+});
+
+// Statut du scraper (dernière exécution)
+router.get('/scraper/status', async (req, res, next) => {
+  try {
+    const [rows] = await db.pool.execute(
+      'SELECT cle, valeur FROM scraper_config WHERE cle IN ("last_run", "last_status")'
+    );
+    const status = {};
+    rows.forEach(row => {
+      status[row.cle] = row.valeur;
+    });
+    res.json({ success: true, data: { status } });
+  } catch (error) {
+    res.json({ success: true, data: { status: { last_run: '', last_status: '' } } });
+  }
+});
+
 module.exports = router;

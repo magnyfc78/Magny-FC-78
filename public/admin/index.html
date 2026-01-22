@@ -365,6 +365,7 @@
         
         <nav class="nav-section">
             <div class="nav-section-title">Système</div>
+            <button class="nav-item" data-section="scraper"><span class="nav-item-icon">🔄</span> Scraper FFF</button>
             <button class="nav-item" data-section="users"><span class="nav-item-icon">👤</span> Utilisateurs</button>
             <button class="nav-item" data-section="logs"><span class="nav-item-icon">📜</span> Activité</button>
             <button class="nav-item" data-action="logout"><span class="nav-item-icon">🚪</span> Déconnexion</button>
@@ -521,6 +522,21 @@
                         <button class="btn btn-primary btn-sm" data-action="add" data-type="user">+ Nouvel utilisateur</button>
                     </div>
                     <div class="card-body" id="users-list"></div>
+                </div>
+            </div>
+
+            <!-- Scraper FFF -->
+            <div class="section" id="section-scraper">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Configuration du Scraper FFF</h3>
+                        <button class="btn btn-success btn-sm" id="btn-run-scraper">▶️ Exécuter maintenant</button>
+                    </div>
+                    <div class="card-body" id="scraper-config"></div>
+                </div>
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header"><h3 class="card-title">Statut</h3></div>
+                    <div class="card-body" id="scraper-status"></div>
                 </div>
             </div>
 
