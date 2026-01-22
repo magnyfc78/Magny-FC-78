@@ -581,7 +581,7 @@ const views = {
             <div class="match-teams">
               <span class="team ${m.equipe_dom?.includes('Magny') ? 'highlight' : ''}">${m.equipe_dom || 'Équipe'}</span>
               ${showScore && m.statut === 'termine' ? `
-                <span class="match-score">${m.score_dom ?? '-'} - ${m.score_ext ?? '-'}</span>
+                <span class="match-score">${m.score_domicile ?? '-'} - ${m.score_exterieur ?? '-'}</span>
               ` : '<span class="vs">VS</span>'}
               <span class="team ${m.equipe_ext?.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext || 'Adversaire'}</span>
             </div>
