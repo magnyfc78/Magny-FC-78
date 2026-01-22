@@ -30,8 +30,12 @@ const fs = require('fs');
 const ROOT_DIR = path.join(__dirname, '../..');
 const LOG_DIR = path.join(ROOT_DIR, 'logs');
 
-// Charger les variables d'environnement
-require('dotenv').config({ path: require('path').join(ROOT_DIR, '.env') });
+// Charger les variables d'environnement selon NODE_ENV
+// Utilise .env.development en dev, .env.production en prod
+require('dotenv-flow').config({
+  path: ROOT_DIR,
+  silent: true
+});
 
 const puppeteer = require('puppeteer');
 const mysql = require('mysql2/promise');
