@@ -27,18 +27,19 @@ const cron = require('node-cron');
 const { spawn } = require('child_process');
 
 // Configuration des tâches
+// Jours de week-end football: Samedi (6), Dimanche (0), Lundi (1)
 const TASKS = {
-  scrapeFFFMatin: {
-    name: 'Scraping FFF (Matin)',
-    schedule: '0 6 * * *', // Tous les jours à 6h00
+  scrapeFFFMinuit: {
+    name: 'Scraping FFF (Minuit)',
+    schedule: '0 0 * * 0,1,6', // Samedi, Dimanche, Lundi à 00:00
     script: path.join(__dirname, 'scrape-fff.js'),
     enabled: true,
     timeout: 5 * 60 * 1000, // 5 minutes max
     retries: 2
   },
-  scrapeFFFSoir: {
-    name: 'Scraping FFF (Soir)',
-    schedule: '0 18 * * *', // Tous les jours à 18h00
+  scrapeFFFMidi: {
+    name: 'Scraping FFF (Midi)',
+    schedule: '0 12 * * 0,1,6', // Samedi, Dimanche, Lundi à 12:00
     script: path.join(__dirname, 'scrape-fff.js'),
     enabled: true,
     timeout: 5 * 60 * 1000, // 5 minutes max
@@ -186,7 +187,7 @@ function scheduleTasks() {
   }
 
   logger.info('Planificateur démarré. En attente des tâches...');
-  logger.info('Prochaine exécution du scraping FFF: 6h00');
+  logger.info('Scraping FFF programmé: Samedi/Dimanche/Lundi à 00:00 et 12:00');
 }
 
 // Exécuter une tâche immédiatement
