@@ -699,6 +699,7 @@ nav a.active {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
+  border-radius: 20px;
 }
 
 .match-category {
