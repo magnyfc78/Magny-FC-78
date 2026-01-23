@@ -217,12 +217,37 @@ async function saveDebugInfo(page, tabName) {
   }
 }
 
+// Trouver le chemin de Chromium sur le système
+function findChromiumPath() {
+  const possiblePaths = [
+    '/usr/bin/chromium-browser',  // Ubuntu/Debian
+    '/usr/bin/chromium',          // Arch/Fedora
+    '/usr/bin/google-chrome',     // Google Chrome
+    '/usr/bin/google-chrome-stable',
+    process.env.PUPPETEER_EXECUTABLE_PATH  // Variable d'environnement
+  ];
+
+  const fs = require('fs');
+  for (const path of possiblePaths) {
+    if (path && fs.existsSync(path)) {
+      return path;
+    }
+  }
+  return null; // Utiliser le Chrome bundlé de Puppeteer
+}
+
 // Lancer le navigateur Puppeteer
 async function launchBrowser() {
   scraperLogger.info('Démarrage du navigateur Puppeteer...');
 
+  const executablePath = findChromiumPath();
+  if (executablePath) {
+    scraperLogger.info(`Utilisation de Chromium système: ${executablePath}`);
+  }
+
   return await puppeteer.launch({
     headless: 'new',
+    executablePath: executablePath || undefined,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
