@@ -102,7 +102,6 @@ const views = {
                   <div class="match-meta">
                     ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
                     <span class="match-time">${m.heure}</span>
-                    <span class="match-competition">${m.competition || 'Match'}</span>
                   </div>
                 </div>
               </div>
@@ -588,7 +587,6 @@ const views = {
             <div class="match-meta">
               ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
               <span class="match-time">${m.heure || '15:00'}</span>
-              <span class="match-competition">${m.competition || 'Match'}</span>
               ${showScore && m.resultat ? `<span class="match-result match-result-${m.resultat}">${m.resultat === 'victoire' ? 'V' : m.resultat === 'nul' ? 'N' : 'D'}</span>` : ''}
             </div>
           </div>
