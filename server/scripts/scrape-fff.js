@@ -68,7 +68,7 @@ const TAB_ARG = args.find(a => a.startsWith('--tab='));
 const SPECIFIC_TAB = TAB_ARG ? TAB_ARG.split('=')[1] : null;
 
 // Dossier pour les fichiers de debug
-const DEBUG_DIR = path.join(ROOT_DIR, 'logs', 'scraper-debug');
+const DEBUG_DIR = path.join(ROOT_DIR,'logs', 'scraper-debu g');
 
 // Logger personnalisé pour le scraping
 const scraperLogger = {
