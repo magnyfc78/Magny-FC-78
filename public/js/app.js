@@ -100,8 +100,8 @@ const views = {
                     <span class="team ${m.equipe_ext.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext}</span>
                   </div>
                   <div class="match-meta">
-                    ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
                     <span class="match-time">${m.heure}</span>
+                    ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -585,8 +585,8 @@ const views = {
               <span class="team ${m.equipe_ext?.includes('Magny') ? 'highlight' : ''}">${m.equipe_ext || 'Adversaire'}</span>
             </div>
             <div class="match-meta">
-              ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
               <span class="match-time">${m.heure || '15:00'}</span>
+              ${m.equipe_nom ? `<span class="match-category">${m.equipe_nom}</span>` : ''}
               ${showScore && m.resultat ? `<span class="match-result match-result-${m.resultat}">${m.resultat === 'victoire' ? 'V' : m.resultat === 'nul' ? 'N' : 'D'}</span>` : ''}
             </div>
           </div>
