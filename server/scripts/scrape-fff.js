@@ -1086,7 +1086,7 @@ async function scrapeEquipes(page) {
         });
 
         return results;
-      }, teamLabel, monthsMap);
+      }, team.label, months);
       };
 
       // Scraper les résultats (matchs passés) et l'agenda (matchs futurs)
