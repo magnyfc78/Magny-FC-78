@@ -897,24 +897,37 @@ async function scrapeEquipes(page) {
         scraperLogger.info(`     ⚠ Pas d'équipe locale correspondante (configurer fff_nom dans l'admin)`);
       }
 
-      scraperLogger.info(`     URL: ${team.url}`);
+      scraperLogger.info(`     URL originale: ${team.url}`);
 
-      await page.goto(team.url, {
-        waitUntil: 'networkidle2',
-        timeout: CONFIG.timeout
-      });
-      await delay(2000);
+      // Construire les URLs pour résultats et agenda à partir de l'URL du calendrier
+      // Le subtab=calendar affiche une grille calendrier sans app-confrontation,
+      // il faut utiliser subtab=resultats (matchs passés) et subtab=agenda (matchs futurs)
+      // qui affichent les matchs sous forme de app-confrontation
+      const baseTeamUrl = team.url
+        .replace(/([?&])subtab=[^&]+(&?)/, (_, pre, post) => post ? pre : '')
+        .replace(/[?&]$/, '');
+      const sep = baseTeamUrl.includes('?') ? '&' : '?';
+      const resultatsUrl = baseTeamUrl + sep + 'subtab=resultats';
+      const agendaUrl = baseTeamUrl + sep + 'subtab=agenda';
 
-      // Fermer la popup de cookies si elle réapparaît
-      await dismissCookiePopup(page);
-      await delay(1000);
+      // Helper pour scraper les app-confrontation d'une page
+      const scrapeConfrontations = async (url, subtabName) => {
+        scraperLogger.info(`     Scraping ${subtabName}: ${url}`);
+        await page.goto(url, {
+          waitUntil: 'networkidle2',
+          timeout: CONFIG.timeout
+        });
+        await delay(2000);
 
-      if (DEBUG) {
-        await saveDebugInfo(page, `equipe-${team.label.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`);
-      }
+        // Fermer la popup de cookies si elle réapparaît
+        await dismissCookiePopup(page);
+        await delay(1000);
 
-      // Récupérer tous les matchs de cette équipe (passés et futurs)
-      const matches = await page.evaluate((teamLabel, monthsMap) => {
+        if (DEBUG) {
+          await saveDebugInfo(page, `equipe-${team.label.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}-${subtabName}`);
+        }
+
+        return await page.evaluate((teamLabel, monthsMap) => {
         const results = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -1073,19 +1086,35 @@ async function scrapeEquipes(page) {
         });
 
         return results;
-      }, team.label, months);
+      }, teamLabel, monthsMap);
+      };
+
+      // Scraper les résultats (matchs passés) et l'agenda (matchs futurs)
+      const resultatsMatches = await scrapeConfrontations(resultatsUrl, 'resultats');
+      const agendaMatches = await scrapeConfrontations(agendaUrl, 'agenda');
+
+      // Combiner et dédupliquer (par date + adversaire)
+      const allTeamMatches = [...resultatsMatches];
+      const existingKeys = new Set(resultatsMatches.map(m => `${m.date}-${m.homeTeam}-${m.awayTeam}`));
+      for (const m of agendaMatches) {
+        const key = `${m.date}-${m.homeTeam}-${m.awayTeam}`;
+        if (!existingKeys.has(key)) {
+          allTeamMatches.push(m);
+          existingKeys.add(key);
+        }
+      }
 
       // Enrichir chaque match avec l'ID de l'équipe locale
       if (localTeam) {
-        matches.forEach(m => {
+        allTeamMatches.forEach(m => {
           m.localTeamId = localTeam.id;
           m.localTeamNom = localTeam.nom;
         });
       }
 
-      if (matches.length > 0) {
-        scraperLogger.info(`     ${matches.length} matchs trouvés (${matches.filter(m => m.statut === 'termine').length} terminés, ${matches.filter(m => m.statut === 'a_venir').length} à venir)`);
-        allMatches.push(...matches);
+      if (allTeamMatches.length > 0) {
+        scraperLogger.info(`     ${allTeamMatches.length} matchs trouvés (${allTeamMatches.filter(m => m.statut === 'termine').length} terminés, ${allTeamMatches.filter(m => m.statut === 'a_venir').length} à venir)`);
+        allMatches.push(...allTeamMatches);
       } else {
         scraperLogger.warn(`     Aucun match trouvé pour ${team.label}`);
       }
