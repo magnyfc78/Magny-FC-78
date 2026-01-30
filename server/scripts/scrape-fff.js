@@ -1125,6 +1125,152 @@ async function scrapeEquipes(page) {
   }
 
   scraperLogger.info(`\n${'='.repeat(50)}`);
+  scraperLogger.info(`Matchs récupérés via la page équipes: ${allMatches.length}`);
+
+  // ÉTAPE 4: Scraper les pages globales résultats + agenda pour les équipes manquantes
+  // Certaines compétitions (CRITERIUM U10, U11, U12, SENIORS F) n'apparaissent pas
+  // sur la page tab=teams mais sont présentes sur les pages globales resultats/agenda
+  const coveredTeamIds = new Set(allMatches.filter(m => m.localTeamId).map(m => m.localTeamId));
+  const uncoveredTeams = localTeams.filter(lt => lt.fff_nom && !coveredTeamIds.has(lt.id));
+
+  if (uncoveredTeams.length > 0) {
+    scraperLogger.info(`\n--- Équipes non couvertes par la page équipes: ${uncoveredTeams.map(t => t.nom).join(', ')} ---`);
+    scraperLogger.info('Scraping des pages globales résultats + agenda...');
+
+    const globalPages = [
+      { url: CONFIG.urls.resultats, name: 'résultats globaux' },
+      { url: CONFIG.urls.agenda, name: 'agenda global' }
+    ];
+
+    for (const gp of globalPages) {
+      try {
+        scraperLogger.info(`  -> ${gp.name}: ${gp.url}`);
+        await page.goto(gp.url, { waitUntil: 'networkidle2', timeout: CONFIG.timeout });
+        await delay(2000);
+        await dismissCookiePopup(page);
+        await delay(1000);
+
+        const globalMatches = await page.evaluate((monthsMap) => {
+          const results = [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const confrontations = document.querySelectorAll('app-confrontation');
+          confrontations.forEach(el => {
+            try {
+              const match = {
+                homeTeam: null, awayTeam: null,
+                scoreHome: null, scoreAway: null,
+                date: null, heure: null,
+                competition: null, fffLabel: null,
+                url: null, forfait: null, statut: 'a_venir'
+              };
+
+              const link = el.querySelector('a');
+              if (link) match.url = link.getAttribute('href');
+
+              const competitionEl = el.querySelector('.competition');
+              if (competitionEl) {
+                match.competition = competitionEl.innerText.replace(/\n/g, ' ').trim();
+                match.fffLabel = match.competition;
+              }
+
+              const dateEl = el.querySelector('.date');
+              let matchDate = null;
+              if (dateEl) {
+                const dateText = dateEl.innerText;
+                const dateMatch = dateText.match(/(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+(\d{4})/i);
+                if (dateMatch) {
+                  const day = dateMatch[1].padStart(2, '0');
+                  const month = monthsMap[dateMatch[2].toLowerCase()] || '01';
+                  const year = dateMatch[3];
+                  match.date = `${year}-${month}-${day}`;
+                  matchDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                }
+                const timeMatch = dateText.match(/(\d{1,2})[hH](\d{2})/);
+                if (timeMatch) {
+                  match.heure = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+                }
+              }
+
+              const cleanTeamName = (text) => text.replace(/\s+EQUIPE\s*\d+\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
+
+              // Scores via images PNG
+              const scoreContainer = el.querySelector('.score_match');
+              if (scoreContainer) {
+                const imgs = scoreContainer.querySelectorAll('img.number');
+                const digits = [];
+                imgs.forEach(img => {
+                  const src = img.getAttribute('src') || '';
+                  const digitMatch = src.match(/(\d+)\.png/i);
+                  if (digitMatch) digits.push(digitMatch[1]);
+                });
+                const html = scoreContainer.innerHTML;
+                const separatorIndex = html.indexOf(' - ');
+                if (digits.length >= 2 && separatorIndex > -1) {
+                  const beforeSeparator = html.substring(0, separatorIndex);
+                  const imgCountBefore = (beforeSeparator.match(/<img[^>]*class="number"/g) || []).length;
+                  const homeDigits = digits.slice(0, imgCountBefore).join('');
+                  const awayDigits = digits.slice(imgCountBefore).join('');
+                  if (homeDigits && awayDigits) {
+                    match.scoreHome = parseInt(homeDigits);
+                    match.scoreAway = parseInt(awayDigits);
+                  }
+                } else if (digits.length === 2) {
+                  match.scoreHome = parseInt(digits[0]);
+                  match.scoreAway = parseInt(digits[1]);
+                } else if (digits.length > 2) {
+                  const mid = Math.floor(digits.length / 2);
+                  match.scoreHome = parseInt(digits.slice(0, mid).join(''));
+                  match.scoreAway = parseInt(digits.slice(mid).join(''));
+                }
+              }
+
+              const equipe1 = el.querySelector('.equipe1 .name');
+              if (equipe1) match.homeTeam = cleanTeamName(equipe1.innerText.trim());
+              const equipe2 = el.querySelector('.equipe2 .name');
+              if (equipe2) match.awayTeam = cleanTeamName(equipe2.innerText.trim());
+
+              const forfait = el.querySelector('.forfeit span, .forfait');
+              if (forfait) match.forfait = forfait.innerText.trim();
+
+              if (matchDate) {
+                if (matchDate < today) {
+                  match.statut = 'termine';
+                } else {
+                  match.statut = 'a_venir';
+                  match.scoreHome = null;
+                  match.scoreAway = null;
+                }
+              }
+
+              if (match.homeTeam && match.awayTeam) {
+                results.push(match);
+              }
+            } catch (err) {}
+          });
+          return results;
+        }, months);
+
+        scraperLogger.info(`     ${globalMatches.length} matchs trouvés`);
+
+        // Ne garder que les matchs des équipes non couvertes
+        for (const m of globalMatches) {
+          const lt = matchLocalTeam(m.competition, localTeams);
+          if (lt && !coveredTeamIds.has(lt.id)) {
+            m.localTeamId = lt.id;
+            m.localTeamNom = lt.nom;
+            allMatches.push(m);
+          }
+        }
+
+      } catch (err) {
+        scraperLogger.error(`  Erreur ${gp.name}: ${err.message}`);
+      }
+    }
+  }
+
+  scraperLogger.info(`\n${'='.repeat(50)}`);
   scraperLogger.info(`Total équipes récupéré: ${allMatches.length} matchs`);
   scraperLogger.info(`  - Matchs terminés: ${allMatches.filter(m => m.statut === 'termine').length}`);
   scraperLogger.info(`  - Matchs à venir: ${allMatches.filter(m => m.statut === 'a_venir').length}`);
