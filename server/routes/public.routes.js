@@ -111,8 +111,8 @@ router.get('/equipes/:slug', async (req, res, next) => {
 // =====================================================
 router.get('/matchs', async (req, res, next) => {
   try {
-    const { type = 'a_venir', equipe, limit = 20 } = req.query;
-    
+    const { type = 'a_venir', equipe, equipe_id, limit = 20, from_date, to_date, sort } = req.query;
+
     let sql = `
       SELECT m.*, e.nom as equipe_nom, e.slug as equipe_slug, c.nom as categorie
       FROM matchs m
@@ -121,7 +121,7 @@ router.get('/matchs', async (req, res, next) => {
       WHERE m.visible = 1
     `;
     const params = [];
-    
+
     if (type !== 'tous') {
       sql += ' AND m.statut = ?';
       params.push(type);
@@ -130,8 +130,21 @@ router.get('/matchs', async (req, res, next) => {
       sql += ' AND e.slug = ?';
       params.push(equipe);
     }
+    if (equipe_id) {
+      sql += ' AND m.equipe_id = ?';
+      params.push(parseInt(equipe_id));
+    }
+    if (from_date) {
+      sql += ' AND m.date_match >= ?';
+      params.push(from_date);
+    }
+    if (to_date) {
+      sql += ' AND m.date_match <= ?';
+      params.push(to_date);
+    }
     
-    sql += ` ORDER BY m.date_match ${type === 'termine' ? 'DESC' : 'ASC'} LIMIT ?`;
+    const sortOrder = sort === 'asc' ? 'ASC' : sort === 'desc' ? 'DESC' : (type === 'termine' ? 'DESC' : 'ASC');
+    sql += ` ORDER BY m.date_match ${sortOrder} LIMIT ?`;
     params.push(parseInt(limit) || 20);
 
     const matchs = await db.query(sql, params);
