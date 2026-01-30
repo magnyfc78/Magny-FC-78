@@ -541,31 +541,22 @@ const views = {
     `;
   },
 
-  // Page calendrier avec 4 onglets (comme dyf78.fff.fr)
+  // Page calendrier avec 2 onglets principaux
   async calendrier() {
-    // Charger toutes les données en parallèle
-    const [resultatsRes, agendaRes, classementsRes] = await Promise.all([
-      api.getMatchs('termine', 50),
-      api.getMatchs('a_venir', 50),
-      fetch('/api/classements').then(r => r.json()).catch(() => ({ success: false, data: { classements: [] } }))
+    // Charger les équipes et tous les matchs en parallèle
+    const [equipesRes, resultatsRes, agendaRes] = await Promise.all([
+      api.getEquipes(),
+      api.getMatchs('termine', 100),
+      api.getMatchs('a_venir', 100)
     ]);
 
-    const resultats = resultatsRes?.data?.matchs || [];
-    const agenda = agendaRes?.data?.matchs || [];
-    const allMatchs = [...resultats, ...agenda].sort((a, b) => new Date(a.date_match) - new Date(b.date_match));
-    const classements = classementsRes?.success ? classementsRes.data.classements : [];
+    const equipes = (equipesRes?.data?.equipes || []).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    const allResultats = resultatsRes?.data?.matchs || [];
+    const allAgenda = agendaRes?.data?.matchs || [];
+    const allMatchs = [...allResultats, ...allAgenda].sort((a, b) => new Date(a.date_match) - new Date(b.date_match));
 
-    // Grouper les classements par compétition
-    const classementsByCompetition = {};
-    classements.forEach(c => {
-      if (!classementsByCompetition[c.competition_nom]) {
-        classementsByCompetition[c.competition_nom] = [];
-      }
-      classementsByCompetition[c.competition_nom].push(c);
-    });
-
-    // Stocker les données pour le filtrage par onglet
-    window.calendrierData = { resultats, agenda, allMatchs, classementsByCompetition };
+    // Stocker les données
+    window.calendrierData = { equipes, allResultats, allAgenda, allMatchs };
 
     // Fonction pour rendre une liste de matchs
     const renderMatchList = (matchs, showScore = false) => {
@@ -594,47 +585,8 @@ const views = {
       `).join('');
     };
 
-    // Fonction pour rendre les classements
-    const renderClassements = () => {
-      if (Object.keys(classementsByCompetition).length === 0) {
-        return '<p class="text-center text-muted">Aucun classement disponible</p>';
-      }
-      return Object.entries(classementsByCompetition).map(([compName, teams]) => `
-        <div class="classement-group">
-          <h3 class="classement-title">${compName}</h3>
-          <div class="classement-table-wrapper">
-            <table class="classement-table">
-              <thead>
-                <tr>
-                  <th>Pos</th>
-                  <th>Équipe</th>
-                  <th>Pts</th>
-                  <th>J</th>
-                  <th>G</th>
-                  <th>N</th>
-                  <th>P</th>
-                  <th>+/-</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${teams.sort((a, b) => a.position - b.position).map(t => `
-                  <tr class="${/magny/i.test(t.equipe_nom) ? 'highlight-row' : ''}">
-                    <td class="position">${t.position}</td>
-                    <td class="team-name">${t.equipe_nom}</td>
-                    <td class="points"><strong>${t.points}</strong></td>
-                    <td>${t.joues}</td>
-                    <td>${t.gagnes}</td>
-                    <td>${t.nuls}</td>
-                    <td>${t.perdus}</td>
-                    <td class="${t.difference > 0 ? 'positive' : t.difference < 0 ? 'negative' : ''}">${t.difference > 0 ? '+' : ''}${t.difference}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `).join('');
-    };
+    // Stocker renderMatchList globalement pour les sous-tabs
+    window.calendrierRenderMatchList = renderMatchList;
 
     return `
       <section class="page-header">
@@ -644,47 +596,36 @@ const views = {
 
       <section class="section calendrier-section">
         <div class="container">
-          <!-- Onglets -->
+          <!-- Onglets principaux -->
           <div class="calendrier-tabs" id="calendrier-tabs">
-            <button class="tab-btn active" data-tab="resultats">Résultats</button>
-            <button class="tab-btn" data-tab="agenda">Agenda</button>
-            <button class="tab-btn" data-tab="classement">Classement</button>
+            <button class="tab-btn active" data-tab="par-equipe">Calendrier par équipe</button>
             <button class="tab-btn" data-tab="calendrier">Calendrier</button>
           </div>
 
           <!-- Contenu des onglets -->
           <div class="calendrier-content" id="calendrier-content">
-            <!-- Résultats (affiché par défaut) -->
-            <div class="tab-pane active" id="tab-resultats">
-              <h2 class="tab-section-title">Derniers Résultats</h2>
-              <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
-                ${renderMatchList(resultats.slice(0, 20), true)}
+
+            <!-- Tab: Calendrier par équipe -->
+            <div class="tab-pane active" id="tab-par-equipe">
+              <h2 class="tab-section-title">Sélectionnez une équipe</h2>
+              <div class="equipes-grid" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 900px; margin: 0 auto;">
+                ${equipes.map(eq => `
+                  <button class="match-category equipe-btn" data-equipe-id="${eq.id}" data-equipe-nom="${eq.nom}" style="cursor: pointer; border: none; font-size: 0.9rem; padding: 10px 20px;">
+                    ${eq.nom}
+                  </button>
+                `).join('')}
               </div>
+              <div id="equipe-detail" style="max-width: 900px; margin: 30px auto 0;"></div>
             </div>
 
-            <!-- Agenda -->
-            <div class="tab-pane" id="tab-agenda">
-              <h2 class="tab-section-title">Matchs à Venir</h2>
-              <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
-                ${renderMatchList(agenda.slice(0, 20), false)}
-              </div>
-            </div>
-
-            <!-- Classement -->
-            <div class="tab-pane" id="tab-classement">
-              <h2 class="tab-section-title">Classements</h2>
-              <div class="classements-container">
-                ${renderClassements()}
-              </div>
-            </div>
-
-            <!-- Calendrier complet -->
+            <!-- Tab: Calendrier complet -->
             <div class="tab-pane" id="tab-calendrier">
               <h2 class="tab-section-title">Calendrier Complet</h2>
               <div class="matchs-list" style="max-width: 900px; margin: 0 auto;">
                 ${renderMatchList(allMatchs, true)}
               </div>
             </div>
+
           </div>
 
           <!-- Dernière mise à jour -->
@@ -1281,26 +1222,198 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Event delegation for calendrier tabs
   document.addEventListener('click', (e) => {
+    // Gestion des onglets principaux et sous-onglets
     const tabBtn = e.target.closest('.tab-btn[data-tab]');
-    if (!tabBtn) return;
+    if (tabBtn) {
+      const tabId = tabBtn.dataset.tab;
+      const tabsContainer = tabBtn.closest('.calendrier-tabs, .equipe-sub-tabs');
+      const contentId = tabsContainer?.classList.contains('equipe-sub-tabs') ? 'equipe-sub-content' : 'calendrier-content';
+      const contentContainer = document.getElementById(contentId);
 
-    const tabId = tabBtn.dataset.tab;
-    const tabsContainer = tabBtn.closest('.calendrier-tabs');
-    const contentContainer = document.getElementById('calendrier-content');
+      if (!contentContainer) return;
 
-    if (!contentContainer) return;
+      tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      tabBtn.classList.add('active');
 
-    // Update active tab button
-    tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    tabBtn.classList.add('active');
+      contentContainer.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      const targetPane = document.getElementById(`tab-${tabId}`);
+      if (targetPane) targetPane.classList.add('active');
+      return;
+    }
 
-    // Update active tab pane
-    contentContainer.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-    const targetPane = document.getElementById(`tab-${tabId}`);
-    if (targetPane) {
-      targetPane.classList.add('active');
+    // Clic sur une équipe
+    const equipeBtn = e.target.closest('.equipe-btn[data-equipe-id]');
+    if (equipeBtn) {
+      const equipeId = equipeBtn.dataset.equipeId;
+      const equipeNom = equipeBtn.dataset.equipeNom;
+
+      // Highlight le bouton actif
+      document.querySelectorAll('.equipe-btn').forEach(btn => btn.classList.remove('equipe-btn-active'));
+      equipeBtn.classList.add('equipe-btn-active');
+
+      loadEquipeDetail(equipeId, equipeNom);
+      return;
+    }
+
+    // Bouton retour vers la liste des équipes
+    const backBtn = e.target.closest('#btn-back-equipes');
+    if (backBtn) {
+      document.getElementById('equipe-detail').innerHTML = '';
+      document.querySelectorAll('.equipe-btn').forEach(btn => btn.classList.remove('equipe-btn-active'));
+      return;
     }
   });
+
+  // Filtrage par date dans les sous-tabs équipe
+  document.addEventListener('change', (e) => {
+    const dateFilter = e.target.closest('.equipe-date-filter');
+    if (!dateFilter) return;
+
+    const container = dateFilter.closest('.tab-pane');
+    if (!container) return;
+
+    const equipeId = container.dataset.equipeId;
+    const type = container.dataset.type; // 'termine' ou 'a_venir'
+    const fromDate = container.querySelector('.filter-from')?.value || '';
+    const toDate = container.querySelector('.filter-to')?.value || '';
+
+    filterEquipeMatchs(equipeId, type, fromDate, toDate);
+  });
+
+  // Charger le détail d'une équipe (Résultats, Agenda, Classement)
+  async function loadEquipeDetail(equipeId, equipeNom) {
+    const detailEl = document.getElementById('equipe-detail');
+    if (!detailEl) return;
+
+    detailEl.innerHTML = '<div class="loading" style="padding: 40px; text-align: center;"><div class="spinner" style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#1a4d92;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;"></div></div>';
+
+    try {
+      const [resultatsRes, agendaRes, classementsRes] = await Promise.all([
+        api.getMatchs('termine', 100, { equipe_id: equipeId }),
+        api.getMatchs('a_venir', 100, { equipe_id: equipeId }),
+        fetch(`/api/classements?equipe_id=${equipeId}`).then(r => r.json()).catch(() => ({ success: false, data: { classements: [] } }))
+      ]);
+
+      const resultats = resultatsRes?.data?.matchs || [];
+      const agenda = agendaRes?.data?.matchs || [];
+      const classements = classementsRes?.success ? classementsRes.data.classements : [];
+
+      // Stocker pour le filtrage
+      window.calendrierEquipeData = { equipeId, resultats, agenda, classements };
+
+      const renderMatchList = window.calendrierRenderMatchList;
+
+      // Grouper classements par compétition
+      const classementsByComp = {};
+      classements.forEach(c => {
+        if (!classementsByComp[c.competition_nom]) classementsByComp[c.competition_nom] = [];
+        classementsByComp[c.competition_nom].push(c);
+      });
+
+      const renderClassement = () => {
+        if (Object.keys(classementsByComp).length === 0) {
+          return '<p class="text-center text-muted">Aucun classement disponible</p>';
+        }
+        return Object.entries(classementsByComp).map(([compName, teams]) => `
+          <div class="classement-group">
+            <h3 class="classement-title">${compName}</h3>
+            <div class="classement-table-wrapper">
+              <table class="classement-table">
+                <thead>
+                  <tr>
+                    <th>Pos</th><th>Équipe</th><th>Pts</th><th>J</th><th>G</th><th>N</th><th>P</th><th>+/-</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${teams.sort((a, b) => a.position - b.position).map(t => `
+                    <tr class="${/magny/i.test(t.equipe_nom) ? 'highlight-row' : ''}">
+                      <td class="position">${t.position}</td>
+                      <td class="team-name">${t.equipe_nom}</td>
+                      <td class="points"><strong>${t.points}</strong></td>
+                      <td>${t.joues}</td>
+                      <td>${t.gagnes}</td>
+                      <td>${t.nuls}</td>
+                      <td>${t.perdus}</td>
+                      <td class="${t.difference > 0 ? 'positive' : t.difference < 0 ? 'negative' : ''}">${t.difference > 0 ? '+' : ''}${t.difference}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join('');
+      };
+
+      const dateFilterHTML = (type) => `
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
+          <label style="font-size: 0.85rem; color: #6b7280;">Du</label>
+          <input type="date" class="form-control equipe-date-filter filter-from" style="width: auto; padding: 6px 10px; font-size: 0.85rem;">
+          <label style="font-size: 0.85rem; color: #6b7280;">au</label>
+          <input type="date" class="form-control equipe-date-filter filter-to" style="width: auto; padding: 6px 10px; font-size: 0.85rem;">
+        </div>
+      `;
+
+      detailEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+          <button id="btn-back-equipes" class="btn btn-sm" style="background: #e5e7eb; border: none; cursor: pointer;">← Retour</button>
+          <span class="match-category" style="font-size: 1rem; padding: 10px 20px;">${equipeNom}</span>
+        </div>
+
+        <div class="equipe-sub-tabs" style="display: flex; gap: 5px; margin-bottom: 20px;">
+          <button class="tab-btn active" data-tab="eq-resultats">Résultats</button>
+          <button class="tab-btn" data-tab="eq-agenda">Agenda</button>
+          <button class="tab-btn" data-tab="eq-classement">Classement</button>
+        </div>
+
+        <div id="equipe-sub-content">
+          <div class="tab-pane active" id="tab-eq-resultats" data-equipe-id="${equipeId}" data-type="termine">
+            ${dateFilterHTML('termine')}
+            <div class="matchs-list" id="eq-resultats-list">
+              ${renderMatchList(resultats, true)}
+            </div>
+          </div>
+
+          <div class="tab-pane" id="tab-eq-agenda" data-equipe-id="${equipeId}" data-type="a_venir">
+            ${dateFilterHTML('a_venir')}
+            <div class="matchs-list" id="eq-agenda-list">
+              ${renderMatchList(agenda, false)}
+            </div>
+          </div>
+
+          <div class="tab-pane" id="tab-eq-classement">
+            <div class="classements-container">
+              ${renderClassement()}
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      detailEl.innerHTML = `<p style="color: #ef4444;">Erreur lors du chargement: ${err.message}</p>`;
+    }
+  }
+
+  // Filtrer les matchs par date
+  async function filterEquipeMatchs(equipeId, type, fromDate, toDate) {
+    const renderMatchList = window.calendrierRenderMatchList;
+    const listId = type === 'termine' ? 'eq-resultats-list' : 'eq-agenda-list';
+    const listEl = document.getElementById(listId);
+    if (!listEl) return;
+
+    const isResultats = type === 'termine';
+    const data = window.calendrierEquipeData;
+    if (!data) return;
+
+    const matchs = isResultats ? data.resultats : data.agenda;
+
+    const filtered = matchs.filter(m => {
+      const d = m.date_match?.split('T')[0] || '';
+      if (fromDate && d < fromDate) return false;
+      if (toDate && d > toDate) return false;
+      return true;
+    });
+
+    listEl.innerHTML = renderMatchList(filtered, isResultats);
+  }
 
   // Event delegation for contact form submission
   document.addEventListener('submit', (e) => {

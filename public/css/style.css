@@ -2164,6 +2164,37 @@ a.partenaire-clickable:hover::after {
   font-weight: 700;
 }
 
+/* Bouton équipe dans le calendrier */
+.equipe-btn {
+  transition: all 0.3s ease;
+}
+
+.equipe-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.equipe-btn.equipe-btn-active {
+  background: var(--bleu-fonce) !important;
+  color: var(--blanc) !important;
+  box-shadow: 0 4px 12px rgba(26, 39, 68, 0.3);
+}
+
+/* Sous-tabs équipe */
+.equipe-sub-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  background: var(--gris-clair);
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.equipe-sub-tabs .tab-btn {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+}
+
 /* Footer calendrier */
 .calendrier-footer {
   margin-top: 50px;

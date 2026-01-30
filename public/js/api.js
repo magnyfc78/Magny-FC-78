@@ -199,9 +199,14 @@ class API {
   // =====================================================
   // MATCHS
   // =====================================================
-  
-  async getMatchs(type = 'a_venir', limit = 20) {
-    return this.get(`/matchs?type=${type}&limit=${limit}`);
+
+  async getMatchs(type = 'a_venir', limit = 20, params = {}) {
+    let url = `/matchs?type=${type}&limit=${limit}`;
+    if (params.equipe_id) url += `&equipe_id=${params.equipe_id}`;
+    if (params.from_date) url += `&from_date=${params.from_date}`;
+    if (params.to_date) url += `&to_date=${params.to_date}`;
+    if (params.sort) url += `&sort=${params.sort}`;
+    return this.get(url);
   }
 
   // =====================================================
