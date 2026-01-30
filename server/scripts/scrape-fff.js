@@ -604,7 +604,12 @@ async function scrapeClassement(page) {
 
   scraperLogger.info(`Compétitions trouvées: ${competitionLinks.length}`);
 
-  // ÉTAPE 2: Naviguer vers chaque compétition pour récupérer le classement détaillé
+  // ÉTAPE 2: Récupérer les équipes locales avec fff_nom pour le matching (comme dans scrapeEquipes)
+  const [localTeams] = await db.query('SELECT id, nom, slug, fff_nom FROM equipes WHERE actif = 1');
+  scraperLogger.info(`Équipes locales avec fff_nom configuré:`);
+  localTeams.filter(t => t.fff_nom).forEach(t => scraperLogger.info(`  - ${t.nom} -> fff_nom: "${t.fff_nom}"`));
+
+  // ÉTAPE 3: Naviguer vers chaque compétition pour récupérer le classement détaillé
   const allClassements = [];
 
   for (const comp of competitionLinks) {
@@ -694,6 +699,23 @@ async function scrapeClassement(page) {
       }, comp.name);
 
       if (standings.length > 0) {
+        // Associer cette compétition à une équipe locale via fff_nom
+        const localTeam = localTeams.find(lt => {
+          if (!lt.fff_nom) return false;
+          const fffNomLower = lt.fff_nom.toLowerCase().trim();
+          const compNameLower = comp.name.toLowerCase().trim();
+          return compNameLower === fffNomLower ||
+                 compNameLower.includes(fffNomLower) ||
+                 fffNomLower.includes(compNameLower);
+        });
+
+        if (localTeam) {
+          scraperLogger.info(`     ✓ Compétition associée à: ${localTeam.nom} (id: ${localTeam.id})`);
+          standings.forEach(s => s.localTeamId = localTeam.id);
+        } else {
+          scraperLogger.info(`     ⚠ Pas d'équipe locale pour cette compétition (configurer fff_nom)`);
+        }
+
         scraperLogger.info(`     ${standings.length} équipes dans le classement`);
         allClassements.push(...standings);
       } else {
@@ -1464,8 +1486,12 @@ async function saveClassement(entry) {
     difference: entry.difference || 0
   };
 
-  if (/magny/i.test(entry.equipe)) {
-    const localTeam = await findLocalTeam(entry.equipe);
+  // Utiliser localTeamId si déjà défini (depuis scrapeClassement avec matching fff_nom)
+  if (entry.localTeamId) {
+    data.equipe_id = entry.localTeamId;
+  } else if (/magny/i.test(entry.equipe)) {
+    // Fallback: chercher via le nom d'équipe (peu fiable sans catégorie)
+    const localTeam = await findLocalTeam(entry.competition || entry.equipe);
     if (localTeam) data.equipe_id = localTeam.id;
   }
 

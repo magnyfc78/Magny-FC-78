@@ -87,7 +87,7 @@ const views = {
             <div class="section-line"></div>
           </div>
           <div style="max-width: 900px; margin: 0 auto;">
-            ${matchs.length ? matchs.slice(0, 4).map(m => `
+            ${matchs.length ? matchs.slice(0, 6).map(m => `
               <div class="match-card">
                 <div class="match-date">
                   <div class="day">${m.date_formatee.split(' ')[0]}</div>
