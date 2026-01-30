@@ -170,6 +170,60 @@ async function updateScrapingLog(logId, data) {
 // Helper function to replace deprecated page.waitForTimeout
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Extraire la catégorie principale d'un nom FFF
+// Ex: "U13 N2 POULE D" → "u13", "CRITERIUM PAR ANNEE U12" → "u12",
+//     "CRITERIUM SENIORS F À 8" → "seniors f", "SENIORS D4 POULE C" → "seniors"
+function extractCategory(name) {
+  if (!name) return null;
+  const s = name.toLowerCase().trim();
+
+  // U + chiffres (U10, U11, U12, U13, U14, etc.)
+  const uMatch = s.match(/\bu(\d{1,2})\b/);
+  if (uMatch) return `u${uMatch[1]}`;
+
+  // Seniors F / Féminines
+  if (/\bseniors?\s*f\b/.test(s) || /\bf[ée]minin/.test(s)) return 'seniors f';
+
+  // Seniors (sans F)
+  if (/\bseniors?\b/.test(s)) return 'seniors';
+
+  // Vétérans
+  if (/\bv[ée]t[ée]rans?\b/.test(s)) return 'veterans';
+
+  return null;
+}
+
+// Matching intelligent entre un nom FFF et une équipe locale via fff_nom
+// Retourne l'équipe locale correspondante ou null
+function matchLocalTeam(fffName, localTeams) {
+  if (!fffName) return null;
+  const fffNameLower = fffName.toLowerCase().trim();
+
+  // 1. Match exact par fff_nom
+  const exact = localTeams.find(lt => lt.fff_nom && lt.fff_nom.toLowerCase().trim() === fffNameLower);
+  if (exact) return exact;
+
+  // 2. Match par inclusion (fff_nom contenu dans le nom FFF, ou l'inverse)
+  const includes = localTeams.find(lt => {
+    if (!lt.fff_nom) return false;
+    const ltNom = lt.fff_nom.toLowerCase().trim();
+    return fffNameLower.includes(ltNom) || ltNom.includes(fffNameLower);
+  });
+  if (includes) return includes;
+
+  // 3. Match par catégorie extraite (U13, SENIORS F, etc.)
+  const fffCategory = extractCategory(fffName);
+  if (fffCategory) {
+    const catMatch = localTeams.find(lt => {
+      if (!lt.fff_nom) return false;
+      return extractCategory(lt.fff_nom) === fffCategory;
+    });
+    if (catMatch) return catMatch;
+  }
+
+  return null;
+}
+
 // Sauvegarder les infos de debug (screenshot + HTML)
 async function saveDebugInfo(page, tabName) {
   if (!DEBUG) return;
@@ -699,15 +753,8 @@ async function scrapeClassement(page) {
       }, comp.name);
 
       if (standings.length > 0) {
-        // Associer cette compétition à une équipe locale via fff_nom
-        const localTeam = localTeams.find(lt => {
-          if (!lt.fff_nom) return false;
-          const fffNomLower = lt.fff_nom.toLowerCase().trim();
-          const compNameLower = comp.name.toLowerCase().trim();
-          return compNameLower === fffNomLower ||
-                 compNameLower.includes(fffNomLower) ||
-                 fffNomLower.includes(compNameLower);
-        });
+        // Associer cette compétition à une équipe locale via fff_nom (matching intelligent)
+        const localTeam = matchLocalTeam(comp.name, localTeams);
 
         if (localTeam) {
           scraperLogger.info(`     ✓ Compétition associée à: ${localTeam.nom} (id: ${localTeam.id})`);
@@ -841,17 +888,8 @@ async function scrapeEquipes(page) {
     try {
       scraperLogger.info(`\n  -> Récupération calendrier: ${team.label}`);
 
-      // Trouver l'équipe locale correspondante via fff_nom
-      const localTeam = localTeams.find(lt => {
-        if (!lt.fff_nom) return false;
-        const fffNomLower = lt.fff_nom.toLowerCase().trim();
-        const labelLower = team.label.toLowerCase().trim();
-
-        // Matching exact ou partiel
-        return labelLower === fffNomLower ||
-               labelLower.includes(fffNomLower) ||
-               fffNomLower.includes(labelLower);
-      });
+      // Trouver l'équipe locale correspondante via fff_nom (matching intelligent)
+      const localTeam = matchLocalTeam(team.label, localTeams);
 
       if (localTeam) {
         scraperLogger.info(`     ✓ Associé à équipe locale: ${localTeam.nom} (id: ${localTeam.id})`);
@@ -1134,12 +1172,7 @@ async function scrapeCalendrierFallback(page) {
     try {
       scraperLogger.info(`  -> ${team.label}`);
 
-      const localTeam = localTeams.find(lt => {
-        if (!lt.fff_nom) return false;
-        const fffNomLower = lt.fff_nom.toLowerCase().trim();
-        const labelLower = team.label.toLowerCase().trim();
-        return labelLower === fffNomLower || labelLower.includes(fffNomLower) || fffNomLower.includes(labelLower);
-      });
+      const localTeam = matchLocalTeam(team.label, localTeams);
 
       await page.goto(team.url, {
         waitUntil: 'networkidle2',
