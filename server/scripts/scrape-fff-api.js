@@ -146,7 +146,7 @@ async function fetchAPI(page, endpoint) {
 // Parser un match de l'API
 function parseMatch(m) {
   const match = {
-    fffMatchId: m.ma_no || m.id || null,
+    fffMatchId: m.ma_no || null,
     date: null,
     heure: null,
     homeTeam: null,
@@ -154,32 +154,39 @@ function parseMatch(m) {
     scoreHome: null,
     scoreAway: null,
     competition: null,
-    journee: null
+    journee: null,
+    terrain: null
   };
 
-  // Date/heure
-  const dateStr = m.ma_date || m.date;
-  if (dateStr) {
+  // Date - format "2026-06-04T00:00:00+00:00"
+  if (m.date) {
     try {
-      const d = new Date(dateStr);
+      const d = new Date(m.date);
       match.date = d.toISOString().split('T')[0];
-      match.heure = d.toTimeString().slice(0, 5);
     } catch (e) {}
   }
 
-  // Équipes - plusieurs formats possibles
-  match.homeTeam = m.home?.cl_nom || m.eq1?.eq_nom || m.equipe1 || m.home_team_name || null;
-  match.awayTeam = m.away?.cl_nom || m.eq2?.eq_nom || m.equipe2 || m.away_team_name || null;
+  // Heure - format "18H15"
+  if (m.time) {
+    match.heure = m.time.replace('H', ':');
+  }
+
+  // Équipes - structure: home.short_name, away.short_name
+  match.homeTeam = m.home?.short_name || null;
+  match.awayTeam = m.away?.short_name || null;
 
   // Scores
-  match.scoreHome = m.ma_score1 ?? m.home_score ?? m.score1 ?? null;
-  match.scoreAway = m.ma_score2 ?? m.away_score ?? m.score2 ?? null;
+  match.scoreHome = m.home_score ?? null;
+  match.scoreAway = m.away_score ?? null;
 
-  // Compétition
-  match.competition = m.poule?.cp_nom || m.competition?.cp_nom || m.cp_nom || m.competition_name || null;
+  // Compétition - structure: competition.name
+  match.competition = m.competition?.name || null;
 
-  // Journée
-  match.journee = m.ma_journee ?? m.journee ?? null;
+  // Journée - structure: poule_journee.number
+  match.journee = m.poule_journee?.number ?? m.poule_journee?.name ?? null;
+
+  // Terrain
+  match.terrain = m.terrain?.name || null;
 
   return match;
 }
