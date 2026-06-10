@@ -86,9 +86,12 @@ function extractCategory(name) {
   const s = name.toLowerCase().trim();
   const uMatch = s.match(/\bu(\d{1,2})\b/);
   if (uMatch) return `u${uMatch[1]}`;
-  if (/\bseniors?\s*f\b/.test(s) || /\bf[ée]minin/.test(s)) return 'seniors f';
-  if (/\bseniors?\b/.test(s)) return 'seniors';
-  if (/\bv[ée]t[ée]rans?\b/.test(s)) return 'veterans';
+  // Seniors F / Féminines (avec ou sans accent sur le é)
+  if (/\bs[eé]niors?\s*f\b/.test(s) || /\bf[ée]minin/.test(s)) return 'seniors f';
+  // Seniors (avec ou sans accent)
+  if (/\bs[eé]niors?\b/.test(s)) return 'seniors';
+  // Vétérans
+  if (/\bv[eé]t[eé]rans?\b/.test(s)) return 'veterans';
   return null;
 }
 
