@@ -186,7 +186,8 @@ function switchSection(section) {
     dashboard: 'Tableau de bord', config: 'Configuration', menu: 'Menu de navigation',
     equipes: 'Équipes', matchs: 'Matchs', actualites: 'Actualités',
     galerie: 'Galerie', histoire: 'Histoire du club', organigramme: 'Organigramme',
-    partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs', logs: 'Activité'
+    partenaires: 'Partenaires', contacts: 'Messages', users: 'Utilisateurs',
+    scraper: 'Scraper FFF', logs: 'Activité'
   };
   document.getElementById('page-title').textContent = titles[section] || section;
 
@@ -195,7 +196,8 @@ function switchSection(section) {
     dashboard: loadDashboard, config: () => loadConfig('general'), menu: loadMenu,
     equipes: loadEquipes, matchs: loadMatchs, actualites: loadActualites,
     galerie: loadGalerie, histoire: loadHistoire, organigramme: loadOrganigramme,
-    partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers, logs: loadLogs
+    partenaires: loadPartenaires, contacts: loadContacts, users: loadUsers,
+    scraper: loadScraper, logs: loadLogs
   };
   loaders[section]?.();
 }
@@ -463,7 +465,7 @@ async function loadEquipes() {
   await loadEquipesList();
   document.getElementById('equipes-list').innerHTML = equipes.length ? `
     <table class="table">
-      <thead><tr><th>Nom</th><th>Catégorie</th><th>Division</th><th>Coach</th><th>Joueurs</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Nom</th><th>Catégorie</th><th>Division</th><th>Coach</th><th>Joueurs</th><th>FFF</th><th>Actions</th></tr></thead>
       <tbody>
         ${equipes.map(e => `
           <tr>
@@ -472,6 +474,7 @@ async function loadEquipes() {
             <td>${e.division || '-'}</td>
             <td>${e.coach || '-'}</td>
             <td>${e.nb_joueurs || 0}</td>
+            <td>${e.fff_nom ? `<span class="badge badge-success" title="${e.fff_nom}">🔗 Lié</span>` : '<span class="badge badge-warning">Non lié</span>'}</td>
             <td>
               <button class="btn btn-sm" data-action="edit" data-type="equipe" data-id="${e.id}">✏️</button>
               <button class="btn btn-sm btn-danger" data-action="delete" data-type="equipes" data-id="${e.id}">🗑️</button>
@@ -492,7 +495,7 @@ async function loadMatchs() {
     matchs = res.data.matchs;
     document.getElementById('matchs-list').innerHTML = matchs.length ? `
       <table class="table">
-        <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Date</th><th>Équipe</th><th>Adversaire</th><th>Compétition</th><th>Score</th><th>Statut</th><th>FFF</th><th>Actions</th></tr></thead>
         <tbody>
           ${matchs.map(m => `
             <tr>
@@ -502,6 +505,7 @@ async function loadMatchs() {
               <td>${m.competition || '-'}</td>
               <td>${m.statut === 'termine' ? `${m.score_domicile} - ${m.score_exterieur}` : '-'}</td>
               <td><span class="badge badge-${m.statut === 'termine' ? 'success' : m.statut === 'a_venir' ? 'info' : 'warning'}">${m.statut}</span></td>
+              <td>${m.fff_id ? '<span class="badge badge-primary" title="Synchronisé FFF">🔗</span>' : '-'}</td>
               <td>
                 <button class="btn btn-sm" data-action="edit" data-type="match" data-id="${m.id}">✏️</button>
                 <button class="btn btn-sm btn-danger" data-action="delete" data-type="matchs" data-id="${m.id}">🗑️</button>
@@ -1107,6 +1111,151 @@ async function viewContact(id) {
 }
 
 // =====================================================
+// SCRAPER FFF
+// =====================================================
+async function loadScraper() {
+  try {
+    const [configRes, statusRes] = await Promise.all([
+      api.get('/admin/scraper/config'),
+      api.get('/admin/scraper/status')
+    ]);
+
+    const config = configRes.data.config;
+    const status = statusRes.data.status;
+
+    // Jours de la semaine
+    const joursOptions = [
+      { value: '0', label: 'Dimanche' },
+      { value: '1', label: 'Lundi' },
+      { value: '2', label: 'Mardi' },
+      { value: '3', label: 'Mercredi' },
+      { value: '4', label: 'Jeudi' },
+      { value: '5', label: 'Vendredi' },
+      { value: '6', label: 'Samedi' }
+    ];
+
+    const selectedDays = (config.days || '0,1,6').split(',');
+    const selectedHours = (config.hours || '0,12').split(',');
+
+    document.getElementById('scraper-config').innerHTML = `
+      <form id="scraper-form">
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="scraper-enabled" ${config.enabled === 'true' ? 'checked' : ''}>
+            Activer le scraping automatique
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jours d'exécution</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            ${joursOptions.map(j => `
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" name="days" value="${j.value}" ${selectedDays.includes(j.value) ? 'checked' : ''}>
+                ${j.label}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Heures d'exécution</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            ${[0, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(h => `
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" name="hours" value="${h}" ${selectedHours.includes(String(h)) ? 'checked' : ''}>
+                ${String(h).padStart(2, '0')}:00
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Timeout (secondes)</label>
+            <input type="number" class="form-control" id="scraper-timeout" value="${Math.round((parseInt(config.timeout) || 300000) / 1000)}" min="60" max="600">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tentatives en cas d'échec</label>
+            <input type="number" class="form-control" id="scraper-retries" value="${config.retries || 2}" min="0" max="5">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Enregistrer la configuration</button>
+      </form>
+    `;
+
+    // Statut
+    const lastRun = status.last_run ? new Date(status.last_run).toLocaleString('fr-FR') : 'Jamais';
+    document.getElementById('scraper-status').innerHTML = `
+      <p><strong>Dernière exécution:</strong> ${lastRun}</p>
+      <p><strong>Statut:</strong> ${status.last_status || 'Inconnu'}</p>
+      <p style="margin-top: 15px; color: #6b7280; font-size: 0.9rem;">
+        Le scraper récupère automatiquement les matchs et résultats depuis le site de la FFF (District des Yvelines).
+      </p>
+    `;
+
+    // Event listeners
+    document.getElementById('scraper-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await saveScraperConfig();
+    });
+
+    document.getElementById('btn-run-scraper').addEventListener('click', async () => {
+      if (confirm('Lancer le scraping maintenant ?')) {
+        try {
+          document.getElementById('btn-run-scraper').disabled = true;
+          document.getElementById('btn-run-scraper').textContent = '⏳ En cours...';
+          await api.post('/admin/scraper/run', {});
+          showAlert('Scraper lancé en arrière-plan', 'success');
+          setTimeout(() => loadScraper(), 3000);
+        } catch (err) {
+          showAlert('Erreur: ' + err.message, 'danger');
+        } finally {
+          document.getElementById('btn-run-scraper').disabled = false;
+          document.getElementById('btn-run-scraper').textContent = '▶️ Exécuter maintenant';
+        }
+      }
+    });
+
+  } catch (e) {
+    document.getElementById('scraper-config').innerHTML = '<p class="text-danger">Erreur chargement configuration</p>';
+    console.error(e);
+  }
+}
+
+async function saveScraperConfig() {
+  try {
+    const enabled = document.getElementById('scraper-enabled').checked;
+    const daysChecked = [...document.querySelectorAll('input[name="days"]:checked')].map(c => c.value);
+    const hoursChecked = [...document.querySelectorAll('input[name="hours"]:checked')].map(c => c.value);
+    const timeout = parseInt(document.getElementById('scraper-timeout').value) * 1000;
+    const retries = parseInt(document.getElementById('scraper-retries').value);
+
+    if (daysChecked.length === 0) {
+      showAlert('Sélectionnez au moins un jour', 'danger');
+      return;
+    }
+    if (hoursChecked.length === 0) {
+      showAlert('Sélectionnez au moins une heure', 'danger');
+      return;
+    }
+
+    await api.put('/admin/scraper/config', {
+      enabled: String(enabled),
+      days: daysChecked.join(','),
+      hours: hoursChecked.join(','),
+      timeout: String(timeout),
+      retries: String(retries)
+    });
+
+    showAlert('Configuration sauvegardée', 'success');
+  } catch (e) {
+    showAlert('Erreur: ' + e.message, 'danger');
+  }
+}
+
+// =====================================================
 // LOGS
 // =====================================================
 async function loadLogs() {
@@ -1299,6 +1448,24 @@ function openModal(type, data = null) {
             <label class="form-label"><input type="checkbox" id="f-actif" ${data?.actif !== false ? 'checked' : ''}> Actif</label>
           </div>
         </div>
+        <div class="form-section-title" style="margin-top:20px;padding-top:15px;border-top:1px solid #e5e7eb;font-weight:600;color:#374151;">
+          🔗 Lien FFF (District des Yvelines)
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom FFF</label>
+          <input type="text" class="form-control" id="f-fff_nom" value="${data?.fff_nom || ''}" placeholder="Ex: MAGNY 78 FC - Seniors A">
+          <small style="color:#6b7280;font-size:12px;">Le nom exact de l'équipe tel qu'il apparaît sur dyf78.fff.fr</small>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ID FFF</label>
+            <input type="text" class="form-control" id="f-fff_team_id" value="${data?.fff_team_id || ''}" placeholder="Ex: 12345">
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL FFF</label>
+            <input type="text" class="form-control" id="f-fff_team_url" value="${data?.fff_team_url || ''}" placeholder="https://dyf78.fff.fr/...">
+          </div>
+        </div>
       `;
       break;
     case 'match':
@@ -1351,6 +1518,19 @@ function openModal(type, data = null) {
               <option value="reporte" ${data?.statut === 'reporte' ? 'selected' : ''}>Reporté</option>
             </select>
           </div>
+          ${data?.fff_id ? `
+          <div class="form-section-title" style="margin-top:20px;padding-top:15px;border-top:1px solid #e5e7eb;font-weight:600;color:#374151;">
+            🔗 Données FFF (synchronisées automatiquement)
+          </div>
+          <div class="fff-info" style="background:#f3f4f6;padding:12px;border-radius:8px;font-size:13px;">
+            <div style="margin-bottom:8px;"><strong>ID FFF:</strong> ${data.fff_id}</div>
+            ${data.fff_home_team ? `<div style="margin-bottom:8px;"><strong>Équipe Dom.:</strong> ${data.fff_home_team}</div>` : ''}
+            ${data.fff_away_team ? `<div style="margin-bottom:8px;"><strong>Équipe Ext.:</strong> ${data.fff_away_team}</div>` : ''}
+            ${data.fff_venue ? `<div style="margin-bottom:8px;"><strong>Lieu:</strong> ${data.fff_venue}</div>` : ''}
+            ${data.fff_url ? `<div style="margin-bottom:8px;"><strong>URL:</strong> <a href="${data.fff_url}" target="_blank" style="color:#2563eb;">${data.fff_url}</a></div>` : ''}
+            ${data.fff_synced_at ? `<div style="color:#6b7280;"><strong>Dernière sync:</strong> ${new Date(data.fff_synced_at).toLocaleString('fr-FR')}</div>` : ''}
+          </div>
+          ` : ''}
         ` : ''}
       `;
       break;
@@ -1695,7 +1875,11 @@ async function saveModal() {
         photo: getValue('f-photo') || null,
         photo_equipe: photoEquipePath,
         actif: getChecked('f-actif'),
-        ordre: parseInt(getValue('f-ordre')) || 0
+        ordre: parseInt(getValue('f-ordre')) || 0,
+        // Champs FFF
+        fff_nom: getValue('f-fff_nom') || null,
+        fff_team_id: getValue('f-fff_team_id') || null,
+        fff_team_url: getValue('f-fff_team_url') || null
       };
       endpoint = '/admin/equipes';
       break;

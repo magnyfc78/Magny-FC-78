@@ -12,7 +12,8 @@
 !.env.example
 
 # Logs
-logs/
+logs/*
+!logs/.gitkeep
 *.log
 npm-debug.log*
 
@@ -33,3 +34,7 @@ build/
 # Uploads (si vous avez des fichiers uploadés localement)
 uploads/
 !uploads/.gitkeep
+
+#package
+package-lock.json
+
