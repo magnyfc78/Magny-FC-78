@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — Magny FC 78</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="icon" href="/assets/images/logo.png" type="image/png">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card">
+      <div class="brand"><span class="logo">MFC</span><h1>Connexion</h1></div>
+      <div id="alert" class="alert"></div>
+      <form id="login-form">
+        <div class="field"><label for="email">Email</label><input type="email" id="email" autocomplete="email" required></div>
+        <div class="field"><label for="password">Mot de passe</label><input type="password" id="password" autocomplete="current-password" required></div>
+        <button class="btn" id="btn-login" type="submit">Se connecter</button>
+      </form>
+      <div class="foot">
+        <a href="/pages/forgot-password.html">Mot de passe oublié ?</a><br><br>
+        Pas encore de compte ? <a href="/pages/register.html">S'inscrire</a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script>AuthUI.initLogin();</script>
+</body>
+</html>

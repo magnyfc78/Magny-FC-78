@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Licences — Magny FC 78</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="icon" href="/assets/images/logo.png" type="image/png">
+</head>
+<body>
+  <div class="auth-wrap" style="align-items:flex-start">
+    <div class="card wide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div class="brand" style="margin:0;text-align:left;display:flex;align-items:center;gap:12px">
+          <span class="logo">MFC</span><h1 style="margin:0">Administration — Licences</h1>
+        </div>
+        <button class="btn ghost sm" id="btn-logout">Déconnexion</button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="licenses">Licences</div>
+        <div class="tab" data-tab="import">Import FFF</div>
+        <div class="tab" data-tab="invitations">Invitations</div>
+        <div class="tab" data-tab="accounts">Comptes</div>
+      </div>
+
+      <!-- Licences -->
+      <section id="panel-licenses">
+        <div class="toolbar">
+          <div class="field"><label>Recherche</label><input type="text" id="f_q" placeholder="Nom, n° licence, email"></div>
+          <div class="field"><label>Catégorie</label><input type="text" id="f_categorie" placeholder="U11, Senior…"></div>
+          <div class="field"><label>Saison</label><input type="text" id="f_saison" placeholder="2024-2025"></div>
+          <div class="field"><label>Statut</label>
+            <select id="f_statut"><option value="">Tous</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+          <div class="field"><label>Liaison</label>
+            <select id="f_linked"><option value="">Toutes</option><option value="1">Liées</option><option value="0">Non liées</option></select></div>
+          <div class="field"><label>&nbsp;</label><button class="btn sm" id="btn-filter">Filtrer</button></div>
+        </div>
+        <div class="subtitle" id="lic-total"></div>
+        <table>
+          <thead><tr><th>N° licence</th><th>Nom</th><th>Catégorie</th><th>Saison</th><th>Compte</th><th></th></tr></thead>
+          <tbody id="lic-body"></tbody>
+        </table>
+      </section>
+
+      <!-- Import -->
+      <section id="panel-import" class="hidden">
+        <h2>Import des licences FFF</h2>
+        <p class="subtitle">Fichier CSV exporté depuis FootClubs/FFF. Colonnes : N° licence, Nom, Prénom, Date naissance, Sexe, Email, Téléphone, Adresse, CP, Ville, Catégorie.</p>
+        <form id="import-form">
+          <div class="toolbar">
+            <div class="field" style="flex:1;min-width:220px"><label>Fichier CSV</label><input type="file" id="csv" accept=".csv,.txt"></div>
+            <div class="field"><label>Saison</label><input type="text" id="season" placeholder="2024-2025" required></div>
+            <div class="field"><label>&nbsp;</label><label style="font-weight:400"><input type="checkbox" id="dry" style="width:auto;margin-right:6px">Simulation</label></div>
+            <div class="field"><label>&nbsp;</label><button class="btn sm" id="btn-import" type="submit">Lancer l'import</button></div>
+          </div>
+        </form>
+        <div id="import-result"></div>
+      </section>
+
+      <!-- Invitations -->
+      <section id="panel-invitations" class="hidden">
+        <h2>Inviter un licencié / parent</h2>
+        <p class="subtitle">Génère un code lié à une licence et l'envoie par email.</p>
+        <form id="inv-form">
+          <div class="toolbar">
+            <div class="field"><label>ID licence</label><input type="number" id="inv_license_id" required></div>
+            <div class="field" style="flex:1;min-width:220px"><label>Email destinataire</label><input type="email" id="inv_email" required></div>
+            <div class="field"><label>Rôle</label>
+              <select id="inv_role"><option value="joueur">Joueur (lui-même)</option><option value="tuteur">Parent / tuteur</option></select></div>
+            <div class="field"><label>&nbsp;</label><button class="btn sm" id="btn-inv" type="submit">Générer l'invitation</button></div>
+          </div>
+        </form>
+        <div id="inv-result"></div>
+      </section>
+
+      <!-- Comptes -->
+      <section id="panel-accounts" class="hidden">
+        <h2>Comptes</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Nom</th><th>Email</th><th>Vérifié</th><th>Licences</th><th>Créé le</th></tr></thead>
+          <tbody id="acc-body"></tbody>
+        </table>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:22px 0">
+        <h2>Fusionner deux comptes en doublon</h2>
+        <p class="subtitle">Les licences du compte <em>source</em> sont transférées vers le compte <em>cible</em>, puis le source est supprimé.</p>
+        <form id="merge-form">
+          <div class="toolbar">
+            <div class="field" style="flex:1;min-width:220px"><label>ID source (sera supprimé)</label><input type="text" id="merge_source" required></div>
+            <div class="field" style="flex:1;min-width:220px"><label>ID cible (conservé)</label><input type="text" id="merge_target" required></div>
+            <div class="field"><label>&nbsp;</label><button class="btn danger sm" id="btn-merge" type="submit">Fusionner</button></div>
+          </div>
+        </form>
+        <div id="merge-result"></div>
+      </section>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script src="/js/licenses.js"></script>
+  <script>LicensesUI.initAdmin();</script>
+</body>
+</html>

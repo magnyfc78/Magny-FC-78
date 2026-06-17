@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon espace — Magny FC 78</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="icon" href="/assets/images/logo.png" type="image/png">
+</head>
+<body>
+  <div class="auth-wrap" style="align-items:flex-start">
+    <div class="card wide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div class="brand" style="margin:0;text-align:left;display:flex;align-items:center;gap:12px">
+          <span class="logo">MFC</span>
+          <div><h1 style="margin:0">Mon espace</h1><div id="welcome" class="subtitle" style="margin:0"></div></div>
+        </div>
+        <button class="btn ghost sm" id="btn-logout">Déconnexion</button>
+      </div>
+
+      <div id="alert" class="alert"></div>
+
+      <h2>Mes licences</h2>
+      <p class="subtitle">Vos licences et celles de vos enfants. La licence principale s'affiche par défaut.</p>
+      <div id="lic-grid" class="lic-grid"></div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:26px 0">
+
+      <h2>Ajouter une licence</h2>
+      <p class="subtitle">Pour vous-même ou votre enfant. Vérification par numéro de licence + date de naissance.</p>
+      <form id="add-form">
+        <div class="toolbar">
+          <div class="field" style="flex:1;min-width:180px">
+            <label for="license_number">Numéro de licence</label>
+            <input type="text" id="license_number" required>
+          </div>
+          <div class="field" style="min-width:160px">
+            <label for="birth_date">Date de naissance</label>
+            <input type="date" id="birth_date" required>
+          </div>
+          <div class="field" style="min-width:160px">
+            <label for="relationship">Lien</label>
+            <select id="relationship">
+              <option value="self">Moi-même</option>
+              <option value="parent">Mon enfant</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn sm" id="btn-add" type="submit">Ajouter la licence</button>
+          </div>
+        </div>
+      </form>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:26px 0">
+
+      <h2>Sécurité &amp; données (RGPD)</h2>
+      <div class="btn-row" style="flex-wrap:wrap">
+        <button class="btn ghost sm" id="btn-history">Historique de connexion</button>
+        <button class="btn ghost sm" id="btn-export">Exporter mes données</button>
+        <button class="btn danger sm" id="btn-delete">Supprimer mon compte</button>
+      </div>
+      <div id="history" class="muted-box hidden" style="margin-top:14px"></div>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script src="/js/licenses.js"></script>
+  <script>LicensesUI.initDashboard();</script>
+</body>
+</html>

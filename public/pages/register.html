@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription — Magny FC 78</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="icon" href="/assets/images/logo.png" type="image/png">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card">
+      <div class="brand"><span class="logo">MFC</span><h1>Créer mon compte</h1></div>
+
+      <div class="stepper"><div class="step"></div><div class="step"></div><div class="step"></div></div>
+      <div id="alert" class="alert"></div>
+
+      <!-- Étape 1 : email -->
+      <section id="step-1">
+        <h2>Votre email</h2>
+        <p class="subtitle">Nous vérifions s'il correspond à une licence du club.</p>
+        <div id="invitation-block" class="hidden field">
+          <label for="invitation_code">Code d'invitation</label>
+          <input type="text" id="invitation_code" placeholder="Code reçu par email">
+        </div>
+        <div class="field">
+          <label for="email">Adresse email</label>
+          <input type="email" id="email" placeholder="vous@exemple.fr" autocomplete="email">
+        </div>
+        <button class="btn" id="btn-check">Vérifier</button>
+        <div id="parent-note" class="muted-box hidden" style="margin-top:16px">
+          Aucune licence à cet email. Vous êtes <strong>parent d'un licencié</strong> ?
+          Créez votre compte, vous pourrez lier la licence de votre/vos enfant(s) juste après.
+        </div>
+      </section>
+
+      <!-- Étape 2 : informations -->
+      <section id="step-2" class="hidden">
+        <h2>Vos informations</h2>
+        <input type="hidden" id="reg_email">
+        <div id="preview" class="preview hidden"></div>
+        <div class="field"><label for="first_name">Prénom</label><input type="text" id="first_name" autocomplete="given-name"></div>
+        <div class="field"><label for="last_name">Nom</label><input type="text" id="last_name" autocomplete="family-name"></div>
+        <div class="field"><label for="password">Mot de passe</label><input type="password" id="password" autocomplete="new-password">
+          <div class="hint">8 caractères min., 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial.</div></div>
+        <div class="field"><label for="password2">Confirmer le mot de passe</label><input type="password" id="password2" autocomplete="new-password"></div>
+
+        <div class="field">
+          <label><input type="checkbox" id="toggle-license" style="width:auto;margin-right:8px">Lier ma propre licence maintenant</label>
+        </div>
+        <div id="license-fields" class="hidden">
+          <div class="field"><label for="license_number">Numéro de licence</label><input type="text" id="license_number"></div>
+          <div class="field"><label for="birth_date">Date de naissance</label><input type="date" id="birth_date"></div>
+        </div>
+        <button class="btn" id="btn-to-recap">Continuer</button>
+      </section>
+
+      <!-- Étape 3 : confirmation -->
+      <section id="step-3" class="hidden">
+        <h2>Confirmation</h2>
+        <p class="subtitle">Vérifiez vos informations avant de créer le compte.</p>
+        <div id="recap" class="muted-box"></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="btn-back-2">Retour</button>
+          <button class="btn" id="btn-submit">Créer mon compte</button>
+        </div>
+      </section>
+
+      <!-- Succès -->
+      <section id="done" class="hidden center">
+        <div class="alert show ok">Compte créé ! Un email de vérification vous a été envoyé pour l'activer.</div>
+        <a class="btn" href="/pages/member-dashboard.html">Accéder à mon espace</a>
+      </section>
+
+      <div class="foot">Déjà un compte ? <a href="/pages/login.html">Se connecter</a></div>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script>AuthUI.initRegister();</script>
+</body>
+</html>

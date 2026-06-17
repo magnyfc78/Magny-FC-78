@@ -32,6 +32,23 @@ const config = {
     name: process.env.DB_NAME || 'magny_fc_78'
   },
 
+  // Application (URL publique pour les liens dans les emails)
+  app: {
+    publicUrl: process.env.PUBLIC_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`
+  },
+
+  // Email (nodemailer). Si email.enabled est faux, on utilise un transport
+  // "stub" en dev (jsonTransport) : les emails sont loggués, pas envoyés.
+  email: {
+    enabled: process.env.EMAIL_ENABLED === 'true',
+    host: process.env.SMTP_HOST || 'localhost',
+    port: parseInt(process.env.SMTP_PORT, 10) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+    from: process.env.EMAIL_FROM || 'Magny FC 78 <no-reply@magnyfc78.fr>'
+  },
+
   // JWT
   jwt: {
     secret: process.env.JWT_SECRET,

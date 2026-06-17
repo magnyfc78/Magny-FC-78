@@ -23,6 +23,7 @@ const authRoutes = require('./routes/auth.routes');
 const publicRoutes = require('./routes/public.routes');
 const adminRoutes = require('./routes/admin.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const v1Routes = require('./api/v1');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -185,6 +186,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// API v1 — gestion utilisateurs & inscriptions (Partie 2+)
+app.use('/api/v1', v1Routes);
 
 // Health check
 app.get('/api/health', (req, res) => {
