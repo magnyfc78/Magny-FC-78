@@ -7,16 +7,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/auth.css">
   <link rel="icon" href="/assets/images/logo.png" type="image/png">
 </head>
 <body>
+  <header class="site-header"></header>
   <div class="auth-wrap">
     <div class="card center">
       <div class="brand"><span class="logo">MFC</span><h1>Vérification de l'email</h1></div>
       <div id="result"><div class="spin"></div></div>
     </div>
   </div>
+  <footer class="site-footer"></footer>
+  <script src="/js/site-chrome.js"></script>
   <script src="/js/auth.js"></script>
   <script>AuthUI.initVerify();</script>
 </body>

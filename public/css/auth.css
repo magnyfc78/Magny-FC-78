@@ -50,11 +50,12 @@ a { color: var(--navy); transition: color 0.3s ease; }
 a:hover { color: var(--gold); }
 
 .auth-wrap {
-  min-height: 100vh;
+  /* dégage l'en-tête fixe du site (--header-height défini dans style.css) */
+  min-height: calc(100vh - var(--header-height, 80px));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: calc(var(--header-height, 80px) + 40px) 24px 60px;
 }
 
 .card {

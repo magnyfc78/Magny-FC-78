@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <button class="menu-toggle" id="menu-toggle">☰</button>
       <nav id="nav">
         ${menuLinks}
-        <a href="/admin/login.html" class="btn-connexion">CONNEXION</a>
+        <a href="/pages/login.html" class="btn-connexion">ESPACE MEMBRE</a>
       </nav>
     </div>
   `;
@@ -849,6 +849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <a href="/equipes" data-link>Équipes</a>
           <a href="/actualites" data-link>Actualités</a>
           <a href="/calendrier" data-link>Calendrier</a>
+          <a href="/pages/login.html">Espace membre</a>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
